@@ -1,0 +1,454 @@
+/* Body and general font */
+body {
+  background-color: #f5f5f5;
+  /* light, clean background */
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #333;
+  /* default text color */
+}
+
+/* Main heading */
+h1 {
+  text-align: left;
+  height: 20px;
+  color: white;
+  background-color: #263F73;
+  margin-left: 210px;
+  margin-top: 0px;
+  font-size: 23px;
+  padding: 12px 20px;
+  /* Smooth curve on left, sharp on right */
+  border-radius: 5px 0 0 10px;
+}
+
+/* Buttons (including search and links) */
+input[type="submit"],
+h1 a,
+.button-link {
+  background-color: #263F73;
+  /* dark blue button */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+input[type="submit"]:hover,
+h1 a:hover,
+.button-link:hover {
+  background-color: #004c99;
+  /* darker blue on hover */
+  color: white;
+}
+
+/* Search input */
+input[type="text"] {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 250px;
+  font-size: 14px;
+}
+
+/* Main table styling - Patient Info View (outside sidebar) */
+table:not(.sidebar-table) {
+  width: calc(100% - 250px);
+  /* 100% minus sidebar space */
+  max-width: none;
+  /* remove 700px limit */
+  margin-left: 220px;
+  /* keep same left margin */
+  border-collapse: separate;
+  border-spacing: 5;
+  background-color: #ffffff;
+  border: 1px solid #263F73;
+  /* outer dark blue border */
+  border-radius: 2px;
+  /* slightly smaller rounded edges */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  /* light compact shadow */
+  overflow: hidden;
+  font-size: 14px;
+  /* slightly smaller font */
+}
+
+/* Main table header */
+table:not(.sidebar-table) th {
+  background-color: #DCDCDC;
+  /* dark blue header */
+  color: black;
+  padding: 4px 8px;
+  /* reduced padding for compact look */
+  text-align: left;
+  font-weight: bold;
+  font-family: 'Lato', Arial, sans-serif;
+  border: none;
+  font-size: 13px;
+}
+
+/* Main table cells */
+table:not(.sidebar-table) td {
+  padding: 2px 2px;
+  /* tighter spacing */
+  text-align: left;
+  color: #333;
+  border: none;
+  vertical-align: middle;
+  /* vertically center content */
+  background-color: #fafafa;
+  word-wrap: break-word;
+  font-size: 12px;
+}
+
+/* Alternating row colors */
+table:not(.sidebar-table) tr:nth-child(even) td {
+  background-color: #fdfdfd;
+}
+
+/* Row hover */
+table:not(.sidebar-table) tr:hover td {
+  background-color: #e9f1fc;
+}
+
+/* Links inside main table */
+table:not(.sidebar-table) a {
+  color: #263F73;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+table:not(.sidebar-table) a:hover {
+  color: #004c99;
+  text-decoration: underline;
+}
+
+/* Sidebar */
+.sidebar {
+  height: 100vh;
+  width: 200px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #263F73;
+  padding-top: 0px;
+  display: flex;
+  flex-direction: column;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 8px;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for the remarks table */
+div::-webkit-scrollbar {
+  width: 6px;
+}
+
+div::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+div::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+div::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* For Firefox */
+div {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure table rows are compact */
+.sidebar-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.sidebar-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Sidebar table - this is for your remarks table - WHITE/GRAY VERSION */
+.sidebar-table {
+  width: 100% !important;
+  font-size: 11px !important;
+  background: #ffffff !important;
+  /* Changed to white */
+  border-collapse: collapse !important;
+  margin-left: 0 !important;
+  max-width: 100% !important;
+  border: 1px solid #333 !important;
+  /* Light gray border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 5px !important;
+  color: #333 !important;
+  /* Dark text for contrast */
+  margin-bottom: 10px !important;
+}
+
+.sidebar-table th {
+  background: #f5f5f5 !important;
+  /* Light gray header */
+  color: #333 !important;
+  /* Dark text */
+  padding: 8px !important;
+  text-align: left !important;
+  border-bottom: 1px solid #ddd !important;
+  font-weight: bold !important;
+  font-size: 12px !important;
+}
+
+.sidebar-table td {
+  color: #333 !important;
+  /* Dark text */
+  padding: 6px !important;
+  text-align: left !important;
+  border-bottom: 1px solid #eee !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  font-size: 11px !important;
+}
+
+/* Alternating row colors for sidebar table */
+.sidebar-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9 !important;
+  /* Very light gray for even rows */
+}
+
+.sidebar-table tbody tr:nth-child(odd) {
+  background-color: #ffffff !important;
+  /* White for odd rows */
+}
+
+.sidebar-table tbody tr:hover {
+  background-color: #f0f0f0 !important;
+  /* Light gray on hover */
+}
+
+.sidebar-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.spacer {
+  flex-grow: 1;
+  /* pushes the logout button to the bottom */
+}
+
+.logout-btn {
+  background-color: #263F73;
+  color: white;
+  text-align: left;
+  padding: 5px 10px;
+  /* adjusted padding for better look */
+  border-radius: 5px;
+  display: block;
+  text-decoration: none;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+/* Compact input fields inside table */
+table input[type="text"],
+table input[type="number"],
+table select {
+  width: 150px;
+  /* compact width */
+  padding: 4px 2px;
+  /* compact inner spacing */
+  font-size: 13.5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* When collapsed */
+.sidebar.collapsed {
+  width: 50px;
+}
+
+.sidebar h2 {
+  color: white;
+  text-align: center;
+  margin-bottom: 20px;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed h2,
+.sidebar.collapsed a {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar a {
+  background-color: #263F73;
+  color: white;
+  text-align: left;
+  padding: 10px 10px;
+  /* adjusted padding for better look */
+  border-radius: 5px;
+  display: block;
+  text-decoration: none;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.sidebar a:hover {
+  background-color: #004c99;
+  transform: translateX(2px);
+}
+
+/* Toggle button */
+.toggle-btn {
+  position: absolute;
+  top: 15px;
+  right: -15px;
+  background-color: #263F73;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s;
+}
+
+.sidebar.collapsed .toggle-btn {
+  transform: rotate(180deg);
+}
+
+/* Content area */
+.content {
+  margin-left: 220px;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed+.content {
+  margin-left: 70px;
+}
+
+/* Main content adjustment */
+.main-content {
+  margin-left: 220px;
+  /* leave space for sidebar */
+  padding: 20px;
+}
+
+#errorPopup {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #f8d7da;
+  /* light red */
+  color: #721c24;
+  /* dark red text */
+  border: 1px solid #f5c6cb;
+  padding: 20px 30px;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  text-align: center;
+  z-index: 9999;
+  display: none;
+  /* hidden by default */
+}
+
+#errorPopup button {
+  background-color: #721c24;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.close {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.popup-message {
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #5cb85c;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  animation: fadeInOut 3s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+#prescriptionModal .modal-content {
+  background: #fff;
+  width: 200%;
+  /* ⬅ wider than usual (default ~60%) */
+  max-width: 1100px;
+  /* ⬅ limit max width for large screens */
+  border-radius: 12px;
+  padding: 20px 30px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}

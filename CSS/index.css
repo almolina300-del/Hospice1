@@ -1,0 +1,131 @@
+/* CSS/index.css */
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    background: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    min-height: 100vh;
+    position: relative;
+}
+
+header {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    background-color: #263F73;
+    padding: 10px 20px;
+    border-bottom: 3px solid #263F73;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+header .logo {
+    width: 60px;
+    height: auto;
+    margin-right: 10px;
+}
+
+header span {
+    font-size: 24px;
+    font-weight: bold;
+    color: #f5f5f5;
+}
+
+.login-container {
+    display: flex;
+    max-width: 1000px; /* Remove the 100px max-width */
+    margin: 20px auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    width: 100%; /* Change from 150% to 90% or 100% */
+    max-height: 800px;
+    overflow: hidden;
+}
+.form-section {
+    flex: 1;
+    padding: 40px;
+    min-width: 0; /* Prevent flex item from overflowing */
+}
+
+.image-section {
+    flex: 2;
+    background: linear-gradient(rgba(38, 63, 115, 0.7), rgba(38, 63, 115, 0.5));
+    border-left: 1px solid #eee;
+    display: flex;
+    align-items: center\\;
+    justify-content: center;
+    padding: 10px;
+    overflow: hidden; /* Add this */
+    min-width: 0; /* Prevent flex item from overflowing */
+}
+
+/* NEW: Style for the image inside image-section */
+.image-section img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Shows entire image */
+    border-radius: 1px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background: #263F73;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button[type="submit"]:hover {
+    background: #1a2f5a;
+}
+
+.error {
+    color: red;
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    background: #ffe6e6;
+    border-radius: 5px;
+    border: 1px solid #ffcccc;
+}
+
+/* Basic adjustments for .footer-note inside form */
+.footer-note {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #666;
+    text-align: center;
+}
+
+h2 {
+    text-align: center;
+    color: #263F73;
+    margin-bottom: 30px;
+    font-size: 28px;
+}
+

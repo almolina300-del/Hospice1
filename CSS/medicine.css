@@ -1,0 +1,630 @@
+/* ==================== BASE STYLES ==================== */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #333;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+/* Sidebar */
+.sidebar {
+  height: 100vh;
+  width: 200px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #263F73;
+  padding-top: 0px;
+  display: flex;
+  flex-direction: column;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 8px;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+.sidebar a {
+    background-color: #263F73;
+    color: white;
+    text-align: left;
+    padding: 12px 15px;
+    border-radius: 5px;
+    display: block;
+    text-decoration: none;
+    margin: 2px 5px;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.sidebar a:hover {
+    background-color: #004c99;
+    transform: translateX(2px);
+}
+
+.sidebar a[href="medicine.php"] {
+    background-color: whitesmoke;
+    color: #263F73;
+    font-weight: bold;
+    border-left: 4px solid #263F73;
+}
+
+/* ==================== MAIN HEADER ==================== */
+h1 {
+    text-align: left;
+    height: 20px;
+    color: white;
+    background-color: #263F73;
+    margin-left: 210px;
+    margin-top: -8px;
+    font-size: 23px;
+    padding: 12px 20px;
+    border-radius: 5px 0 0 10px;
+    position: fixed;
+    top: 0;
+    left: 20px;
+    right: 0;
+    z-index: 900;
+    width: calc(100% - 210px);
+}
+
+/* ==================== STATS BOX ==================== */
+.stats-box {
+    background-color: white;
+    padding: 15px 30px;
+    margin: 60px 300px 20px 300px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: #263F73;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.stats-number {
+    font-size: 30px;
+    display: block;
+    margin-top: 5px;
+}
+
+.blink-text {
+    animation: blinker 1.5s ease-in-out 1;
+}
+
+@keyframes blinker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ==================== ACCESS WARNING ==================== */
+.access-warning {
+    text-align: center;
+    margin: 10px 300px;
+    padding: 12px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    color: #856404;
+    font-weight: bold;
+}
+
+/* ==================== SEARCH CONTAINER ==================== */
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 300px;
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    width: calc(100% - 600px);
+}
+
+.search-container input[type="text"] {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.search-container input[type="submit"] {
+    padding: 8px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.search-container input[type="submit"]:hover {
+    background-color: #218838;
+}
+
+/* ==================== BUTTONS ==================== */
+.add-medicine-btn {
+    padding: 8px 20px;
+    background-color: #263F73;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.add-medicine-btn:hover:not(:disabled) {
+    background-color: #1a2d57;
+}
+
+.btn-edit {
+    padding: 5px 15px;
+    background-color: #007BFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+.btn-edit:hover {
+    background-color: #0056b3;
+}
+
+.disabled-btn {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* ==================== TABLE CONTAINER ==================== */
+.table-container {
+    max-height: 800px;
+    overflow-y: auto;
+    margin: 20px 20px; /* Only 20px margins */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    background-color: white;
+    width: calc(80% - 40px);
+}
+
+/* ==================== MEDICINE TABLE ==================== */
+.medicine-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+}
+
+.medicine-table th {
+    background-color: #263F73;
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-weight: bold;
+    font-size: 13px;
+    border: none;
+}
+
+.medicine-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+}
+
+/* Column alignment */
+.medicine-table th:nth-child(1),
+.medicine-table td:nth-child(1),
+.medicine-table th:nth-child(5),
+.medicine-table td:nth-child(5) {
+    text-align: center;
+    width: 10%;
+}
+
+.medicine-table th:nth-child(2),
+.medicine-table td:nth-child(2) {
+    text-align: left;
+    width: 40%;
+}
+
+.medicine-table th:nth-child(3),
+.medicine-table td:nth-child(3) {
+    text-align: left;
+    width: 25%;
+}
+
+.medicine-table th:nth-child(4),
+.medicine-table td:nth-child(4) {
+    text-align: left;
+    width: 25%;
+}
+
+/* Row styling */
+.medicine-table tr:nth-child(even) {
+    background-color: #F2F2FF;
+}
+
+.medicine-table tr:hover {
+    background-color: #e6f7ff;
+}
+
+/* ==================== MODALS ==================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 450px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.close-modal:hover {
+    color: #f1f1f1;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #263F73, #3a5f9e);
+    color: white;
+    padding: 20px;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 0 20px;
+}
+
+.form-group label {
+    font-weight: bold;
+    width: 140px;
+    margin-right: 10px;
+    color: #333;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.form-group input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #263F73;
+    box-shadow: 0 0 0 2px rgba(38, 63, 115, 0.2);
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-top: 1px solid #eee;
+    border-radius: 0 0 8px 8px;
+}
+
+.btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: #28A745;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #218838;
+}
+
+.btn-danger {
+    background-color: #6C757D;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #5a6268;
+}
+
+/* ==================== LOADER ==================== */
+#loader {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.7);
+    z-index: 9999;
+    text-align: center;
+    padding-top: 200px;
+}
+
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #263F73;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ==================== PAGINATION ==================== */
+.pagination-container {
+    text-align: center;
+    margin: 20px 300px;
+    width: calc(100% - 600px);
+}
+
+.pagination-info {
+    font-weight: bold;
+    color: #263F73;
+    margin-bottom: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.pagination-links a {
+    padding: 8px 20px;
+    margin: 0 5px;
+    background-color: #263F73;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
+    transition: background-color 0.2s;
+    display: inline-block;
+}
+
+.pagination-links a:hover {
+    background-color: #1a2d57;
+}
+
+.pagination-links a:first-child {
+    background-color: #DAA520;
+}
+
+.pagination-links a:last-child {
+    background-color: #28A745;
+}
+
+/* ==================== NO DATA MESSAGE ==================== */
+.no-data-message {
+    text-align: center;
+    margin: 20px 300px;
+    padding: 15px;
+    color: #b30000;
+    background-color: #ffe6e6;
+    font-weight: bold;
+    border-radius: 6px;
+    border: 1px solid #ffcccc;
+    font-family: Arial, Helvetica, sans-serif;
+    width: calc(100% - 600px);
+}
+
+/* ==================== SUCCESS/ERROR MESSAGES ==================== */
+.success-message, .error-message {
+    text-align: center;
+    margin: 70px 300px 10px 300px;
+    padding: 10px;
+    font-weight: bold;
+    border-radius: 6px;
+    border: 1px solid;
+    font-family: Arial, Helvetica, sans-serif;
+    width: calc(100% - 600px);
+}
+
+.success-message {
+    color: green;
+    background-color: #e6ffe6;
+    border-color: #ccffcc;
+}
+
+.error-message {
+    color: #b30000;
+    background-color: #ffe6e6;
+    border-color: #ffcccc;
+}
+
+/* ==================== HORIZONTAL LINE ==================== */
+hr {
+    margin: 20px 300px;
+    border: 1px solid #ccc;
+    width: calc(100% - 600px);
+}
+
+/* ==================== LOGO ==================== */
+.logo {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+/* ==================== LOGOUT BUTTON ==================== */
+.logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    gap: 8px;
+    text-decoration: none;
+    color: white;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+    margin: 5px;
+    transition: background 0.3s;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.logout-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 1400px) {
+    .table-container,
+    .search-container,
+    .stats-box,
+    .access-warning,
+    .success-message,
+    .error-message,
+    .no-data-message,
+    .pagination-container,
+    hr {
+        margin-left: 150px;
+        margin-right: 150px;
+        width: calc(100% - 300px);
+    }
+    
+    h1 {
+        width: calc(100% - 170px);
+        margin-left: 150px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .table-container,
+    .search-container,
+    .stats-box,
+    .access-warning,
+    .success-message,
+    .error-message,
+    .no-data-message,
+    .pagination-container,
+    hr {
+        margin-left: 50px;
+        margin-right: 50px;
+        width: calc(100% - 100px);
+    }
+    
+    h1 {
+        width: calc(100% - 70px);
+        margin-left: 50px;
+    }
+    
+    .sidebar {
+        width: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-container {
+        overflow-x: auto;
+        max-height: 500px;
+    }
+    
+    .medicine-table {
+        min-width: 700px;
+    }
+    
+    .table-container,
+    .search-container,
+    .stats-box,
+    .access-warning,
+    .success-message,
+    .error-message,
+    .no-data-message,
+    .pagination-container,
+    hr {
+        margin-left: 20px;
+        margin-right: 20px;
+        width: calc(100% - 40px);
+    }
+    
+    h1 {
+        width: calc(100% - 40px);
+        margin-left: 20px;
+        font-size: 18px;
+        padding: 8px 15px;
+    }
+    
+    .sidebar {
+        width: 60px;
+    }
+    
+    .sidebar a span {
+        display: none;
+    }
+    
+    .search-container {
+        flex-direction: column;
+    }
+    
+    .add-medicine-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
