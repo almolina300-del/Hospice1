@@ -160,7 +160,7 @@ try {
             $pdf->SetTextColor(0, 0, 0);
             $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
 
-            $pdf->Ln(5);
+            $pdf->Ln(-5);
         } else {
             // Find where to break the address (like frequency)
             $charPos = 0;
