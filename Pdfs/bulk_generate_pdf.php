@@ -17,18 +17,18 @@ if (!empty($bulk_ids) && is_array($bulk_ids)) {
     $valid_ids = array_filter($bulk_ids, 'is_numeric');
     if (!empty($valid_ids)) {
         $id_list = implode(',', $valid_ids);
-        
+
         // Get prescriptions by the provided IDs
         $sql = "SELECT p.Prescription_id 
                 FROM prescription p
                 LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
                 WHERE pat.is_active = 1
                 AND p.Prescription_id IN ($id_list)";
-                
+
         if ($Refill_day != "") {
             $sql .= " AND p.Refill_day = '" . mysqli_real_escape_string($conn, $Refill_day) . "'";
         }
-        
+
         $sql .= " ORDER BY p.Refill_day ASC";
     } else {
         die("Invalid prescription IDs provided.");
@@ -92,9 +92,9 @@ while ($row = mysqli_fetch_assoc($list_result)) {
     if (!$rx) {
         die("Error fetching prescription: " . mysqli_error($conn));
     }
-    
+
     $prescription = mysqli_fetch_assoc($rx);
-    
+
     // Check if prescription data was found
     if (!$prescription) {
         continue; // Skip if no prescription found
@@ -157,81 +157,81 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(-11, 10, $prescription['Sex'] ?? '', 0, 1, 'R');
 
-// Address section - working like frequency
-$pdf->SetX(10);
-$pdf->SetFont('Arial', 'B', 9);
-$pdf->SetTextColor(200, 200, 200);
-$pdf->Cell(11, 5, 'Address:');
+        // Address section - working like frequency
+        $pdf->SetX(10);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetTextColor(200, 200, 200);
+        $pdf->Cell(11, 5, 'Address:');
 
-// Get address text
-$address = $prescription['Address'];
-$maxAddrWidth = 65; // Reduced from 100 to leave space for date at X:115
+        // Get address text
+        $address = $prescription['Address'];
+        $maxAddrWidth = 65; // Reduced from 100 to leave space for date at X:115
 
-// Save starting position
-$addrStartX = $pdf->GetX(); // Should be 21
-$addrStartY = $pdf->GetY(); // Should be 40
+        // Save starting position
+        $addrStartX = $pdf->GetX(); // Should be 21
+        $addrStartY = $pdf->GetY(); // Should be 40
 
-// Set font for address
-$pdf->SetFont('courier', 'B', 8);
-$pdf->SetTextColor(0, 0, 0);
+        // Set font for address
+        $pdf->SetFont('courier', 'B', 8);
+        $pdf->SetTextColor(0, 0, 0);
 
-// Check if address fits
-$addrWidth = $pdf->GetStringWidth($address);
+        // Check if address fits
+        $addrWidth = $pdf->GetStringWidth($address);
 
-if ($addrWidth <= $maxAddrWidth) {
-    // Write address
-    $pdf->Cell($maxAddrWidth, 5, $address, 0, 0, 'L');
-    
-    // Write date on same line
-    $pdf->SetX(93);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetTextColor(200, 200, 200);
-    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-    $pdf->SetFont('courier', 'B', 8);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
-    
-    $pdf->Ln(5);
-} else {
-    // Find where to break the address (like frequency)
-    $charPos = 0;
-    $testString = '';
-    
-    for ($j = 0; $j < strlen($address); $j++) {
-        $testString .= $address[$j];
-        if ($pdf->GetStringWidth($testString) > $maxAddrWidth) {
-            $charPos = $j;
-            break;
+        if ($addrWidth <= $maxAddrWidth) {
+            // Write address
+            $pdf->Cell($maxAddrWidth, 5, $address, 0, 0, 'L');
+
+            // Write date on same line
+            $pdf->SetX(93);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetTextColor(200, 200, 200);
+            $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+            $pdf->SetFont('courier', 'B', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+
+            $pdf->Ln(5);
+        } else {
+            // Find where to break the address (like frequency)
+            $charPos = 0;
+            $testString = '';
+
+            for ($j = 0; $j < strlen($address); $j++) {
+                $testString .= $address[$j];
+                if ($pdf->GetStringWidth($testString) > $maxAddrWidth) {
+                    $charPos = $j;
+                    break;
+                }
+            }
+
+            $firstLine = $charPos > 0 ? substr($address, 0, $charPos) : $address;
+            $remaining = $charPos > 0 ? substr($address, $charPos) : '';
+
+            // Save Y position
+            $yPos = $pdf->GetY();
+
+            // First line of address
+            $pdf->Cell($maxAddrWidth, 1, $firstLine, 0, 0, 'L');
+
+            // Date on same line
+            $pdf->SetX(93);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetTextColor(200, 200, 200);
+            $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+            $pdf->SetFont('courier', 'B', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+
+            // Second line if needed (like frequency's second line)
+            if (!empty($remaining)) {
+                $pdf->SetXY($addrStartX, $yPos + 1); // Next line, same X
+                $pdf->Cell($maxAddrWidth, 5, $remaining, 0, 0, 'L');
+            }
+
+            // Adjust spacing
+            $pdf->Ln(1);
         }
-    }
-    
-    $firstLine = $charPos > 0 ? substr($address, 0, $charPos) : $address;
-    $remaining = $charPos > 0 ? substr($address, $charPos) : '';
-    
-    // Save Y position
-    $yPos = $pdf->GetY();
-    
-    // First line of address
-    $pdf->Cell($maxAddrWidth, 1, $firstLine, 0, 0, 'L');
-    
-    // Date on same line
-    $pdf->SetX(93);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetTextColor(200, 200, 200);
-    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-    $pdf->SetFont('courier', 'B', 8);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
-    
-    // Second line if needed (like frequency's second line)
-    if (!empty($remaining)) {
-        $pdf->SetXY($addrStartX, $yPos + 1); // Next line, same X
-        $pdf->Cell($maxAddrWidth, 5, $remaining, 0, 0, 'L');
-    }
-    
-    // Adjust spacing
-    $pdf->Ln(1);
-}
 
         $start = ($page - 1) * $meds_per_page;
         $end = min($start + $meds_per_page, $total_meds);
@@ -246,7 +246,7 @@ if ($addrWidth <= $maxAddrWidth) {
 
             // Get medicine form
             $medicineForm = $med['Form'] ?? '';
-            
+
             // Medicine name and dose line - WITH WRAPPING LOGIC
             $pdf->SetX(2);
             $pdf->SetTextColor(200, 200, 200);
@@ -354,113 +354,113 @@ if ($addrWidth <= $maxAddrWidth) {
                 $pdf->Cell(15, 4, '___________', 0, 1);
             }
 
-     // Signa line - APPLYING THE FREQUENCY WRAPPING LOGIC FROM GENERATE_PDF
-    $pdf->SetX(2);
-    $pdf->SetTextColor(200, 200, 200);
-    $pdf->Cell(8, 4, '', 0, 0);
-    $pdf->Cell(11, 4, 'Signa:', 0, 0);
-    $pdf->SetFont('courier', 'B', 7); // Font size 7 like generate_pdf
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->SetX(17);
-
-    // Get frequency text
-    $frequency = $med['Frequency'] ?? '';
-    $maxFrequencyWidth = 68; // Max width for frequency text
-
-    // Calculate frequency width for checking
-    $freqWidth = $pdf->GetStringWidth($frequency);
-
-    if ($freqWidth <= $maxFrequencyWidth) {
-        // Fits in one line
-        $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
-        
-        // "Per day For" and "Days" labels on same line
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetTextColor(200, 200, 200);
-        $pdf->Cell(18, 4, 'Per day For', 0, 0);
-        $pdf->Cell(12, 4, '', 0, 0);
-        $pdf->Cell(8, 4, 'Days', 0, 1);
-    } else {
-        // Doesn't fit - need to wrap
-        $currentXFreq = $pdf->GetX();
-        $currentYFreq = $pdf->GetY();
-
-        // Find where to break the frequency text
-        $charPosFreq = 0;
-        $testStringFreq = '';
-
-        for ($j = 0; $j < strlen($frequency); $j++) {
-            $testStringFreq .= $frequency[$j];
-            if ($pdf->GetStringWidth($testStringFreq) > $maxFrequencyWidth) {
-                $charPosFreq = $j;
-                break;
-            }
-        }
-
-        if ($charPosFreq > 0) {
-            $firstLineFreq = substr($frequency, 0, $charPosFreq);
-            $remainingFreq = substr($frequency, $charPosFreq);
-        } else {
-            $firstLineFreq = $frequency;
-            $remainingFreq = '';
-        }
-
-        // Save starting Y for frequency
-        $yFreq = $pdf->GetY();
-
-        // First line of frequency
-        $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
-
-        // Add "Per day For" and "Days" on same line as first part
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetTextColor(200, 200, 200);
-        $pdf->Cell(18, 2, 'Per day For', 0, 0);
-        $pdf->Cell(12, 2, '', 0, 0);
-        $pdf->Cell(8, 2, 'Days', 0, 1);
-
-        // Output remaining frequency on second line (indented)
-        if (!empty($remainingFreq)) {
-            $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
-            $pdf->SetFont('courier', 'B', 6);
+            // Signa line - APPLYING THE FREQUENCY WRAPPING LOGIC FROM GENERATE_PDF
+            $pdf->SetX(2);
+            $pdf->SetTextColor(200, 200, 200);
+            $pdf->Cell(8, 4, '', 0, 0);
+            $pdf->Cell(11, 4, 'Signa:', 0, 0);
+            $pdf->SetFont('courier', 'B', 7); // Font size 7 like generate_pdf
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
-            
-            // Don't reset Y position
+            $pdf->SetX(17);
+
+            // Get frequency text
+            $frequency = $med['Frequency'] ?? '';
+            $maxFrequencyWidth = 68; // Max width for frequency text
+
+            // Calculate frequency width for checking
+            $freqWidth = $pdf->GetStringWidth($frequency);
+
+            if ($freqWidth <= $maxFrequencyWidth) {
+                // Fits in one line
+                $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
+
+                // "Per day For" and "Days" labels on same line
+                $pdf->SetFont('Arial', '', 9);
+                $pdf->SetTextColor(200, 200, 200);
+                $pdf->Cell(18, 4, 'Per day For', 0, 0);
+                $pdf->Cell(12, 4, '', 0, 0);
+                $pdf->Cell(8, 4, 'Days', 0, 1);
+            } else {
+                // Doesn't fit - need to wrap
+                $currentXFreq = $pdf->GetX();
+                $currentYFreq = $pdf->GetY();
+
+                // Find where to break the frequency text
+                $charPosFreq = 0;
+                $testStringFreq = '';
+
+                for ($j = 0; $j < strlen($frequency); $j++) {
+                    $testStringFreq .= $frequency[$j];
+                    if ($pdf->GetStringWidth($testStringFreq) > $maxFrequencyWidth) {
+                        $charPosFreq = $j;
+                        break;
+                    }
+                }
+
+                if ($charPosFreq > 0) {
+                    $firstLineFreq = substr($frequency, 0, $charPosFreq);
+                    $remainingFreq = substr($frequency, $charPosFreq);
+                } else {
+                    $firstLineFreq = $frequency;
+                    $remainingFreq = '';
+                }
+
+                // Save starting Y for frequency
+                $yFreq = $pdf->GetY();
+
+                // First line of frequency
+                $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
+
+                // Add "Per day For" and "Days" on same line as first part
+                $pdf->SetFont('Arial', '', 9);
+                $pdf->SetTextColor(200, 200, 200);
+                $pdf->Cell(18, 2, 'Per day For', 0, 0);
+                $pdf->Cell(12, 2, '', 0, 0);
+                $pdf->Cell(8, 2, 'Days', 0, 1);
+
+                // Output remaining frequency on second line (indented)
+                if (!empty($remainingFreq)) {
+                    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
+                    $pdf->SetFont('courier', 'B', 6);
+                    $pdf->SetTextColor(0, 0, 0);
+                    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
+
+                    // Don't reset Y position
+                    $pdf->SetFont('courier', 'B', 8);
+                }
+            }
+
+            // "Per day For" and "Days" labels
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetTextColor(200, 200, 200);
+
+            // Position the labels properly
+            if (empty($frequency) || $freqWidth <= $maxFrequencyWidth) {
+                // If frequency fits in one line, continue on same line
+                $pdf->Cell(18, 4, 'Per day For', 0, 0);
+                $pdf->Cell(12, 4, '', 0, 0);
+                $pdf->Cell(8, 4, 'Days', 0, 1);
+            } else {
+                // If frequency wrapped, move to next line for labels
+                $pdf->Ln(3); // Small line break for wrapped frequency
+                $pdf->SetX(17); // Align with Signa label
+            }
+
+            // Notes line
+            $pdf->SetX(2);
+            $pdf->Cell(8, 4, '', 0, 0);
+            $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0);
+            $pdf->Cell(15, 4, '____', 0, 0, 'R');
+            $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
             $pdf->SetFont('courier', 'B', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell(15, 4, $med['Quantity'] ?? '', 0, 0, '', false);
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(0, 4, '', 0, 1);
+
+            $pdf->Ln(5);
         }
-    }
 
-    // "Per day For" and "Days" labels
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->SetTextColor(200, 200, 200);
-
-    // Position the labels properly
-    if (empty($frequency) || $freqWidth <= $maxFrequencyWidth) {
-        // If frequency fits in one line, continue on same line
-        $pdf->Cell(18, 4, 'Per day For', 0, 0);
-        $pdf->Cell(12, 4, '', 0, 0);
-        $pdf->Cell(8, 4, 'Days', 0, 1);
-    } else {
-        // If frequency wrapped, move to next line for labels
-        $pdf->Ln(3); // Small line break for wrapped frequency
-        $pdf->SetX(17); // Align with Signa label
-    }
-
-    // Notes line
-    $pdf->SetX(2);
-    $pdf->Cell(8, 4, '', 0, 0);
-    $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0);
-    $pdf->Cell(15, 4, '____', 0, 0, 'R');
-    $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
-    $pdf->SetFont('courier', 'B', 8);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell(15, 4, $med['Quantity'] ?? '', 0, 0, '', false);
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->Cell(0, 4, '', 0, 1);
-
-    $pdf->Ln(5);
-}
-        
         // Fill remaining empty medicine forms
         $current_page_meds = $end - $start;
         if ($current_page_meds < $meds_per_page) {
@@ -565,7 +565,7 @@ if ($addrWidth <= $maxAddrWidth) {
 
         // Re-enable auto page break for next page
         $pdf->SetAutoPageBreak(true, 15);
-        
+
         // Add a line break to properly end the page
         $pdf->Ln();
     }
@@ -573,4 +573,3 @@ if ($addrWidth <= $maxAddrWidth) {
 
 $filename = "Bulk_Prescriptions_" . ($Refill_day ? "Day{$Refill_day}_" : "") . date('Ymd_His') . ".pdf";
 $pdf->Output('I', $filename);
-?>

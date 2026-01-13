@@ -126,81 +126,81 @@ try {
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(-11, 10, $prescription['Sex'], 0, 1, 'R');
 
-// Address section - working like frequency
-$pdf->SetX(10);
-$pdf->SetFont('Arial', 'B', 9);
-$pdf->SetTextColor(200, 200, 200);
-$pdf->Cell(11, 5, 'Address:');
+        // Address section - working like frequency
+        $pdf->SetX(10);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetTextColor(200, 200, 200);
+        $pdf->Cell(11, 5, 'Address:');
 
-// Get address text
-$address = $prescription['Address'];
-$maxAddrWidth = 65; // Reduced from 100 to leave space for date at X:115
+        // Get address text
+        $address = $prescription['Address'];
+        $maxAddrWidth = 65; // Reduced from 100 to leave space for date at X:115
 
-// Save starting position
-$addrStartX = $pdf->GetX(); // Should be 21
-$addrStartY = $pdf->GetY(); // Should be 40
+        // Save starting position
+        $addrStartX = $pdf->GetX(); // Should be 21
+        $addrStartY = $pdf->GetY(); // Should be 40
 
-// Set font for address
-$pdf->SetFont('courier', 'B', 8);
-$pdf->SetTextColor(0, 0, 0);
+        // Set font for address
+        $pdf->SetFont('courier', 'B', 8);
+        $pdf->SetTextColor(0, 0, 0);
 
-// Check if address fits
-$addrWidth = $pdf->GetStringWidth($address);
+        // Check if address fits
+        $addrWidth = $pdf->GetStringWidth($address);
 
-if ($addrWidth <= $maxAddrWidth) {
-    // Write address
-    $pdf->Cell($maxAddrWidth, 5, $address, 0, 0, 'L');
-    
-    // Write date on same line
-    $pdf->SetX(93);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetTextColor(200, 200, 200);
-    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-    $pdf->SetFont('courier', 'B', 8);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
-    
-    $pdf->Ln(5);
-} else {
-    // Find where to break the address (like frequency)
-    $charPos = 0;
-    $testString = '';
-    
-    for ($j = 0; $j < strlen($address); $j++) {
-        $testString .= $address[$j];
-        if ($pdf->GetStringWidth($testString) > $maxAddrWidth) {
-            $charPos = $j;
-            break;
+        if ($addrWidth <= $maxAddrWidth) {
+            // Write address
+            $pdf->Cell($maxAddrWidth, 5, $address, 0, 0, 'L');
+
+            // Write date on same line
+            $pdf->SetX(93);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetTextColor(200, 200, 200);
+            $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+            $pdf->SetFont('courier', 'B', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+
+            $pdf->Ln(5);
+        } else {
+            // Find where to break the address (like frequency)
+            $charPos = 0;
+            $testString = '';
+
+            for ($j = 0; $j < strlen($address); $j++) {
+                $testString .= $address[$j];
+                if ($pdf->GetStringWidth($testString) > $maxAddrWidth) {
+                    $charPos = $j;
+                    break;
+                }
+            }
+
+            $firstLine = $charPos > 0 ? substr($address, 0, $charPos) : $address;
+            $remaining = $charPos > 0 ? substr($address, $charPos) : '';
+
+            // Save Y position
+            $yPos = $pdf->GetY();
+
+            // First line of address
+            $pdf->Cell($maxAddrWidth, 1, $firstLine, 0, 0, 'L');
+
+            // Date on same line
+            $pdf->SetX(93);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetTextColor(200, 200, 200);
+            $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+            $pdf->SetFont('courier', 'B', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+
+            // Second line if needed (like frequency's second line)
+            if (!empty($remaining)) {
+                $pdf->SetXY($addrStartX, $yPos + 1); // Next line, same X
+                $pdf->Cell($maxAddrWidth, 5, $remaining, 0, 0, 'L');
+            }
+
+            // Adjust spacing
+            $pdf->Ln(1);
         }
-    }
-    
-    $firstLine = $charPos > 0 ? substr($address, 0, $charPos) : $address;
-    $remaining = $charPos > 0 ? substr($address, $charPos) : '';
-    
-    // Save Y position
-    $yPos = $pdf->GetY();
-    
-    // First line of address
-    $pdf->Cell($maxAddrWidth, 1, $firstLine, 0, 0, 'L');
-    
-    // Date on same line
-    $pdf->SetX(93);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetTextColor(200, 200, 200);
-    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-    $pdf->SetFont('courier', 'B', 8);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
-    
-    // Second line if needed (like frequency's second line)
-    if (!empty($remaining)) {
-        $pdf->SetXY($addrStartX, $yPos + 1); // Next line, same X
-        $pdf->Cell($maxAddrWidth, 5, $remaining, 0, 0, 'L');
-    }
-    
-    // Adjust spacing
-    $pdf->Ln(1);
-}
 
         // Medicines section - UPDATED to match bulk exactly
         $start_index = ($page_num - 1) * $medicines_per_page;
@@ -341,9 +341,7 @@ if ($addrWidth <= $maxAddrWidth) {
 
             if ($freqWidth <= $maxFrequencyWidth) {
                 // Fits in one line
-                $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
-
-      ;
+                $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);;
             } else {
                 // Doesn't fit - need to wrap
                 $currentXFreq = $pdf->GetX();
@@ -381,16 +379,16 @@ if ($addrWidth <= $maxAddrWidth) {
                 $pdf->Cell(18, 2, 'Per day For', 0, 0);
                 $pdf->Cell(12, 2, '', 0, 0);
                 $pdf->Cell(8, 2, 'Days', 0, 1);
-// Output remaining frequency on second line (indented)
-if (!empty($remainingFreq)) {
-    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
-    $pdf->SetFont('courier', 'B', 6);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
-    
-    // Don't reset Y position
-    $pdf->SetFont('courier', 'B', 8);
-}
+                // Output remaining frequency on second line (indented)
+                if (!empty($remainingFreq)) {
+                    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
+                    $pdf->SetFont('courier', 'B', 6);
+                    $pdf->SetTextColor(0, 0, 0);
+                    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
+
+                    // Don't reset Y position
+                    $pdf->SetFont('courier', 'B', 8);
+                }
             }
 
             // "Per day For" and "Days" labels
@@ -508,7 +506,7 @@ if (!empty($remainingFreq)) {
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(5, 10, 'M.D.', 0, 0, 'R');
-        $pdf->SetFont('courier', 'B', 7 );
+        $pdf->SetFont('courier', 'B', 7);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(40, 10, $prescription['Doctor_name'], 0, 1, 'R');
 
