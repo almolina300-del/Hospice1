@@ -358,7 +358,10 @@ if ($ycExpiryDate) {
     <form action='pttransact.php' name='theform' method='post'>
         <table align="center" border="1" cellpadding="5" width="70%" bgcolor="<?php echo $tablebg; ?>">
             <tr>
-                <th style="white-space:nowrap;">Patient Details</th>
+            <th style="white-space:nowrap; padding-left:30px; position:relative;">
+    <img src="img/personal_det_icon.png" alt="Patient Details Icon" style="position:absolute; left:2px; top:40%; transform:translateY(-50%); height:30px; width:30px;">
+    Patient Details
+</th>
             </tr>
             <!-- Last Name -->
             <tr>
@@ -1061,22 +1064,25 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
         }
     </style>
 
-    <!-- Prescription Table -->
-    <?php if ($char > 0): ?>
-        <?php
-        $sql = "SELECT p.*, CONCAT(d.Last_name, ', ', d.First_name, ' ', d.Middle_name) AS DoctorName
-        FROM prescription AS p
-        LEFT JOIN doctors AS d ON p.License_number = d.License_number
-        WHERE p.Patient_id = $char
-        ORDER BY p.Date DESC";
-        $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
-        $total_rows = mysqli_num_rows($result);
-        $needScroll = $total_rows >= 10;
+ <!-- Prescription Table -->
+<?php if ($char > 0): ?>
+    <?php
+    $sql = "SELECT p.*, CONCAT(d.Last_name, ', ', d.First_name, ' ', d.Middle_name) AS DoctorName
+    FROM prescription AS p
+    LEFT JOIN doctors AS d ON p.License_number = d.License_number
+    WHERE p.Patient_id = $char
+    ORDER BY p.Date DESC";
+    $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
+    $total_rows = mysqli_num_rows($result);
+    $needScroll = $total_rows >= 10;
 
-        // Get today's date for comparison
-        $today = new DateTime();
-        $todayStr = $today->format('Y-m-d');
-        ?>
+    // Get today's date for comparison
+    $today = new DateTime();
+    $todayStr = $today->format('Y-m-d');
+
+    // Check if patient has sex/gender
+    $hasSex = !empty($ch['Sex']);
+    ?>
 
         <div style='width: 100%; margin: 0 auto;'>
             <!-- Main table with headers -->
@@ -1086,19 +1092,35 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-                        <?php if ($hasBirthday): ?>
-                            <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
-                                Add Prescription</a>
-                        <?php else: ?>
-                            <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-                                title='Cannot add prescription: Patient birthday is missing'>
-                                Add Prescription</button>
-                            <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-                                ⚠ Add patient birthday first to create a prescription
-                            </span>
-                        <?php endif; ?>
-                    </th>
-                </tr>
+                     <?php if ($hasBirthday && $hasSex): ?>
+                        <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
+                            Add Prescription</a>
+                    <?php else: ?>
+                        <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
+                            title='Cannot add prescription: <?php 
+                                if (!$hasBirthday && !$hasSex) {
+                                    echo "Patient birthday and sex are missing";
+                                } elseif (!$hasBirthday) {
+                                    echo "Patient birthday is missing";
+                                } elseif (!$hasSex) {
+                                    echo "Patient sex/gender is missing";
+                                }
+                            ?>'>
+                            Add Prescription</button>
+                        <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
+                            ⚠ <?php 
+                                if (!$hasBirthday && !$hasSex) {
+                                    echo "Add patient birthday and select sex first to create a prescription";
+                                } elseif (!$hasBirthday) {
+                                    echo "Add patient birthday first to create a prescription";
+                                } elseif (!$hasSex) {
+                                    echo "Select patient sex (MALE/FEMALE) to create a prescription";
+                                }
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                </th>
+            </tr>
 
                 <!-- Column headers -->
                 <tr style='background-color:#f8f9fa; text-align:center; font-weight:bold;'>
@@ -1157,7 +1179,7 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
                                             <a href='Pdfs/generate_pdf.php?prescription_id=<?php echo $row['Prescription_id']; ?>'
                                                 target='_blank'
                                                 style='background-color:#007bff; color:white; border:none; padding:6px 10px; font-size:13px; border-radius:4px; font-weight:bold; text-decoration:none;'>
-                                                View Prescription
+                                                 <img src="img/pdf_icon.png" alt="PDF Icon" style="vertical-align:middle; margin-right:5px; height:16px; width:16px;">Prescription
                                             </a>
 
                                             <?php if ($canEdit): ?>

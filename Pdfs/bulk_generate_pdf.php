@@ -157,48 +157,81 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(-11, 10, $prescription['Sex'] ?? '', 0, 1, 'R');
 
-        // Address section - EXACTLY LIKE GENERATEPDF
-        $pdf->SetX(10);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetTextColor(200, 200, 200);
-        $pdf->Cell(35, 5, 'Address:');
+// Address section - working like frequency
+$pdf->SetX(10);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->SetTextColor(200, 200, 200);
+$pdf->Cell(11, 5, 'Address:');
 
-        // Get address text
-        $address = $prescription['Address'] ?? '';
-        $maxWidth = 140;
+// Get address text
+$address = $prescription['Address'];
+$maxAddrWidth = 65; // Reduced from 100 to leave space for date at X:115
 
-        // Check if text needs truncation - USING GENERATEPDF FONT SIZE
-        $pdf->SetFont('courier', 'B', 8);
-        $textWidth = $pdf->GetStringWidth($address);
+// Save starting position
+$addrStartX = $pdf->GetX(); // Should be 21
+$addrStartY = $pdf->GetY(); // Should be 40
 
-        if ($textWidth > $maxWidth) {
-            // Truncate with ellipsis
-            $ellipsis = '...';
-            $ellipsisWidth = $pdf->GetStringWidth($ellipsis);
-            $maxTextWidth = $maxWidth - $ellipsisWidth;
-            
-            $truncatedText = $address;
-            while ($pdf->GetStringWidth($truncatedText) > $maxTextWidth && strlen($truncatedText) > 3) {
-                $truncatedText = substr($truncatedText, 0, -1);
-            }
-            $displayAddress = $truncatedText . $ellipsis;
-        } else {
-            $displayAddress = $address;
+// Set font for address
+$pdf->SetFont('courier', 'B', 8);
+$pdf->SetTextColor(0, 0, 0);
+
+// Check if address fits
+$addrWidth = $pdf->GetStringWidth($address);
+
+if ($addrWidth <= $maxAddrWidth) {
+    // Write address
+    $pdf->Cell($maxAddrWidth, 5, $address, 0, 0, 'L');
+    
+    // Write date on same line
+    $pdf->SetX(93);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+    $pdf->SetFont('courier', 'B', 8);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+    
+    $pdf->Ln(5);
+} else {
+    // Find where to break the address (like frequency)
+    $charPos = 0;
+    $testString = '';
+    
+    for ($j = 0; $j < strlen($address); $j++) {
+        $testString .= $address[$j];
+        if ($pdf->GetStringWidth($testString) > $maxAddrWidth) {
+            $charPos = $j;
+            break;
         }
-
-        // Move closer and write
-        $pdf->SetX(23.5);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(0, 5, $displayAddress, 0, 5, 'L');
-
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetTextColor(200, 200, 200);
-        $pdf->Cell(78, -5, 'Date:', 0, 0, 'R');
-        $pdf->SetFont('courier', 'B', 8);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(18, -5, $prescription['Date'] ?? '', 0, 1, 'R');
-
-        $pdf->Ln(5);
+    }
+    
+    $firstLine = $charPos > 0 ? substr($address, 0, $charPos) : $address;
+    $remaining = $charPos > 0 ? substr($address, $charPos) : '';
+    
+    // Save Y position
+    $yPos = $pdf->GetY();
+    
+    // First line of address
+    $pdf->Cell($maxAddrWidth, 1, $firstLine, 0, 0, 'L');
+    
+    // Date on same line
+    $pdf->SetX(93);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+    $pdf->SetFont('courier', 'B', 8);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+    
+    // Second line if needed (like frequency's second line)
+    if (!empty($remaining)) {
+        $pdf->SetXY($addrStartX, $yPos + 1); // Next line, same X
+        $pdf->Cell($maxAddrWidth, 5, $remaining, 0, 0, 'L');
+    }
+    
+    // Adjust spacing
+    $pdf->Ln(1);
+}
 
         $start = ($page - 1) * $meds_per_page;
         $end = min($start + $meds_per_page, $total_meds);
