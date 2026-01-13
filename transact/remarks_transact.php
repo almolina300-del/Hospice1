@@ -1,17 +1,14 @@
 <?php
-require('Config/Config.php');
+require('../Config/Config.php');
 session_start();
 date_default_timezone_set('Asia/Manila');
 
-if (!isset($_SESSION['Username'])) {
-    header("Location: index.php");
-    exit();
-}
+
 
 // Database connection
 $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
     or die('Could not connect: ' . mysqli_connect_error());
-mysqli_select_db($conn, SQL_DB);
+mysqli_set_charset($conn, 'utf8mb4');
 
 // Get action
 $action = $_POST['action'] ?? '';
@@ -35,7 +32,7 @@ if (!empty($referrer)) {
 }
 
 // Initialize redirect - use the correct file
-$redirect = $base_file . '?c=' . $patient_id;
+$redirect = '../' . $base_file . '?c=' . $patient_id;
 
 switch ($action) {
 
@@ -43,12 +40,12 @@ switch ($action) {
     case "Add Remark":
         // Get form data
         $remark_date = $_POST['Date'] ?? date('Y-m-d');
-        $remark_details = mysqli_real_escape_string($conn, $_POST['Details'] ?? '');
-        $created_by = mysqli_real_escape_string($conn, $_POST['Created_by'] ?? ($_SESSION['First_name'] ?? 'Unknown'));
+        $remark_details = $_POST['Details'] ?? '';
+        $created_by = $_POST['Created_by'] ?? ($_SESSION['First_name'] ?? 'Unknown');
 
         // Convert to uppercase
-        $remark_details = strtoupper($remark_details);
-        $created_by = strtoupper($created_by);
+        $remark_details = strtoupper(trim($remark_details));
+        $created_by = strtoupper(trim($created_by));
         $remark_date = trim($remark_date);
 
         // Validate
@@ -68,19 +65,21 @@ switch ($action) {
             exit();
         }
 
-        // Insert remark
-        $sql = "INSERT INTO patient_remarks 
-                (Date, Details, Created_by, Patient_id)
-                VALUES ('$remark_date', '$remark_details', '$created_by', $patient_id)";
+        // Insert remark using prepared statement
+        $stmt = $conn->prepare("INSERT INTO patient_remarks (Date, Details, Created_by, Patient_id) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("sssi", $remark_date, $remark_details, $created_by, $patient_id);
         
-        if (mysqli_query($conn, $sql)) {
+        if ($stmt->execute()) {
+            $stmt->close();
             echo "<script>
                     alert('Remark successfully added!');
-                    window.location.href = '$base_file?c=$patient_id&remark_added=1';
+                    window.location.href = '../$base_file?c=$patient_id&remark_added=1';
                   </script>";
         } else {
+            $error = $stmt->error;
+            $stmt->close();
             echo "<script>
-                    alert('Error adding remark: " . mysqli_error($conn) . "');
+                    alert('Error adding remark: " . addslashes($error) . "');
                     window.history.back();
                   </script>";
         }
@@ -92,12 +91,12 @@ switch ($action) {
         // Get form data
         $ptr_id = intval($_POST['remark_id'] ?? 0);
         $remark_date = $_POST['Date'] ?? date('Y-m-d');
-        $remark_details = mysqli_real_escape_string($conn, $_POST['Details'] ?? '');
+        $remark_details = $_POST['Details'] ?? '';
         $current_user = $_SESSION['First_name'] ?? 'Unknown';
 
         // Convert to uppercase
-        $remark_details = strtoupper($remark_details);
-        $current_user_upper = strtoupper($current_user);
+        $remark_details = strtoupper(trim($remark_details));
+        $current_user_upper = strtoupper(trim($current_user));
         $remark_date = trim($remark_date);
 
         // Validate
@@ -109,12 +108,15 @@ switch ($action) {
             exit();
         }
 
-        // Check if current user is the creator of this remark
-        $check_sql = "SELECT Created_by FROM patient_remarks WHERE Ptr_id = $ptr_id";
-        $check_result = mysqli_query($conn, $check_sql);
+        // Check if current user is the creator of this remark using prepared statement
+        $stmt = $conn->prepare("SELECT Created_by FROM patient_remarks WHERE Ptremarks_id = ?");
+        $stmt->bind_param("i", $ptr_id);
+        $stmt->execute();
+        $check_result = $stmt->get_result();
+        $stmt->close();
         
-        if (mysqli_num_rows($check_result) > 0) {
-            $row = mysqli_fetch_assoc($check_result);
+        if ($check_result->num_rows > 0) {
+            $row = $check_result->fetch_assoc();
             $creator = strtoupper(trim($row['Created_by']));
             
             // Only allow the creator to edit
@@ -137,25 +139,27 @@ switch ($action) {
         mysqli_begin_transaction($conn);
 
         try {
-            // Update remark - REMOVED Updated_by column
-            $sql = "UPDATE patient_remarks 
-                    SET Date = '$remark_date', 
-                        Details = '$remark_details'
-                    WHERE Ptr_id = $ptr_id";
+            // Update remark using prepared statement
+            $stmt = $conn->prepare("UPDATE patient_remarks SET Date = ?, Details = ? WHERE Ptremarks_id = ?");
+            $stmt->bind_param("ssi", $remark_date, $remark_details, $ptr_id);
             
-            if (!mysqli_query($conn, $sql)) {
-                throw new Exception(mysqli_error($conn));
+            if (!$stmt->execute()) {
+                throw new Exception($stmt->error);
             }
-
+            
+            $stmt->close();
             mysqli_commit($conn);
+            
             echo "<script>
                     alert('Remark successfully updated.');
-                    window.location.href = '$base_file?c=$patient_id&remark_updated=1';
+                    window.location.href = '../$base_file?c=$patient_id&remark_updated=1';
                   </script>";
             exit();
 
         } catch (Exception $e) {
             mysqli_rollback($conn);
+            if (isset($stmt)) $stmt->close();
+            
             echo "<script>
                     alert('Error updating remark: " . addslashes($e->getMessage()) . "');
                     window.history.back();

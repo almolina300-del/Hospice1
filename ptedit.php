@@ -638,7 +638,7 @@ if ($ycExpiryDate) {
             <span id="yellowCardModalTitle">Add Yellow Card</span>
         </h3>
 
-        <form id="yellowCardForm" method="post" action="yc_transact.php">
+        <form id="yellowCardForm" method="post" action="transact/yc_transact.php">
             <input type="hidden" name="Patient_id" id="yellowCardPatientId" value="<?php echo $char; ?>">
             <input type="hidden" name="action" id="yellowCardAction" value="Create Yellow Card">
 
@@ -716,7 +716,7 @@ if ($ycExpiryDate) {
     <div id="addRemarkModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
         <div style="background:white; padding:20px; border-radius:8px; width:400px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
             <h3 style="margin-top:0;">Add New Remark</h3>
-            <form id="addRemarkForm" method="post" action="remarks_transact.php">
+            <form id="addRemarkForm" method="post" action="transact/remarks_transact.php">
                 <!-- Add patient_id field -->
                 <input type="hidden" name="patient_id" value="<?php echo $char; ?>">
 
@@ -762,7 +762,7 @@ if ($ycExpiryDate) {
             <h3 style="margin-top:0; margin-bottom:20px; color:#333;" id="modalTitle">View Remark</h3>
 
             <!-- Form for editing -->
-            <form id="editRemarkForm" method="post" action="remarks_transact.php" style="display:none;">
+            <form id="editRemarkForm" method="post" action="transact/remarks_transact.php" style="display:none;">
                 <input type="hidden" name="remark_id" id="editRemarkId">
                 <input type="hidden" name="patient_id" value="<?php echo $char; ?>">
                 <input type="hidden" name="Date" id="editDate">

@@ -230,7 +230,7 @@ $table_doctors = "<table align='center'>
                 <div class="modal-header">
                     <h2 style="margin: 0; color: white;">Add Doctor</h2>
                 </div>
-                <form method="post" action="doctortransact.php" id="addDoctorForm">
+                <form method="post" action="transact/doctortransact.php" id="addDoctorForm">
                     <input type="hidden" name="a" value="Create Record">
 
                     <div style="display: flex; align-items: center; margin-bottom: 12px;">
@@ -278,7 +278,7 @@ $table_doctors = "<table align='center'>
                 <div class="modal-header">
                     <h2 style="margin: 0; color: white;">Edit Doctor Information</h2>
                 </div>
-                <form method="post" action="doctortransact.php" id="editDoctorForm">
+                <form method="post" action="transact/doctortransact.php" id="editDoctorForm">
                     <input type="hidden" name="a" value="Update Record">
                     <input type="hidden" name="c" id="original_license">
 
@@ -573,7 +573,7 @@ $table_doctors = "<table align='center'>
 
                 // Delete button - conditionally enabled
                 if ($is_suadmin) {
-                    echo "<a href='doctortransact.php?c=" . urlencode($row['License_number']) . "&a=deactivate' 
+                    echo "<a href='transact/doctortransact.php?c=" . urlencode($row['License_number']) . "&a=deactivate' 
                           class='btn-danger'
                           style='padding:6px 5px; border-radius:3px; text-decoration:none; font-size:11px;' 
                           onclick=\"return confirm('Are you sure you want to deactivate this doctor?');\">Delete</a>";

@@ -174,7 +174,7 @@ if ($barangayFilterActive) {
     <hr style="margin: 20px 250px; border: 1px solid #ccc; width: 80%;">
 
 <!-- Search container -->
-<div style="background-color: white; padding: 15px 20px; margin: 0 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; margin-bottom: 20px;">
+<div style="background-color: white; padding: 15px 15px; margin: 0 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; margin-bottom: 20px;">
     <form method="post" action="Patiententry.php" name="theform" style="display: flex; align-items: center; gap: 10px;">
         <input type="text" name="dosearch" placeholder="Enter Lastname, Firstname, or Full Name"
             value="<?php echo htmlspecialchars($_GET['dosearch'] ?? ''); ?>"
@@ -186,6 +186,51 @@ if ($barangayFilterActive) {
             Add New Patient
         </a>
     </form>
+           <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
+    <!-- Add this button somewhere in your Patiententry.php -->
+    <div style="text-align: right; margin: 20px 0;">
+        <button onclick="showInactivePatientsModal()" 
+                style="background-color: #dc3545; color: white; border: none; padding: 10px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            View Inactive Patients
+        </button>
+    </div>
+    
+    <!-- Modal container -->
+    <div id="inactivePatientsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:90%; max-width:1200px; max-height:80vh; overflow-y:auto;">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+    
+    <script>
+        function showInactivePatientsModal() {
+            const modal = document.getElementById('inactivePatientsModal');
+            modal.style.display = 'flex';
+            
+            // Load content via AJAX
+            fetch('inactive_patients_modal.php')
+                .then(response => response.text())
+                .then(html => {
+                    modal.querySelector('div').innerHTML = html;
+                })
+                .catch(error => {
+                    modal.querySelector('div').innerHTML = '<p style="color:red;">Error loading inactive patients</p>';
+                });
+        }
+        
+        function closeInactiveModal() {
+            document.getElementById('inactivePatientsModal').style.display = 'none';
+        }
+        
+   
+        // Close with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeInactiveModal();
+            }
+        });
+    </script>
+<?php endif; ?>
 </div>
 
     <?php
@@ -454,13 +499,6 @@ $totalPages = ceil($totalRows / $limit);
         function hideBarangayFilter() {
             document.getElementById('barangayFilterModal').style.display = 'none';
         }
-
-        // Close modal when clicking outside
-        document.getElementById('barangayFilterModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideBarangayFilter();
-            }
-        });
 
         // Close modal with Escape key
         document.addEventListener('keydown', function(e) {

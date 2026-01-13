@@ -508,7 +508,7 @@ try {
         $pdf->Cell(5, 10, 'M.D.', 0, 0, 'R');
         $pdf->SetFont('courier', 'B', 7);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(40, 10, $prescription['Doctor_name'], 0, 1, 'R');
+        $pdf->Cell(30, 10, $prescription['Doctor_name'], 0, 1, 'R');
 
         // Line 2: License #
         $pdf->SetY($footerY + 5);
