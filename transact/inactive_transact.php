@@ -14,6 +14,10 @@ $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
 $patient_id = isset($_GET['c']) ? intval($_GET['c']) : 0;
 $action = isset($_GET['a']) ? trim($_GET['a']) : '';
 
+// Get search and page parameters to maintain them
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+
 // Only process if patient ID is valid
 if ($patient_id > 0 && $action == 'Restore Record') {
     
@@ -33,13 +37,33 @@ if ($patient_id > 0 && $action == 'Restore Record') {
         mysqli_stmt_bind_param($stmt, "i", $patient_id);
         
         if (mysqli_stmt_execute($stmt)) {
+            // Build the redirect URL with search and page parameters
+            $redirect_url = '../inactive_patients_modal.php';
+            $params = [];
+            
+            if (!empty($search)) {
+                $params[] = 'search=' . urlencode($search);
+            }
+            if ($page > 1) {
+                $params[] = 'page=' . $page;
+            }
+            
+            if (!empty($params)) {
+                $redirect_url .= '?' . implode('&', $params);
+            }
+            
             echo "<script>
                     alert('Patient has been restored successfully!');
-                    window.location.href = '../Patiententry.php';
+                    // Use parent's function to reload modal
+                    if (window.parent && window.parent.reloadInactiveModal) {
+                        window.parent.reloadInactiveModal('" . $redirect_url . "');
+                    } else {
+                        window.history.back();
+                    }
                   </script>";
         } else {
             echo "<script>
-                    alert('Error restoring patient: " . mysqli_error($conn) . "');
+                    alert('Error restoring patient: " . addslashes(mysqli_error($conn)) . "');
                     window.history.back();
                   </script>";
         }

@@ -1,4 +1,4 @@
-    <?php
+<?php
 session_start();
 require('Config/Config.php');
 
@@ -10,19 +10,33 @@ if (!isset($_SESSION['Role']) || strtoupper($_SESSION['Role']) != 'SUADMIN') {
 $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS) or die('Could not connect to database.');
 mysqli_select_db($conn, SQL_DB);
 
+// Get search term if any
+$search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+
 // Number of rows per page
 $limit = 20;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $start = ($page - 1) * $limit;
 
-// Get search term if any
-$search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
-
-// Build query
+// Build query with improved search
 $where = "WHERE is_active = 0";
 if (!empty($search)) {
-    $where .= " AND (Last_name LIKE '%$search%' OR First_name LIKE '%$search%' OR Middle_name LIKE '%$search%')";
+    // Split search terms by spaces
+    $search_terms = explode(' ', $search);
+    
+    // Build search conditions for each term
+    $search_conditions = array();
+    foreach ($search_terms as $term) {
+        if (!empty(trim($term))) {
+            $term_escaped = mysqli_real_escape_string($conn, trim($term));
+            $search_conditions[] = "(Last_name LIKE '%$term_escaped%' OR First_name LIKE '%$term_escaped%' OR Middle_name LIKE '%$term_escaped%')";
+        }
+    }
+    
+    if (!empty($search_conditions)) {
+        $where .= " AND (" . implode(' AND ', $search_conditions) . ")";
+    }
 }
 
 // Count total records
@@ -40,6 +54,7 @@ $result = mysqli_query($conn, $sql);
 <html>
 <head>
     <style>
+        /* Your CSS styles remain the same */
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -91,6 +106,10 @@ $result = mysqli_query($conn, $sql);
             cursor: pointer;
         }
         
+        .search-box button:hover {
+            background: #218838;
+        }
+        
         .patient-table {
             width: 100%;
             border-collapse: collapse;
@@ -131,63 +150,26 @@ $result = mysqli_query($conn, $sql);
             background: #e0a800;
         }
         
-        .view-btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            text-decoration: none;
-            display: inline-block;
-            margin-right: 5px;
-        }
-        
-        .view-btn:hover {
-            background: #0056b3;
-        }
-        
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-            margin-top: 15px;
-        }
-        
-        .pagination a, .pagination span {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            text-decoration: none;
-            color: #333;
-            border-radius: 3px;
-            font-size: 13px;
-        }
-        
-        .pagination a:hover {
-            background: #007bff;
-            color: white;
-            border-color: #007bff;
-        }
-        
-        .pagination .current {
-            background: #dc3545;
-            color: white;
-            border-color: #dc3545;
-        }
-        
         .no-records {
             text-align: center;
-            padding: 20px;
+            padding: 40px 20px;
             color: #666;
             font-style: italic;
+            font-size: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
         }
         
-        .total-count {
-            text-align: right;
+        .search-info {
+            text-align: center;
             color: #666;
-            font-size: 12px;
-            margin-bottom: 10px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
         }
     </style>
 </head>
@@ -199,18 +181,31 @@ $result = mysqli_query($conn, $sql);
                 Total: <?php echo $total_rows; ?>
             </span>
         </div>
-        <button class="close-btn" onclick="closeInactiveModal()">Close</button>
+        <button class="close-btn" onclick="parent.closeInactiveModal()">Close</button>
     </div>
+   <!-- In inactive_patients_modal.php -->
+<!-- Search Box - NO FORM TAG! -->
+<div class="search-box">
+    <input type="text" id="searchInput" 
+           placeholder="Search by name (Last name, First name, or Middle name)..." 
+           value="<?php echo htmlspecialchars($search); ?>">
+    <button type="button" onclick="performSearch()">Search</button>
+    <?php if (!empty($search)): ?>
+        <button type="button" onclick="performClear()" style="background: #6c757d;">Clear</button>
+    <?php endif; ?>
+</div>
     
-    <!-- Search Form -->
-    <form method="get" action="" class="search-box" onsubmit="searchInactivePatients(this); return false;">
-        <input type="text" name="search" placeholder="Search by name..." 
-               value="<?php echo htmlspecialchars($search); ?>">
-        <button type="submit">Search</button>
-        <?php if (!empty($search)): ?>
-            <button type="button" onclick="clearSearch()" style="background: #6c757d;">Clear</button>
-        <?php endif; ?>
-    </form>
+    <!-- Search info if searching -->
+    <?php if (!empty($search)): ?>
+        <div class="search-info">
+            Search results for: "<strong><?php echo htmlspecialchars($search); ?></strong>"
+            <?php if ($total_rows == 0): ?>
+                - No records found
+            <?php else: ?>
+                - Found <?php echo $total_rows; ?> record<?php echo $total_rows != 1 ? 's' : ''; ?>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
     
 <?php if ($total_rows > 0): ?>
 <div style="max-height: 500px; overflow-y: auto; overflow-x: hidden; border: 0px solid #ddd; border-radius: 5px;">
@@ -234,7 +229,10 @@ $result = mysqli_query($conn, $sql);
                     <td style="width: 25%; padding: 10px 15px; text-align: left; word-wrap: break-word;"><?php echo strtoupper($row['Barangay']); ?></td>
                     <td style="width: 15%; padding: 10px 15px; text-align: left;"><?php echo $row['Birthday']; ?></td>
                     <td style="width: 15%; padding: 10px 15px; text-align: center;">
-                        <a href="transact/inactive_transact.php?c=<?php echo $row['Patient_id']; ?>&a=Restore Record"
+                       <a href="transact/inactive_transact.php?c=<?php echo $row['Patient_id']; ?>&a=Restore Record<?php 
+    echo !empty($search) ? '&search=' . urlencode($search) : ''; 
+    echo $page > 1 ? '&page=' . $page : ''; 
+    ?>"
                            class="restore-btn" 
                            onclick="return confirm('Restore this patient to active?')">Restore</a>
                     </td>
@@ -247,7 +245,7 @@ $result = mysqli_query($conn, $sql);
     <?php if ($total_pages > 1): ?>
         <div style="display: flex; justify-content: center; gap: 5px; margin-top: 20px;">
             <?php if ($page > 1): ?>
-                <a href="#" onclick="changePage(<?php echo $page - 1; ?>)" style="padding: 8px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; font-size: 14px;">Previous</a>
+                <a href="#" class="page-link" data-page="<?php echo $page - 1; ?>" style="padding: 8px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; font-size: 14px;">Previous</a>
             <?php endif; ?>
             
             <?php 
@@ -258,66 +256,83 @@ $result = mysqli_query($conn, $sql);
                 <?php if ($i == $page): ?>
                     <span style="padding: 8px 15px; background: #dc3545; color: white; border: 1px solid #dc3545; border-radius: 4px; font-size: 14px;"><?php echo $i; ?></span>
                 <?php else: ?>
-                    <a href="#" onclick="changePage(<?php echo $i; ?>)" style="padding: 8px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; font-size: 14px;"><?php echo $i; ?></a>
+                    <a href="#" class="page-link" data-page="<?php echo $i; ?>" style="padding: 8px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; font-size: 14px;"><?php echo $i; ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
             
             <?php if ($page < $total_pages): ?>
-                <a href="#" onclick="changePage(<?php echo $page + 1; ?>)" style="padding: 8px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; font-size: 14px;">Next</a>
+                <a href="#" class="page-link" data-page="<?php echo $page + 1; ?>" style="padding: 8px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; border-radius: 4px; font-size: 14px;">Next</a>
             <?php endif; ?>
         </div>
     <?php endif; ?>
 <?php else: ?>
-    <div style="text-align: center; padding: 40px; color: #666; font-style: italic; font-size: 16px;">
-        No inactive patients found.
+    <!-- No records found message -->
+    <div class="no-records">
+        <span style="font-size: 48px; color: #dc3545; margin-bottom: 15px; display: block;">🔍</span>
+        <div style="margin-bottom: 15px;">
+            <strong>No inactive patients found</strong>
+        </div>
         <?php if (!empty($search)): ?>
-            <br><span style="font-size: 14px; color: #999;">Try a different search term.</span>
+            <div style="margin-bottom: 10px;">
+                No records found for: "<strong><?php echo htmlspecialchars($search); ?></strong>"
+            </div>
+        <?php else: ?>
+            <div style="color: #999; font-size: 13px;">
+                There are currently no inactive patients in the system.
+            </div>
         <?php endif; ?>
     </div>
 <?php endif; ?>
     
-    <script>
- function searchInactivePatients(form) {
-    const search = form.search.value;
-    const url = new URL('transact/inactive_patient_modal.php', window.location);
+<script>
+// Global functions (for onclick attributes)
+function performSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const search = searchInput ? searchInput.value.trim() : '';
     
-    if (search.trim() !== '') {
-        url.searchParams.set('search', search);
-    }
-    
-    // Remove page parameter when searching
-    url.searchParams.delete('page');
-    
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            document.querySelector('#inactivePatientsModal > div').innerHTML = html;
-        });
-}
-
-function clearSearch() {
-    fetch('transact/inactive_patient_modal.php')
-        .then(response => response.text())
-        .then(html => {
-            document.querySelector('#inactivePatientsModal > div').innerHTML = html;
-        });
-}
-
-function changePage(page) {
-    const url = new URL('transact/inactive_patient_modal.php', window.location);
-    const search = new URLSearchParams(window.location.search).get('search');
-    
+    let url = 'inactive_patients_modal.php';
     if (search) {
-        url.searchParams.set('search', search);
+        url += '?search=' + encodeURIComponent(search);
     }
-    url.searchParams.set('page', page);
     
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            document.querySelector('#inactivePatientsModal > div').innerHTML = html;
-        });
+    if (window.parent && window.parent.reloadInactiveModal) {
+        window.parent.reloadInactiveModal(url);
+    }
+    return false;
 }
-    </script>
+
+function performClear() {
+    if (window.parent && window.parent.reloadInactiveModal) {
+        window.parent.reloadInactiveModal('inactive_patients_modal.php');
+    }
+    return false;
+}
+
+function performPageChange(page) {
+    const searchInput = document.getElementById('searchInput');
+    const search = searchInput ? searchInput.value.trim() : '';
+    
+    let url = 'inactive_patients_modal.php?page=' + page;
+    if (search) {
+        url += '&search=' + encodeURIComponent(search);
+    }
+    
+    if (window.parent && window.parent.reloadInactiveModal) {
+        window.parent.reloadInactiveModal(url);
+    }
+    return false;
+}
+
+// Add Enter key support
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        performSearch();
+    }
+});
+
+// Focus on search input
+document.getElementById('searchInput').focus();
+</script>
 </body>
 </html>

@@ -7,7 +7,13 @@ if (!isset($_SESSION['Username'])) {
 }
 
 require('Config/Config.php');
-
+// ---------- FETCH ALL DISTINCT FORMS FROM DATABASE ----------
+$form_query = "SELECT DISTINCT UPPER(Form) as form FROM medicine WHERE Form IS NOT NULL AND Form != '' ORDER BY Form ASC";
+$form_result = mysqli_query($conn, $form_query);
+$existing_forms = array();
+while ($form_row = mysqli_fetch_assoc($form_result)) {
+    $existing_forms[] = $form_row['form'];
+}
 // Check if user role is SUADMIN - if not, disable functionality
 $is_suadmin = isset($_SESSION['Role']) && $_SESSION['Role'] === 'SUADMIN';
 
@@ -351,12 +357,18 @@ $totalPages = ceil($totalRows / $limit);
                            placeholder="e.g., 500MG, 250MG/5ML">
                 </div>
                 
-                <div class="form-group">
-                    <label>Form:<span style="color: #dc3545; font-weight: bold;">*</span></label>
-                    <input type="text" name="Form" required class="auto-uppercase"
-                           oninput="this.value = this.value.toUpperCase()"
-                           placeholder="e.g., TABLET, CAPSULE, SYRUP">
-                </div>
+            <div class="form-group">
+    <label>Form:<span style="color: #dc3545; font-weight: bold;">*</span></label>
+    <input type="text" name="Form" id="addFormInput" required class="auto-uppercase"
+           oninput="this.value = this.value.toUpperCase()"
+           placeholder="e.g., TABLET, CAPSULE, SYRUP"
+           list="formSuggestions">
+    <datalist id="formSuggestions">
+        <?php foreach ($existing_forms as $form): ?>
+            <option value="<?php echo htmlspecialchars($form); ?>">
+        <?php endforeach; ?>
+    </datalist>
+</div>
                 
                 <div class="modal-buttons">
                     <button type="submit" class="btn btn-primary">Add Medicine</button>
@@ -390,11 +402,13 @@ $totalPages = ceil($totalRows / $limit);
                            oninput="this.value = this.value.toUpperCase()">
                 </div>
                 
-                <div class="form-group">
-                    <label>Form:<span style="color: #dc3545; font-weight: bold;">*</span></label>
-                    <input type="text" id="editForm" name="Form" required class="auto-uppercase"
-                           oninput="this.value = this.value.toUpperCase()">
-                </div>
+        <div class="form-group">
+    <label>Form:<span style="color: #dc3545; font-weight: bold;">*</span></label>
+    <input type="text" name="Form" id="editForm" required class="auto-uppercase"
+           oninput="this.value = this.value.toUpperCase()"
+           placeholder="e.g., TABLET, CAPSULE, SYRUP"
+           list="formSuggestions">
+</div>
                 
                 <div class="modal-buttons">
                     <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -527,75 +541,84 @@ $totalPages = ceil($totalRows / $limit);
             });
         }
         
-        // Close modal when clicking outside the modal
-        window.addEventListener('click', function(event) {
-            if (event.target === addModal) {
-                addModal.style.display = 'none';
-            }
-            if (event.target === editModal) {
-                editModal.style.display = 'none';
-            }
-        });
+
         
-        // Form submission for adding medicine
-        const addMedicineForm = document.getElementById('addMedicineForm');
-        if (addMedicineForm) {
-            addMedicineForm.addEventListener('submit', function(e) {
-                if (!isSuadmin) {
-                    e.preventDefault();
-                    alert('Only SUADMIN users can add medicines.');
-                    return false;
-                }
-                
-                // Validate form
-                const medicineName = addMedicineForm.querySelector('input[name="Medicine_name"]').value.trim();
-                const dose = addMedicineForm.querySelector('input[name="Dose"]').value.trim();
-                const form = addMedicineForm.querySelector('input[name="Form"]').value.trim();
-                
-                if (!medicineName || !dose || !form) {
-                    e.preventDefault();
-                    alert('Please fill in all fields!');
-                    return false;
-                }
-                
-                // Show loader when form is submitted
-                const loader = document.getElementById('loader');
-                if (loader) {
-                    loader.style.display = 'block';
-                }
-                addModal.style.display = 'none';
-            });
+ // Form submission for adding medicine
+const addMedicineForm = document.getElementById('addMedicineForm');
+if (addMedicineForm) {
+    addMedicineForm.addEventListener('submit', function(e) {
+        if (!isSuadmin) {
+            e.preventDefault();
+            alert('Only SUADMIN users can add medicines.');
+            return false;
         }
         
-        // Form submission for editing medicine
-        const editMedicineForm = document.getElementById('editMedicineForm');
-        if (editMedicineForm) {
-            editMedicineForm.addEventListener('submit', function(e) {
-                if (!isSuadmin) {
-                    e.preventDefault();
-                    alert('Only SUADMIN users can edit medicines.');
-                    return false;
-                }
-                
-                // Validate form
-                const medicineName = document.getElementById('editMedicineName').value.trim();
-                const dose = document.getElementById('editDose').value.trim();
-                const form = document.getElementById('editForm').value.trim();
-                
-                if (!medicineName || !dose || !form) {
-                    e.preventDefault();
-                    alert('Please fill in all fields!');
-                    return false;
-                }
-                
-                // Show loader when form is submitted
-                const loader = document.getElementById('loader');
-                if (loader) {
-                    loader.style.display = 'block';
-                }
-                editModal.style.display = 'none';
-            });
+        // Validate form
+        const medicineName = addMedicineForm.querySelector('input[name="Medicine_name"]').value.trim();
+        const dose = addMedicineForm.querySelector('input[name="Dose"]').value.trim();
+        const form = addMedicineForm.querySelector('input[name="Form"]').value.trim();
+        
+        if (!medicineName || !dose || !form) {
+            e.preventDefault();
+            alert('Please fill in all fields!');
+            return false;
         }
+        
+        // ADD THIS VALIDATION:
+        // Check if form is in the valid list
+        if (!validForms.includes(form.toUpperCase())) {
+            e.preventDefault();
+            alert('Error: Form must be selected from the suggested list. Please choose from existing forms.');
+            return false;
+        }
+        
+        // Show loader when form is submitted
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.display = 'block';
+        }
+        addModal.style.display = 'none';
+    });
+}
+
+        
+ // Form submission for editing medicine
+const editMedicineForm = document.getElementById('editMedicineForm');
+if (editMedicineForm) {
+    editMedicineForm.addEventListener('submit', function(e) {
+        if (!isSuadmin) {
+            e.preventDefault();
+            alert('Only SUADMIN users can edit medicines.');
+            return false;
+        }
+        
+        // Validate form
+        const medicineName = document.getElementById('editMedicineName').value.trim();
+        const dose = document.getElementById('editDose').value.trim();
+        const form = document.getElementById('editForm').value.trim();
+        
+        if (!medicineName || !dose || !form) {
+            e.preventDefault();
+            alert('Please fill in all fields!');
+            return false;
+        }
+        
+        // ADD THIS VALIDATION:
+        // Check if form is in the valid list
+        if (!validForms.includes(form.toUpperCase())) {
+            e.preventDefault();
+            alert('Error: Form must be selected from the suggested list. Please choose from existing forms.');
+            return false;
+        }
+        
+        // Show loader when form is submitted
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.display = 'block';
+        }
+        editModal.style.display = 'none';
+    });
+}
         
         // Show loader when search form is submitted
         if (searchForm) {
@@ -643,6 +666,10 @@ $totalPages = ceil($totalRows / $limit);
             }
         }
     });
+</script>
+<script>
+// Create array of valid forms from PHP
+const validForms = <?php echo json_encode($existing_forms); ?>;
 </script>
 </body>
 </html>
