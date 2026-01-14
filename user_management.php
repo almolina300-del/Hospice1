@@ -453,15 +453,15 @@ if ($is_suadmin) {
                         <span class='action-btn edit-btn disabled-link'>Edit</span>";
                 
                 // Show deactivate/activate button based on current status (NOT DISABLED)
-                if ($row['is_active']) {
-                    echo "<a href='user_management.php?user_id=" . $row['User_id'] . "&action=deactivate' 
-                            class='action-btn deactivate-btn'
-                            onclick=\"return confirm('Deactivate user " . htmlspecialchars($row['Username']) . "?');\">Deactivate</a>";
-                } else {
-                    echo "<a href='user_management.php?user_id=" . $row['User_id'] . "&action=activate' 
-                            class='action-btn activate-btn'
-                            onclick=\"return confirm('Activate user " . htmlspecialchars($row['Username']) . "?');\">Activate</a>";
-                }
+            if ($row['is_active']) {
+    echo "<a href='user_management.php?User_id=" . $row['User_id'] . "&action=deactivate' 
+            class='action-btn deactivate-btn'
+            onclick=\"return confirm('Deactivate user " . htmlspecialchars($row['Username']) . "?');\">Deactivate</a>";
+} else {
+    echo "<a href='user_management.php?User_id=" . $row['User_id'] . "&action=activate' 
+            class='action-btn activate-btn'
+            onclick=\"return confirm('Activate user " . htmlspecialchars($row['Username']) . "?');\">Activate</a>";
+}
 
                 echo "</div></td></tr>";
             }

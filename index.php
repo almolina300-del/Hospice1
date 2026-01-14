@@ -21,16 +21,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($result && mysqli_num_rows($result) === 1) {
             $row = mysqli_fetch_assoc($result);
-            $_SESSION['Username'] = $row['Username'];
-            $_SESSION['First_name'] = $row['First_name'];
-            $_SESSION['Role'] = $row['Role']; // Add Role to session
+            
+            // CHECK IF USER IS ACTIVE
+            if ($row['is_active'] == 0) {
+                $error = "Your account is deactivated. Please contact Health Informatics Division.";
+            } else {
+                $_SESSION['Username'] = $row['Username'];
+                $_SESSION['First_name'] = $row['First_name'];
+                $_SESSION['Role'] = $row['Role'];
+                $_SESSION['User_id'] = $row['User_id']; // Add User_id to session for deactivation checks
 
-            // Set welcome message using first_name
-            $First_name = $row['First_name'];
-            $_SESSION['success_message'] = "Hello $First_name, Welcome to MHD Prescription System.";
+                // Set welcome message using first_name
+                $First_name = $row['First_name'];
+                $_SESSION['success_message'] = "Hello $First_name, Welcome to MHD Prescription System.";
 
-            header("Location: Patiententry.php"); // redirect after login
-            exit();
+                header("Location: Patiententry.php"); // redirect after login
+                exit();
+            }
         } else {
             $error = "Invalid username or password.";
         }
@@ -89,6 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="image-section">
             <img src="img/rx1.jpg" alt="Healthcare">
         </div>
+    </div>
 
 </body>
 
