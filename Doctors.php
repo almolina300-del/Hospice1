@@ -13,22 +13,33 @@ require('Config/Config.php');
 
 $bg_doctors = 'F2F2FF';
 
-// Order handling
+// Order handling with direction tracking
 $ord_doctors = '';
+$dir = 'asc'; // default direction
 if (isset($_GET['od'])) {
     $ord_doctors = $_GET['od'];
+
+    // Check if there's a direction parameter
+    if (isset($_GET['dir'])) {
+        $dir = ($_GET['dir'] == 'desc') ? 'desc' : 'asc';
+    } else {
+        // Default direction
+        $dir = 'asc';
+    }
 };
 
 if (is_numeric($ord_doctors)) {
-    $ord_doctors = round(min(max($ord_doctors, 1), 3));
+    $ord_doctors = round(min(max($ord_doctors, 1), 4));
 } else {
     $ord_doctors = 1;
 }
 
+// Define order clauses with both ASC and DESC options
 $order_doctors = array(
-    1 => 'License_number ASC',
-    2 => 'Last_name ASC',
-    3 => 'First_name ASC'
+    1 => array('asc' => 'License_number ASC', 'desc' => 'License_number DESC'),
+    2 => array('asc' => 'Last_name ASC', 'desc' => 'Last_name DESC'),
+    3 => array('asc' => 'First_name ASC', 'desc' => 'First_name DESC'),
+    4 => array('asc' => 'is_active ASC', 'desc' => 'is_active DESC') // Status: 0 (Inactive) to 1 (Active)
 );
 
 $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
@@ -52,7 +63,7 @@ $start = ($page - 1) * $limit;
 // Function to get doctor data for editing
 function getDoctorData($conn, $license_number)
 {
-    $sql = "SELECT * FROM doctors WHERE License_number = ? AND is_active = 1";
+    $sql = "SELECT * FROM doctors WHERE License_number = ?";
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, "s", $license_number);
     mysqli_stmt_execute($stmt);
@@ -78,11 +89,10 @@ $table_doctors = "<table align='center'>
     <td align='center' 
       style='color:#b30000; background-color:#ffe6e6; 
              font-weight:bold; padding:10px; border-radius:6px;'>
-    No Active Doctors Found!
+    No Doctors Found!
     </td>
         </tr>
         </table>";
-
 ?>
 
 <!DOCTYPE html>
@@ -108,30 +118,54 @@ $table_doctors = "<table align='center'>
             color: #856404;
             font-weight: bold;
         }
+
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .sort-asc:after {
+            content: " ↑";
+        }
+
+        .sort-desc:after {
+            content: " ↓";
+        }
+
+        th a {
+            display: inline-block;
+            padding: 5px;
+            transition: background-color 0.3s;
+        }
+
+        th a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
     </style>
 </head>
 
 <body>
     <div class="sidebar">
-     <!-- Welcome message with first_name above logout -->
-<?php if (isset($_SESSION['First_name'])): ?>
-    <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
-        <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
-            Prescription
-        </div> <br>
-        <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
-        Welcome,<br>
-            <?php if (isset($_SESSION['Role'])): ?>
-            <div style="margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.8);">
-               <?php echo htmlspecialchars($_SESSION['Role']); ?>
+        <!-- Welcome message with first_name above logout -->
+        <?php if (isset($_SESSION['First_name'])): ?>
+            <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
+                    Prescription
+                </div> <br>
+                <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
+                Welcome,<br>
+                <?php if (isset($_SESSION['Role'])): ?>
+                    <div style="margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.8);">
+                        <?php echo htmlspecialchars($_SESSION['Role']); ?>
+                    </div>
+                <?php endif; ?>
+                <div style="display: flex; align-items: center; justify-content: center">
+                    <strong style="font-size: 15px;"><?php echo htmlspecialchars($_SESSION['First_name']); ?></strong>
+                </div>
+
             </div>
         <?php endif; ?>
-        <div style="display: flex; align-items: center; justify-content: center">
-            <strong style="font-size: 15px;"><?php echo htmlspecialchars($_SESSION['First_name']); ?></strong>
-        </div>
-    
-    </div>
-<?php endif; ?>
         <a href="patiententry.php">
             Patient Records
         </a>
@@ -143,13 +177,13 @@ $table_doctors = "<table align='center'>
             <a href="Doctors.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
                 Doctors
             </a>
-        <a href="Medicines.php">Medicines</a>    
+            <a href="Medicines.php">Medicines</a>
             <a href="user_management.php">
                 User Management
             </a>
         <?php endif; ?>
 
-        
+
 
         <div class="spacer"></div>
         <div class="logout-container">
@@ -182,20 +216,46 @@ $table_doctors = "<table align='center'>
     $count_active_query = mysqli_query($conn, "SELECT COUNT(*) AS active_doctors FROM doctors WHERE is_active = 1");
     $count_active_result = mysqli_fetch_assoc($count_active_query);
 
-    if ($count_active_result) {
-        echo "<div style='display:flex; align-items:center; gap:20px; margin-bottom:20px;'>";
+    // Count inactive doctors
+    $count_inactive_query = mysqli_query($conn, "SELECT COUNT(*) AS inactive_doctors FROM doctors WHERE is_active = 0");
+    $count_inactive_result = mysqli_fetch_assoc($count_inactive_query);
+
+    // Count total doctors
+    $count_total_query = mysqli_query($conn, "SELECT COUNT(*) AS total_doctors FROM doctors");
+    $count_total_result = mysqli_fetch_assoc($count_total_query);
+
+    if ($count_total_result) {
+        echo "<div style='display:flex; align-items:center; gap:20px; margin-bottom:20px; justify-content:center; flex-wrap:wrap;'>";
+
+        // Total Doctors box
+        echo "<div class='blink-text' style='background-color:white; 
+                     padding:10px 20px; border-radius:8px; font-weight:bold; 
+                     color:#263F73; width:180px; text-align:center;
+                     box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
+        echo "Total Doctors<br><span style='font-size:30px;'>" . $count_total_result['total_doctors'] . "</span>";
+        echo "</div>";
 
         // Active Doctors box
-        echo "<div class='blink-text' style='background-color:white; 
-                     padding:10px 20px; width:300px; margin-left:250px; border-radius:8px; font-weight:bold; 
-                     color:#263F73; text-align:center;
+        echo "<div style='background-color:white; 
+                     padding:10px 20px; border-radius:8px; font-weight:bold; 
+                     color:#3CB371; width:180px; text-align:center;
                      box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
         echo "Active Doctors<br><span style='font-size:30px;'>" . $count_active_result['active_doctors'] . "</span>";
         echo "</div>";
 
+        // Inactive Doctors box
+        echo "<div style='background-color:white; 
+                     padding:10px 20px; border-radius:8px; font-weight:bold; 
+                     color:#FF6B6B; width:180px; text-align:center;
+                     box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
+        echo "Inactive Doctors<br><span style='font-size:30px;'>" . $count_inactive_result['inactive_doctors'] . "</span>";
+        echo "</div>";
+
         echo "</div>";
     }
+
     ?>
+
     <hr style="margin: 20px 250px; border: 1px solid #ccc; width: 80%;">
     <?php if (!$is_suadmin): ?>
         <div class="access-warning">
@@ -222,7 +282,41 @@ $table_doctors = "<table align='center'>
                 </button>
             </form>
         </div>
-
+<!-- Status Filter Buttons -->
+<div style="text-align: center; margin: 0 250px 20px 250px; background-color: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd;">
+    <div style="display: inline-flex; align-items: center; gap: 10px;">
+        <strong style="color: #263F73; white-space: nowrap;">Filter by Status:</strong>
+        <div style="display: flex; gap: 5px;">
+            <?php
+            $current_filter = $_GET['status'] ?? 'all';
+            ?>
+            <a href="Doctors.php?status=all&od=<?php echo $ord_doctors; ?>&dir=<?php echo $dir; ?>&page=<?php echo $page; ?><?php echo !empty($search) ? '&dosearch=' . urlencode($search) : ''; ?>" 
+               style="padding: 6px 15px; 
+                      background-color: <?php echo $current_filter == 'all' ? '#263F73' : '#6c757d'; ?>; 
+                      color: white; text-decoration: none; border-radius: 4px; font-size: 14px;"
+               onmouseover="if(this.style.backgroundColor!='#263F73')this.style.backgroundColor='#5a6268'"
+               onmouseout="if(this.style.backgroundColor!='#263F73')this.style.backgroundColor='#6c757d'">
+                All
+            </a>
+            <a href="Doctors.php?status=active&od=<?php echo $ord_doctors; ?>&dir=<?php echo $dir; ?>&page=<?php echo $page; ?><?php echo !empty($search) ? '&dosearch=' . urlencode($search) : ''; ?>" 
+               style="padding: 6px 15px; 
+                      background-color: <?php echo $current_filter == 'active' ? '#3CB371' : '#6c757d'; ?>; 
+                      color: white; text-decoration: none; border-radius: 4px; font-size: 14px;"
+               onmouseover="if(this.style.backgroundColor!='#3CB371')this.style.backgroundColor='#5a6268'"
+               onmouseout="if(this.style.backgroundColor!='#3CB371')this.style.backgroundColor='#6c757d'">
+                Active Only
+            </a>
+            <a href="Doctors.php?status=inactive&od=<?php echo $ord_doctors; ?>&dir=<?php echo $dir; ?>&page=<?php echo $page; ?><?php echo !empty($search) ? '&dosearch=' . urlencode($search) : ''; ?>" 
+               style="padding: 6px 15px; 
+                      background-color: <?php echo $current_filter == 'inactive' ? '#FF6B6B' : '#6c757d'; ?>; 
+                      color: white; text-decoration: none; border-radius: 4px; font-size: 14px;"
+               onmouseover="if(this.style.backgroundColor!='#FF6B6B')this.style.backgroundColor='#5a6268'"
+               onmouseout="if(this.style.backgroundColor!='#FF6B6B')this.style.backgroundColor='#6c757d'">
+                Inactive Only
+            </a>
+        </div>
+    </div>
+</div>
         <!-- Modal Structure for Add Doctor -->
         <div id="addDoctorModal" class="modal">
             <div class="modal-content" style="width: 450px;">
@@ -484,18 +578,29 @@ $table_doctors = "<table align='center'>
         </script>
 
         <?php
-        // SEARCH FUNCTIONALITY FOR DOCTORS - ONLY ACTIVE DOCTORS
-        if (!empty($search)) {
-            $runsearch = mysqli_real_escape_string($conn, $search);
-            $sql_doctors = "SELECT SQL_CALC_FOUND_ROWS * FROM doctors 
-                        WHERE `Last_name` LIKE '%$runsearch%' 
-                        AND is_active = 1 
-                        ORDER BY " . $order_doctors[$ord_doctors];
-        } else {
-            $sql_doctors = "SELECT SQL_CALC_FOUND_ROWS * FROM doctors 
-                        WHERE is_active = 1 
-                        ORDER BY " . $order_doctors[$ord_doctors];
-        }
+        // SEARCH FUNCTIONALITY FOR DOCTORS
+        // Get status filter
+$status_filter = '';
+if (isset($_GET['status'])) {
+    if ($_GET['status'] == 'active') {
+        $status_filter = " AND is_active = 1";
+    } elseif ($_GET['status'] == 'inactive') {
+        $status_filter = " AND is_active = 0";
+    }
+}
+
+// SEARCH FUNCTIONALITY FOR DOCTORS
+if (!empty($search)) {
+    $runsearch = mysqli_real_escape_string($conn, $search);
+    $sql_doctors = "SELECT SQL_CALC_FOUND_ROWS * FROM doctors 
+                    WHERE `Last_name` LIKE '%$runsearch%' 
+                    $status_filter 
+                    ORDER BY " . $order_doctors[$ord_doctors][$dir];
+} else {
+    $sql_doctors = "SELECT SQL_CALC_FOUND_ROWS * FROM doctors  
+                    WHERE 1=1 $status_filter 
+                    ORDER BY " . $order_doctors[$ord_doctors][$dir];
+}
 
         // Apply limit for pagination (always show page 1 with limit)
         $sql_doctors .= " LIMIT $start, $limit";
@@ -515,25 +620,35 @@ $table_doctors = "<table align='center'>
             echo "<tr>";
             echo "<th>No.</th>";
             echo "<th>
-                    <a href='" . $_SERVER['PHP_SELF'] . "?od=1&page=" . $page . "&dosearch=" . urlencode($search) . "' 
-                       style='color: white; text-decoration: none;'>
-                       License Number
-                    </a>
-                  </th>";
+        <a href='" . $_SERVER['PHP_SELF'] . "?od=1" . ($ord_doctors == 1 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "' 
+           style='color: white; text-decoration: none;'>
+           License Number
+           " . ($ord_doctors == 1 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+      </th>";
             echo "<th>
-                    <a href='" . $_SERVER['PHP_SELF'] . "?od=2&page=" . $page . "&dosearch=" . urlencode($search) . "'
-                       style='color: white; text-decoration: none;'>
-                       Last name
-                    </a>
-                  </th>";
+        <a href='" . $_SERVER['PHP_SELF'] . "?od=2" . ($ord_doctors == 2 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "'
+           style='color: white; text-decoration: none;'>
+           Last name
+           " . ($ord_doctors == 2 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+      </th>";
             echo "<th>
-                    <a href='" . $_SERVER['PHP_SELF'] . "?od=3&page=" . $page . "&dosearch=" . urlencode($search) . "' 
-                       style='color: white; text-decoration: none;'>
-                       First name
-                    </a>
-                  </th>";
+        <a href='" . $_SERVER['PHP_SELF'] . "?od=3" . ($ord_doctors == 3 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "' 
+           style='color: white; text-decoration: none;'>
+           First name
+           " . ($ord_doctors == 3 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+      </th>";
             echo "<th>Middle name</th>";
             echo "<th>PTR Number</th>";
+            echo "<th>
+        <a href='" . $_SERVER['PHP_SELF'] . "?od=4" . ($ord_doctors == 4 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "' 
+           style='color: white; text-decoration: none;'>
+           Status
+           " . ($ord_doctors == 4 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+      </th>";
             echo "<th>Action</th>";
             echo "</tr>";
             echo "</thead>";
@@ -555,6 +670,14 @@ $table_doctors = "<table align='center'>
                 echo "<td>" . htmlspecialchars(strtoupper($row['First_name'] ?? '')) . "</td>";
                 echo "<td>" . htmlspecialchars(strtoupper($row['Middle_name'] ?? '')) . "</td>";
                 echo "<td>" . htmlspecialchars($row['Ptr_number'] ?? '') . "</td>";
+                // ADD THIS SECTION FOR STATUS:
+                echo "<td>";
+                if ($row['is_active'] == 1) {
+                    echo "<span style='color: #3CB371; font-weight: bold;'>● Active</span>";
+                } else {
+                    echo "<span style='color: #FF6B6B; font-weight: bold;'>● Inactive</span>";
+                }
+                echo "</td>";
                 echo "<td>";
 
                 // Edit button - conditionally enabled
@@ -571,18 +694,41 @@ $table_doctors = "<table align='center'>
                            View/Edit</button>";
                 }
 
-                // Delete button - conditionally enabled
+                // Action buttons - conditionally enabled
                 if ($is_suadmin) {
-                    echo "<a href='transact/doctortransact.php?c=" . urlencode($row['License_number']) . "&a=deactivate' 
-                          class='btn-danger'
-                          style='padding:6px 5px; border-radius:3px; text-decoration:none; font-size:11px;' 
-                          onclick=\"return confirm('Are you sure you want to deactivate this doctor?');\">Delete</a>";
+                    // Check doctor status
+                    if ($row['is_active'] == 1) {
+                        // Doctor is active - show Deactivate button
+                        echo "<a href='transact/doctortransact.php?c=" . urlencode($row['License_number']) . "&a=deactivate' 
+              class='btn-danger'
+              style='padding:6px 5px; border-radius:3px; text-decoration:none; font-size:11px; 
+                     background-color:#dc3545; color:white; display:inline-block; margin-left:5px;' 
+              onclick=\"return confirm('Are you sure you want to deactivate this doctor?');\">
+              Deactivate</a>";
+                    } else {
+                        // Doctor is inactive - show Activate button
+                        echo "<a href='transact/doctortransact.php?c=" . urlencode($row['License_number']) . "&a=activate' 
+              class='btn-success'
+              style='padding:6px 8px; border-radius:3px; text-decoration:none; font-size:11px; 
+                     background-color:#28a745; color:white; display:inline-block; margin-left:5px;' 
+              onclick=\"return confirm('Are you sure you want to activate this doctor?');\">
+              Activate</a>";
+                    }
                 } else {
-                    echo "<button class='disabled-btn' disabled 
-                           style='padding:6px 5px; border-radius:3px; font-size:11px; border:none; cursor:not-allowed;
-                           background-color:#dc3545; color:white;'
-                           title='Only SUADMIN can delete doctors'>
-                           Delete</button>";
+                    // Non-SUADMIN users see disabled buttons
+                    if ($row['is_active'] == 1) {
+                        echo "<button class='disabled-btn' disabled 
+               style='padding:6px 5px; border-radius:3px; font-size:11px; border:none; cursor:not-allowed;
+                      background-color:#dc3545; color:white; margin-left:5px;'
+               title='Only SUADMIN can deactivate doctors'>
+               Deactivate</button>";
+                    } else {
+                        echo "<button class='disabled-btn' disabled 
+               style='padding:6px 5px; border-radius:3px; font-size:11px; border:none; cursor:not-allowed;
+                      background-color:#28a745; color:white; margin-left:5px;'
+               title='Only SUADMIN can activate doctors'>
+               Activate</button>";
+                    }
                 }
 
                 echo "</td>";
@@ -602,21 +748,20 @@ $table_doctors = "<table align='center'>
 
             // PAGINATION LINKS - Only show if more than 1 page
             if ($totalPages > 1) {
-                echo "<div class='pagination'>";    
+                echo "<div class='pagination'>";
+if ($page > 1) {
+    $prev_link = "?page=" . ($page - 1) . "&od=" . $ord_doctors . "&dir=" . $dir;
+    if (!empty($search)) $prev_link .= "&dosearch=" . urlencode($search);
 
-                if ($page > 1) {
-                    $prev_link = "?page=" . ($page - 1) . "&od=" . $ord_doctors;
-                    if (!empty($search)) $prev_link .= "&dosearch=" . urlencode($search);
+    echo "<a href='$prev_link' class='pagination-btn prev'>Previous</a>";
+}
 
-                    echo "<a href='$prev_link' class='pagination-btn prev'>Previous</a>";
-                }
+if ($page < $totalPages) {
+    $next_link = "?page=" . ($page + 1) . "&od=" . $ord_doctors . "&dir=" . $dir;
+    if (!empty($search)) $next_link .= "&dosearch=" . urlencode($search);
 
-                if ($page < $totalPages) {
-                    $next_link = "?page=" . ($page + 1) . "&od=" . $ord_doctors;
-                    if (!empty($search)) $next_link .= "&dosearch=" . urlencode($search);
-
-                    echo "<a href='$next_link' class='pagination-btn next'>Next</a>";
-                }
+    echo "<a href='$next_link' class='pagination-btn next'>Next</a>";
+}
 
                 echo "</div>";
             }
