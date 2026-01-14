@@ -728,14 +728,11 @@ $today_date = date('Y-m-d');
         <?php
         echo "<table align='center' border='1' cellpadding='2' width='100%'>";
         echo "<tr style='background-color:#263F73; color:white;'>
-                <th>No.</th>
-                <th>Refill Date</th>
                 <th>Patient Name</th>
                 <th>Barangay</th>
             </tr>";
 
         $bg = 'F2F2FF';
-        $rownum = $offset + 1;
 
         if ($result) {
             if (mysqli_num_rows($result) > 0) {
@@ -743,40 +740,36 @@ $today_date = date('Y-m-d');
                     $bg = ($bg == 'F2F2FF') ? 'E2E2F2' : 'F2F2FF';
 
                     echo "<tr bgcolor='#$bg'>
-                            <td align='center'>{$rownum}</td>
-                            <td align='center'>" . ($row['Refill_day'] ?? '') . "</td>
                             <td align='center'>" . strtoupper($row['Patient_name'] ?? '') . "</td>
                             <td align='center'>" . strtoupper($row['Barangay'] ?? '') . "</td>
                         </tr>";
-
-                    $rownum++;
                 }
             } else {
                 echo "<tr>
-                        <td colspan='5' align='center' style='padding:10px;'>No prescriptions found.</td>
+                        <td colspan='2' align='center' style='padding:10px;'>No prescriptions found.</td>
                     </tr>";
             }
         } else {
             echo "<tr>
-                    <td colspan='5' align='center' style='padding:10px; color:red;'>Database query error.</td>
+                    <td colspan='2' align='center' style='padding:10px; color:red;'>Database query error.</td>
                 </tr>";
         }
 
         echo "</table>";
         ?>
+    </div>
 
-        <div class="pagination" style="text-align:center; margin-top:15px;">
-            <span style="font-style:italic; color:#263F73; margin-right:10px;">Page:</span>
-            <?php
-            $total_pages = ceil($total_rows / $records_per_page);
-            for ($i = 1; $i <= $total_pages; $i++) {
-                $active = ($i == $page) ? "font-weight:bold;" : "";
-                $link = "bulk_print.php?page=$i";
-                if ($Refill_day != '') $link .= "&dosearch=$Refill_day";
-                echo "<a href='$link' style='padding:5px; color:#263F73; font-style:italic; $active'>$i</a>";
-            }
-            ?>
-        </div>
+    <div class="pagination" style="text-align:center; margin-top:15px;">
+        <span style="font-style:italic; color:#263F73; margin-right:10px;">Page:</span>
+        <?php
+        $total_pages = ceil($total_rows / $records_per_page);
+        for ($i = 1; $i <= $total_pages; $i++) {
+            $active = ($i == $page) ? "font-weight:bold;" : "";
+            $link = "bulk_print.php?page=$i";
+            if ($Refill_day != '') $link .= "&dosearch=$Refill_day";
+            echo "<a href='$link' style='padding:5px; color:#263F73; font-style:italic; $active'>$i</a>";
+        }
+        ?>
     </div>
 
     <!-- Print Confirmation Modal -->
