@@ -99,6 +99,9 @@ if ($barangayFilterActive) {
         <a href="patiententry.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
             Patient Records
         </a>
+        <a href="inactive_patient.php">
+            Inactive Patients
+        </a>
         <a href="bulk_print.php">
             Bulk Print
         </a>
@@ -397,10 +400,11 @@ if ($barangayFilterActive) {
             <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Barangay']) . "</td>
             <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Birthday']) . "</td>
             <td align='center'>
-                <a href='Pttransact.php?c=" . $row['Patient_id'] . "&a=Deactivate Record' 
+                    <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
                     style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; 
-                    text-decoration:none; font-size:10px;' 
-                    onclick=\"return confirm('Deactivate this patient?');\">Active</a>
+                    border:none; font-size:10px; cursor:pointer;'>
+                    Active
+                </button>
             </td>
         </tr>";
         }
@@ -504,7 +508,88 @@ if ($barangayFilterActive) {
             </form>
         </div>
     </div>
+    <!-- Deactivate Patient Modal -->
+    <div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+        <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-top:0; color:#dc3545; border-bottom:1px solid #eee; padding-bottom:10px;">
+                Deactivate Patient
+            </h3>
 
+            <div id="patientInfo" style="margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:5px;">
+                <strong>Patient:</strong> <span id="patientName"></span>
+            </div>
+
+            <form id="deactivateForm" method="post" action="transact/deactivate_patient.php">
+                <input type="hidden" id="patientId" name="patient_id">
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Date of Deactivation:</label>
+                    <input type="date" id="deactivationDate" name="deactivation_date"
+                        value="<?php echo date('Y-m-d'); ?>"
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
+                </div>
+<div style="margin-bottom:20px;">
+    <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
+    <select id="deactivationReason" name="reason"
+            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; 
+                   font-size:14px;"
+            required>
+        <option value="">SELECT REASON FOR DEACTIVATION</option>
+        <option value="DECEASED">DECEASED</option>
+        <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
+        <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
+        <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
+
+    </select>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('deactivationReason');
+    
+    // Store original options with colors
+    const optionsWithColors = [
+        {value: "", text: "SELECT REASON FOR DEACTIVATION", color: "#000"},
+        {value: "DECEASED", text: "DECEASED", color: "#dc3545"},
+        {value: "PATIENT UNLOCATED", text: "PATIENT UNLOCATED", color: "#fd7e14"},
+        {value: "EXPIRED MHP CARD", text: "EXPIRED MHP CARD", color: "#ffc107"},
+        {value: "REFUSED DELIVERY", text: "REFUSED DELIVERY", color: "#6c757d"},
+    ];
+    
+    // Clear and rebuild with colored text
+    select.innerHTML = '';
+    optionsWithColors.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option.value;
+        opt.textContent = option.value ? `● ${option.text}` : option.text;
+        opt.style.color = option.color;
+        select.appendChild(opt);
+    });
+});
+</script>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
+                    <textarea id="deactivationRemarks" name="remarks"
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
+                     text-transform: uppercase; font-size:14px;"
+                        placeholder="ENTER DETAILS FOR DEACTIVATION..."
+                        oninput="this.value = this.value.toUpperCase()" required></textarea>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit"
+                        style="flex:1; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        Confirm Deactivation
+                    </button>
+                    <button type="button" onclick="hideDeactivateModal()"
+                        style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- JavaScript for Barangay Filter -->
     <script>
         function showBarangayFilter() {
@@ -618,6 +703,82 @@ if ($barangayFilterActive) {
 
         updateDateTime();
         setInterval(updateDateTime, 1000);
+    </script>
+
+    <script>
+        // Deactivate Modal Functions
+        function showDeactivateModal(patientId, lastName, firstName) {
+            // Set patient information
+            document.getElementById('patientId').value = patientId;
+            document.getElementById('patientName').textContent = lastName + ', ' + firstName;
+
+            // Reset form
+            document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('deactivationRemarks').value = '';
+
+            // Show modal
+            document.getElementById('deactivateModal').style.display = 'flex';
+        }
+
+        function hideDeactivateModal() {
+            document.getElementById('deactivateModal').style.display = 'none';
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideDeactivateModal();
+                hideBarangayFilter(); // Close barangay filter if open
+            }
+        });
+
+        // Prevent modal close when clicking inside modal
+        document.getElementById('deactivateModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideDeactivateModal();
+            }
+        });
+
+        // AJAX form submission
+        document.getElementById('deactivateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            // Add username who performed the action
+            formData.append('set_by', '<?php echo $_SESSION['Username'] ?? 'Unknown'; ?>');
+
+            // Show loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+
+            fetch('deactivate_patient.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        alert('Patient deactivated successfully!');
+
+                        // Reload the page to reflect changes
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to deactivate patient'));
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    alert('Network error. Please try again.');
+                    console.error('Error:', error);
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
     </script>
 
 </body>
