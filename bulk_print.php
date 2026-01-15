@@ -729,7 +729,7 @@ $today_date = date('Y-m-d');
         echo "<table align='center' border='1' cellpadding='2' width='100%'>";
         echo "<tr style='background-color:#263F73; color:white;'>
                 <th>Patient Name</th>
-                <th>Barangay</th>
+                <th>Address</th>
             </tr>";
 
         $bg = 'F2F2FF';

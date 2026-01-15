@@ -76,25 +76,25 @@ if ($barangayFilterActive) {
 <body>
 
     <div class="sidebar">
-     <!-- Welcome message with first_name above logout -->
-<?php if (isset($_SESSION['First_name'])): ?>
-    <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
-        <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
-            Prescription
-        </div> <br>
-        <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
-        Welcome,<br>
-            <?php if (isset($_SESSION['Role'])): ?>
-            <div style="margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.8);">
-               <?php echo htmlspecialchars($_SESSION['Role']); ?>
+        <!-- Welcome message with first_name above logout -->
+        <?php if (isset($_SESSION['First_name'])): ?>
+            <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
+                    Prescription
+                </div> <br>
+                <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
+                Welcome,<br>
+                <?php if (isset($_SESSION['Role'])): ?>
+                    <div style="margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.8);">
+                        <?php echo htmlspecialchars($_SESSION['Role']); ?>
+                    </div>
+                <?php endif; ?>
+                <div style="display: flex; align-items: center; justify-content: center">
+                    <strong style="font-size: 15px;"><?php echo htmlspecialchars($_SESSION['First_name']); ?></strong>
+                </div>
+
             </div>
         <?php endif; ?>
-        <div style="display: flex; align-items: center; justify-content: center">
-            <strong style="font-size: 15px;"><?php echo htmlspecialchars($_SESSION['First_name']); ?></strong>
-        </div>
-    
-    </div>
-<?php endif; ?>
 
         <a href="patiententry.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
             Patient Records
@@ -107,13 +107,13 @@ if ($barangayFilterActive) {
             <a href="Doctors.php">
                 Doctors
             </a> <?php endif; ?>
-            <a href="Medicines.php">Medicines</a>
+        <a href="Medicines.php">Medicines</a>
 
-        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>    
+        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
             <a href="user_management.php">
                 User Management
             </a><?php endif; ?>
-       
+
 
 
 
@@ -173,83 +173,83 @@ if ($barangayFilterActive) {
     ?>
     <hr style="margin: 20px 250px; border: 1px solid #ccc; width: 80%;">
 
-<!-- Search container -->
-<div style="background-color: white; padding: 15px 15px; margin: 0 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; margin-bottom: 20px;">
-    <form method="post" action="Patiententry.php" name="theform" style="display: flex; align-items: center; gap: 10px;">
-        <input type="text" name="dosearch" placeholder="Enter Lastname, Firstname, or Full Name"
-            value="<?php echo htmlspecialchars($_GET['dosearch'] ?? ''); ?>"
-            style="flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="submit" name="action" value="Search"
-            style="padding: 8px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        <a href="ptedit.php"
-            style="padding: 7px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-            Add New Patient
-        </a>
-    </form>
-           <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
-    <!-- Add this button somewhere in your Patiententry.php -->
-    <div style="text-align: right; margin: 20px 0;">
-        <button onclick="showInactivePatientsModal()" 
-                style="background-color: #dc3545; color: white; border: none; padding: 10px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">
-            View Inactive Patients
-        </button>
+    <!-- Search container -->
+    <div style="background-color: white; padding: 15px 15px; margin: 0 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; margin-bottom: 20px;">
+        <form method="post" action="Patiententry.php" name="theform" style="display: flex; align-items: center; gap: 10px;">
+            <input type="text" name="dosearch" placeholder="Enter Lastname, Firstname, or Full Name"
+                value="<?php echo htmlspecialchars($_GET['dosearch'] ?? ''); ?>"
+                style="flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="submit" name="action" value="Search"
+                style="padding: 8px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            <a href="ptedit.php"
+                style="padding: 7px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                Add New Patient
+            </a>
+        </form>
+        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
+            <!-- Add this button somewhere in your Patiententry.php -->
+            <div style="text-align: right; margin: 20px 0;">
+                <button onclick="showInactivePatientsModal()"
+                    style="background-color: #dc3545; color: white; border: none; padding: 10px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    View Inactive Patients
+                </button>
+            </div>
+
+            <!-- Modal container -->
+            <div id="inactivePatientsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
+                <div style="background:white; padding:20px; border-radius:8px; width:90%; max-width:1200px; max-height:80vh; overflow-y:auto;">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+
+            <script>
+                function showInactivePatientsModal() {
+                    const modal = document.getElementById('inactivePatientsModal');
+                    modal.style.display = 'flex';
+
+                    // Load content via AJAX
+                    fetch('inactive_patients_modal.php')
+                        .then(response => response.text())
+                        .then(html => {
+                            modal.querySelector('div').innerHTML = html;
+                        })
+                        .catch(error => {
+                            modal.querySelector('div').innerHTML = '<p style="color:red;">Error loading inactive patients</p>';
+                            console.error('Error:', error);
+                        });
+                }
+
+                // Update this function in your parent window
+                function reloadInactiveModal(url) {
+                    console.log('reloadInactiveModal called with URL:', url);
+                    const modal = document.getElementById('inactivePatientsModal');
+                    const modalContent = modal.querySelector('div'); // The div inside the modal
+
+                    fetch(url)
+                        .then(response => response.text())
+                        .then(html => {
+                            modalContent.innerHTML = html;
+                            console.log('Modal content reloaded successfully');
+                        })
+                        .catch(error => {
+                            console.error('Error reloading modal:', error);
+                            modalContent.innerHTML = '<p style="color:red; padding:20px;">Error reloading content: ' + error.message + '</p>';
+                        });
+                }
+
+                function closeInactiveModal() {
+                    document.getElementById('inactivePatientsModal').style.display = 'none';
+                }
+
+                // Close with Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeInactiveModal();
+                    }
+                });
+            </script>
+        <?php endif; ?>
     </div>
-    
-    <!-- Modal container -->
-    <div id="inactivePatientsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:8px; width:90%; max-width:1200px; max-height:80vh; overflow-y:auto;">
-            <!-- Content will be loaded here -->
-        </div>
-    </div>
-    
-<script>
-    function showInactivePatientsModal() {
-        const modal = document.getElementById('inactivePatientsModal');
-        modal.style.display = 'flex';
-        
-        // Load content via AJAX
-        fetch('inactive_patients_modal.php')
-            .then(response => response.text())
-            .then(html => {
-                modal.querySelector('div').innerHTML = html;
-            })
-            .catch(error => {
-                modal.querySelector('div').innerHTML = '<p style="color:red;">Error loading inactive patients</p>';
-                console.error('Error:', error);
-            });
-    }
-    
-    // Update this function in your parent window
-    function reloadInactiveModal(url) {
-        console.log('reloadInactiveModal called with URL:', url);
-        const modal = document.getElementById('inactivePatientsModal');
-        const modalContent = modal.querySelector('div'); // The div inside the modal
-        
-        fetch(url)
-            .then(response => response.text())
-            .then(html => {
-                modalContent.innerHTML = html;
-                console.log('Modal content reloaded successfully');
-            })
-            .catch(error => {
-                console.error('Error reloading modal:', error);
-                modalContent.innerHTML = '<p style="color:red; padding:20px;">Error reloading content: ' + error.message + '</p>';
-            });
-    }
-    
-    function closeInactiveModal() {
-        document.getElementById('inactivePatientsModal').style.display = 'none';
-    }
-    
-    // Close with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeInactiveModal();
-        }
-    });
-</script>
-<?php endif; ?>
-</div>
 
     <?php
     // Number of rows per page
@@ -259,90 +259,90 @@ if ($barangayFilterActive) {
     $start = ($page - 1) * $limit;
     $runsearch = mysqli_real_escape_string($conn, $_GET['dosearch'] ?? '');
 
-// SEARCH
-if (isset($_POST['dosearch'])) {
-    $runsearch = $_POST['dosearch'];
-    
-    // Split the search term by spaces
-    $searchTerms = explode(' ', trim($runsearch));
-    
-    // Build the WHERE clause dynamically
-    $whereClauses = [];
-    
-    if (!empty($searchTerms)) {
-        // If single term, search in both first and last name
-        if (count($searchTerms) == 1) {
-            $term = mysqli_real_escape_string($conn, $searchTerms[0]);
-            $whereClauses[] = "(`Last_name` LIKE '%$term%' OR `First_name` LIKE '%$term%')";
-        }
-        // If two terms, assume first is firstname and second is lastname
-        elseif (count($searchTerms) == 2) {
-            $term1 = mysqli_real_escape_string($conn, $searchTerms[0]); // First name
-            $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
-            
-            // Search for exact combination: firstname + lastname
-            $whereClauses[] = "(`First_name` LIKE '%$term1%' AND `Last_name` LIKE '%$term2%')";
-            // Also search for reversed combination: lastname + firstname
-            $whereClauses[] = "(`Last_name` LIKE '%$term1%' AND `First_name` LIKE '%$term2%')";
-        }
-        // If more than two terms, search for each term in either field
-        else {
-            foreach ($searchTerms as $term) {
-                $safeTerm = mysqli_real_escape_string($conn, $term);
-                if (!empty($safeTerm)) {
-                    $whereClauses[] = "(`Last_name` LIKE '%$safeTerm%' OR `First_name` LIKE '%$safeTerm%' OR `Middle_name` LIKE '%$safeTerm%')";
+    // SEARCH
+    if (isset($_POST['dosearch'])) {
+        $runsearch = $_POST['dosearch'];
+
+        // Split the search term by spaces
+        $searchTerms = explode(' ', trim($runsearch));
+
+        // Build the WHERE clause dynamically
+        $whereClauses = [];
+
+        if (!empty($searchTerms)) {
+            // If single term, search in both first and last name
+            if (count($searchTerms) == 1) {
+                $term = mysqli_real_escape_string($conn, $searchTerms[0]);
+                $whereClauses[] = "(`Last_name` LIKE '%$term%' OR `First_name` LIKE '%$term%')";
+            }
+            // If two terms, assume first is firstname and second is lastname
+            elseif (count($searchTerms) == 2) {
+                $term1 = mysqli_real_escape_string($conn, $searchTerms[0]); // First name
+                $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
+
+                // Search for exact combination: firstname + lastname
+                $whereClauses[] = "(`First_name` LIKE '%$term1%' AND `Last_name` LIKE '%$term2%')";
+                // Also search for reversed combination: lastname + firstname
+                $whereClauses[] = "(`Last_name` LIKE '%$term1%' AND `First_name` LIKE '%$term2%')";
+            }
+            // If more than two terms, search for each term in either field
+            else {
+                foreach ($searchTerms as $term) {
+                    $safeTerm = mysqli_real_escape_string($conn, $term);
+                    if (!empty($safeTerm)) {
+                        $whereClauses[] = "(`Last_name` LIKE '%$safeTerm%' OR `First_name` LIKE '%$safeTerm%' OR `Middle_name` LIKE '%$safeTerm%')";
+                    }
                 }
             }
         }
-    }
-    
-    // Build the final SQL query
-    if (!empty($whereClauses)) {
-        $whereCondition = "(" . implode(" OR ", $whereClauses) . ") AND is_active = 1";
-    } else {
-        $whereCondition = "is_active = 1";
-    }
-    
-    $sql = "SELECT * FROM patient_details 
+
+        // Build the final SQL query
+        if (!empty($whereClauses)) {
+            $whereCondition = "(" . implode(" OR ", $whereClauses) . ") AND is_active = 1";
+        } else {
+            $whereCondition = "is_active = 1";
+        }
+
+        $sql = "SELECT * FROM patient_details 
             WHERE $whereCondition";
 
-    if (!empty($barangay_filter)) {
-        $sql .= " AND Barangay = '$barangay_filter'";
-    }
+        if (!empty($barangay_filter)) {
+            $sql .= " AND Barangay = '$barangay_filter'";
+        }
 
-    $sql .= " ORDER BY " . $order[$ord] . " LIMIT $start, $limit";
+        $sql .= " ORDER BY " . $order[$ord] . " LIMIT $start, $limit";
 
-    // Count query
-    $countSql = "SELECT COUNT(*) AS total FROM patient_details 
+        // Count query
+        $countSql = "SELECT COUNT(*) AS total FROM patient_details 
                  WHERE $whereCondition";
 
-    if (!empty($barangay_filter)) {
-        $countSql .= " AND Barangay = '$barangay_filter'";
-    }
-} else {
-    // NO SEARCH - SHOW ALL RECORDS
-    $sql = "SELECT * FROM patient_details 
+        if (!empty($barangay_filter)) {
+            $countSql .= " AND Barangay = '$barangay_filter'";
+        }
+    } else {
+        // NO SEARCH - SHOW ALL RECORDS
+        $sql = "SELECT * FROM patient_details 
             WHERE is_active = 1";
 
-    if (!empty($barangay_filter)) {
-        $sql .= " AND Barangay = '$barangay_filter'";
-    }
+        if (!empty($barangay_filter)) {
+            $sql .= " AND Barangay = '$barangay_filter'";
+        }
 
-    $sql .= " ORDER BY " . $order[$ord] . " LIMIT $start, $limit";
+        $sql .= " ORDER BY " . $order[$ord] . " LIMIT $start, $limit";
 
-    $countSql = "SELECT COUNT(*) AS total FROM patient_details 
+        $countSql = "SELECT COUNT(*) AS total FROM patient_details 
                  WHERE is_active = 1";
 
-    if (!empty($barangay_filter)) {
-        $countSql .= " AND Barangay = '$barangay_filter'";
+        if (!empty($barangay_filter)) {
+            $countSql .= " AND Barangay = '$barangay_filter'";
+        }
     }
-}
 
-// EXECUTE QUERIES
-$result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
-$countResult = mysqli_query($conn, $countSql) or die(mysqli_error($conn));
-$totalRows = mysqli_fetch_assoc($countResult)['total'];
-$totalPages = ceil($totalRows / $limit);
+    // EXECUTE QUERIES
+    $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
+    $countResult = mysqli_query($conn, $countSql) or die(mysqli_error($conn));
+    $totalRows = mysqli_fetch_assoc($countResult)['total'];
+    $totalPages = ceil($totalRows / $limit);
     // TABLE
     if (mysqli_num_rows($result) > 0) {
         echo "<div style='max-height:500px; overflow-y:auto;'>";
@@ -387,19 +387,16 @@ $totalPages = ceil($totalRows / $limit);
         echo "</th>";
 
         echo "<th>Birthday</th>";
-        echo "<th>Action</th></tr>";
+        echo "<th>Status</th></tr>";
 
         while ($row = mysqli_fetch_assoc($result)) {
             echo "<tr>
-            <td align='center'>" . strtoupper($row['Last_name']) . "</td>
-            <td align='center'>" . strtoupper($row['First_name']) . "</td>
-            <td align='center'>" . strtoupper($row['Middle_name']) . "</td>
-            <td align='center'>" . strtoupper($row['Barangay']) . "</td>
-            <td align='center'>" . strtoupper($row['Birthday']) . "</td>
+            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Last_name']) . "</td>
+            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['First_name']) . "</td>
+            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Middle_name']) . "</td>
+            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Barangay']) . "</td>
+            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Birthday']) . "</td>
             <td align='center'>
-                <a href='ptedit.php?c=" . $row['Patient_id'] . "' 
-                    style='background-color:#007bff; color:white; padding:4px 5px; border-radius:3px; 
-                    text-decoration:none; font-size:10px; margin-right:5px;'>View</a>
                 <a href='Pttransact.php?c=" . $row['Patient_id'] . "&a=Deactivate Record' 
                     style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; 
                     text-decoration:none; font-size:10px;' 
