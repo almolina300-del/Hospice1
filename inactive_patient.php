@@ -144,7 +144,7 @@ $table_patients = "<table align='center'>
         </div>
     </div>
     <h1 align='center' style="background-color: #dc3545; color: white; padding: 12px 20px; margin-left: 210px; margin-top: 0px; font-size: 23px; border-radius: 5px 0 0 10px;">
-        <img src="img/inactive_patient.png" alt="inactive_icon" class="logo" style="width: 40px; height: 40px; "> Inactive Patients
+        <img src="img/inactive_patient.png" alt="inactive_icon" class="logo" style="width: 30px; height: 30px; "> Inactive Patients
     </h1>
 
     <?php

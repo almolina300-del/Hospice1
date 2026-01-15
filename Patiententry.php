@@ -528,45 +528,65 @@ if ($barangayFilterActive) {
                         value="<?php echo date('Y-m-d'); ?>"
                         style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
                 </div>
-<div style="margin-bottom:20px;">
-    <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
-    <select id="deactivationReason" name="reason"
-            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; 
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
+                    <select id="deactivationReason" name="reason"
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; 
                    font-size:14px;"
-            required>
-        <option value="">SELECT REASON FOR DEACTIVATION</option>
-        <option value="DECEASED">DECEASED</option>
-        <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
-        <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
-        <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
+                        required>
+                        <option value="">SELECT REASON FOR DEACTIVATION</option>
+                        <option value="DECEASED">DECEASED</option>
+                        <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
+                        <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
+                        <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
 
-    </select>
-</div>
+                    </select>
+                </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('deactivationReason');
-    
-    // Store original options with colors
-    const optionsWithColors = [
-        {value: "", text: "SELECT REASON FOR DEACTIVATION", color: "#000"},
-        {value: "DECEASED", text: "DECEASED", color: "#dc3545"},
-        {value: "PATIENT UNLOCATED", text: "PATIENT UNLOCATED", color: "#fd7e14"},
-        {value: "EXPIRED MHP CARD", text: "EXPIRED MHP CARD", color: "#ffc107"},
-        {value: "REFUSED DELIVERY", text: "REFUSED DELIVERY", color: "#6c757d"},
-    ];
-    
-    // Clear and rebuild with colored text
-    select.innerHTML = '';
-    optionsWithColors.forEach(option => {
-        const opt = document.createElement('option');
-        opt.value = option.value;
-        opt.textContent = option.value ? `● ${option.text}` : option.text;
-        opt.style.color = option.color;
-        select.appendChild(opt);
-    });
-});
-</script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const select = document.getElementById('deactivationReason');
+
+                        // Store original options with colors
+                        const optionsWithColors = [{
+                                value: "",
+                                text: "--SELECT REASON FOR DEACTIVATION--",
+                                color: "#000",
+                                style: "font-style: italic;"
+                            },
+                            {
+                                value: "DECEASED",
+                                text: "DECEASED",
+                                color: "#dc3545"
+                            },
+                            {
+                                value: "PATIENT UNLOCATED",
+                                text: "PATIENT UNLOCATED",
+                                color: "#fd7e14"
+                            },
+                            {
+                                value: "EXPIRED MHP CARD",
+                                text: "EXPIRED MHP CARD",
+                                color: "#ffc107"
+                            },
+                            {
+                                value: "REFUSED DELIVERY",
+                                text: "REFUSED DELIVERY",
+                                color: "#6c757d"
+                            },
+                        ];
+
+                        // Clear and rebuild with colored text
+                        select.innerHTML = '';
+                        optionsWithColors.forEach(option => {
+                            const opt = document.createElement('option');
+                            opt.value = option.value;
+                            opt.textContent = option.value ? `● ${option.text}` : option.text;
+                            opt.style.color = option.color;
+                            select.appendChild(opt);
+                        });
+                    });
+                </script>
 
                 <div style="margin-bottom:20px;">
                     <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
