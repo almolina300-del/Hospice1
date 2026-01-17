@@ -13,7 +13,9 @@ $dosearch = isset($_POST['dosearch']) ? $_POST['dosearch'] : '';
 $prescription_date = isset($_POST['prescription_date']) ? $_POST['prescription_date'] : '';
 $doctor_license = isset($_POST['License_number']) ? $_POST['License_number'] : '';
 $doctor_name = isset($_POST['DoctorName']) ? $_POST['DoctorName'] : '';
-$doctor_ptr = isset($_POST['Ptr_number']) ? $_POST['Ptr_number'] : ''; // NEW: Get PTR number
+$doctor_ptr = isset($_POST['Ptr_number']) ? $_POST['Ptr_number'] : '';
+$selected_patients = isset($_POST['selected_patients']) ? explode(',', $_POST['selected_patients']) : [];
+$excluded_patients = isset($_POST['exclude_patients']) ? $_POST['exclude_patients'] : [];
 
 // Validate required fields
 if (empty($dosearch) || empty($prescription_date) || empty($doctor_license) || empty($doctor_name)) {
@@ -42,6 +44,7 @@ if (empty($doctor_ptr)) {
 }
 
 // Get patients who have prescriptions with the selected refill day in their LATEST prescription only
+// AND are in the selected patients list (if provided)
 $patient_sql = "SELECT pd.Patient_id, 
                        pd.First_name,
                        pd.Middle_name,
@@ -49,7 +52,8 @@ $patient_sql = "SELECT pd.Patient_id,
                        pd.Birthday,
                        TIMESTAMPDIFF(YEAR, pd.Birthday, CURDATE()) AS Age,
                        p.Prescription_id as latest_prescription_id,
-                       p.Refill_day as patient_refill_day
+                       p.Refill_day as patient_refill_day,
+                       p.Date as last_prescription_date
                 FROM patient_details pd
                 INNER JOIN prescription p ON pd.Patient_id = p.Patient_id
                 WHERE pd.is_active = 1 
@@ -61,12 +65,28 @@ $patient_sql = "SELECT pd.Patient_id,
                 )
                 AND p.Refill_day = ?";
 
+// Add condition for selected patients if provided
+if (!empty($selected_patients)) {
+    $placeholders = implode(',', array_fill(0, count($selected_patients), '?'));
+    $patient_sql .= " AND pd.Patient_id IN ($placeholders)";
+}
+
+$patient_sql .= " ORDER BY pd.Last_name, pd.First_name";
+
 $stmt = mysqli_prepare($conn, $patient_sql);
 if (!$stmt) {
     die("SQL Error: " . mysqli_error($conn));
 }
 
-mysqli_stmt_bind_param($stmt, "i", $dosearch);
+// Bind parameters
+if (!empty($selected_patients)) {
+    $types = "i" . str_repeat("i", count($selected_patients));
+    $params = array_merge([$dosearch], $selected_patients);
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+} else {
+    mysqli_stmt_bind_param($stmt, "i", $dosearch);
+}
+
 mysqli_stmt_execute($stmt);
 $patient_result = mysqli_stmt_get_result($stmt);
 
@@ -92,6 +112,10 @@ foreach ($patients as $patient) {
     $age = $patient['Age'];
     $latest_prescription_id = $patient['latest_prescription_id'];
     $patient_refill_day = $patient['patient_refill_day'];
+    $last_prescription_date = $patient['last_prescription_date'];
+    
+    // Log processing
+    error_log("Processing Patient ID: $patient_id, Last Prescription: $last_prescription_date, Age: $age");
     
     // Check if prescription already exists for this patient on the same date
     $check_sql = "SELECT Prescription_id FROM prescription 
@@ -181,8 +205,11 @@ foreach ($patients as $patient) {
             $med_count = $med_data['med_count'];
             
             mysqli_stmt_close($med_count_stmt);
+            
+            error_log("Copied $med_count medicines from prescription $latest_prescription_id to $new_prescription_id");
         } else {
             $med_count = 0;
+            error_log("No previous prescription found for Patient $patient_id to copy medicines from");
         }
         
         mysqli_stmt_close($insert_stmt);
@@ -193,12 +220,13 @@ foreach ($patients as $patient) {
         $created_count++;
         
         // Log success
-        error_log("Created BULK prescription $new_prescription_id for Patient $patient_id (Refill Day: $patient_refill_day) with $med_count medicines");
+        error_log("✅ Created BULK prescription $new_prescription_id for Patient $patient_id (Refill Day: $patient_refill_day, Date: $prescription_date) with $med_count medicines");
         
     } catch (Exception $e) {
         // Rollback transaction on error
         mysqli_rollback($conn);
         $errors[] = $e->getMessage();
+        error_log("❌ Error for Patient $patient_id: " . $e->getMessage());
         continue;
     }
 }
@@ -209,22 +237,24 @@ $total_count = count($all_prescription_ids);
 // Store results in session - with ALL necessary keys
 $_SESSION['bulk_print_result'] = [
     'success' => $total_count > 0,
-    'count' => $total_count, // For backward compatibility
+    'count' => $total_count,
     'created_count' => $created_count,
     'existing_count' => $existing_count,
     'total_patients' => $total_patients,
+    'excluded_count' => count($excluded_patients),
     'errors' => $errors,
     'refill_day' => $dosearch,
     'prescription_date' => $prescription_date,
     'doctor_name' => $doctor_name,
     'doctor_license' => $doctor_license,
-    'doctor_ptr' => $doctor_ptr, // NEW: Store PTR number
+    'doctor_ptr' => $doctor_ptr,
     'all_prescription_ids' => $all_prescription_ids,
-    'created_ids' => $new_prescription_ids, // Only newly created IDs
+    'created_ids' => $new_prescription_ids,
+    'selected_patients' => $selected_patients,
     'action' => 'create'
 ];
 
-// Store for PDF generation - multiple session variables for compatibility
+// Store for PDF generation
 $_SESSION['bulk_prescription_ids'] = $all_prescription_ids;
 $_SESSION['prescription_ids'] = $all_prescription_ids;
 $_SESSION['print_prescriptions'] = $all_prescription_ids;
@@ -233,12 +263,12 @@ $_SESSION['print_prescriptions'] = $all_prescription_ids;
 $_SESSION['prescription_date'] = $prescription_date;
 $_SESSION['doctor_name'] = $doctor_name;
 $_SESSION['doctor_license'] = $doctor_license;
-$_SESSION['doctor_ptr'] = $doctor_ptr; // NEW: Store PTR number for PDF
+$_SESSION['doctor_ptr'] = $doctor_ptr;
 $_SESSION['refill_day'] = $dosearch;
+
 
 // Redirect back to bulk_print.php
 header("Location: bulk_print.php?dosearch=" . urlencode($dosearch) . "&bulk_created=true");
 exit();
 
 mysqli_close($conn);
-?>
