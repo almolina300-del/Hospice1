@@ -322,21 +322,22 @@ $today_date = date('Y-m-d');
         .patient-list-container {
             max-height: 400px;
             overflow-y: auto;
-            border: 1px solid #ddd;
+            border: 0px solid #ddd;
             border-radius: 5px;
             margin-bottom: 20px;
         }
 
         .patient-table {
-            width: 100%;
+            width: 95%;
             border-collapse: collapse;
+            margin-left: 20px;
         }
 
         .patient-table th {
             background-color: #263F73;
             color: white;
             padding: 10px;
-            text-align: left;
+            text-align: center;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -946,39 +947,44 @@ $today_date = date('Y-m-d');
                     </span>
                 </div>
 
-                <div class="patient-list-container">
-                    <table class="patient-table">
-                        <thead>
-                            <tr>
-                                <th class="checkbox-cell">Include</th>
-                                <th>Patient Name</th>
-                                <th>Address</th>
-                                <th>Last Prescription Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="patientListBody">
-                            <?php foreach ($patients as $patient): 
-                                $last_date = $patient['last_prescription_date'];
-                                $formatted_date = $last_date ? date('M d, Y', strtotime($last_date)) : 'Never';
-                            ?>
-                            <tr data-patient-id="<?php echo $patient['Patient_id']; ?>">
-                                <td class="checkbox-cell">
-                                    <input type="checkbox" 
-                                           class="patient-checkbox patient-select" 
-                                           name="exclude_patients[]" 
-                                           value="<?php echo $patient['Patient_id']; ?>"
-                                           checked
-                                           onchange="updatePatientStatus(this)">
-                                </td>
-                                <td><?php echo strtoupper($patient['Patient_name']); ?></td>
-                                <td><?php echo strtoupper($patient['Barangay']); ?></td>
-                                <td><?php echo $formatted_date; ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-
+ <div class="patient-list-container">
+    <table class="patient-table">
+        <thead>
+            <tr>
+                <th class="checkbox-cell">Include</th>
+                <th>Patient Name</th>
+                <th>Address</th>
+                <th class="sortable-header" onclick="toggleDateSort()" style="cursor: pointer;">
+                    Last Prescription Date
+                </th>
+            </tr>
+        </thead>
+        <tbody id="patientListBody">
+            <?php foreach ($patients as $patient): 
+                $last_date = $patient['last_prescription_date'];
+                $formatted_date = $last_date ? date('M d, Y', strtotime($last_date)) : 'Never';
+                $date_timestamp = $last_date ? strtotime($last_date) : 0;
+            ?>
+            <tr data-patient-id="<?php echo $patient['Patient_id']; ?>" 
+                data-date-timestamp="<?php echo $date_timestamp; ?>">
+                <td class="checkbox-cell">
+                    <input type="checkbox" 
+                           class="patient-checkbox patient-select" 
+                           name="exclude_patients[]" 
+                           value="<?php echo $patient['Patient_id']; ?>"
+                           checked
+                           onchange="updatePatientStatus(this)">
+                </td>
+                <td><?php echo strtoupper($patient['Patient_name']); ?></td>
+                <td><?php echo strtoupper($patient['Barangay']); ?></td>
+                <td class="last-prescription-date" data-sort-value="<?php echo $date_timestamp; ?>">
+                    <?php echo $formatted_date; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
                 <!-- Selection Summary -->
                 <div class="selection-summary" id="selectionSummary">
                     Ready to create prescriptions for <?php echo $total_patients; ?> patients
@@ -995,7 +1001,7 @@ $today_date = date('Y-m-d');
                     </button>
                 </div>
 
-            </form>
+            </form> 
 
             <!-- Processing Overlay -->
             <div id="modalProcessingOverlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); border-radius:8px; z-index:100; flex-direction:column; justify-content:center; align-items:center;">
@@ -1402,5 +1408,6 @@ $today_date = date('Y-m-d');
             }
         });
     </script>
+    
 </body>
 </html>
