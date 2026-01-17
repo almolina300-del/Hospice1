@@ -850,7 +850,7 @@ $today_date = date('Y-m-d');
             }
         } else {
             echo "<tr>
-                    <td colspan='3' align='center' style='padding:10px;'>No patients found. Please select a refill day.</td>
+                    <td colspan='3' align='center' style='padding:10px;'>Please select a refill day.</td>
                 </tr>";
         }
 
@@ -975,11 +975,24 @@ $today_date = date('Y-m-d');
                            checked
                            onchange="updatePatientStatus(this)">
                 </td>
-                <td><?php echo strtoupper($patient['Patient_name']); ?></td>
-                <td><?php echo strtoupper($patient['Barangay']); ?></td>
-                <td class="last-prescription-date" data-sort-value="<?php echo $date_timestamp; ?>">
-                    <?php echo $formatted_date; ?>
-                </td>
+       <td><?php echo strtoupper($patient['Patient_name']); ?></td>
+<td>
+    <?php 
+    // Concatenate House_nos_street_name and Barangay
+    $addressParts = [];
+    if (!empty(trim($patient['House_nos_street_name'] ?? ''))) {
+        $addressParts[] = trim($patient['House_nos_street_name']);
+    }
+    if (!empty(trim($patient['Barangay'] ?? ''))) {
+        $addressParts[] = trim($patient['Barangay']);
+    }
+    
+    echo strtoupper(implode(', ', $addressParts));
+    ?>
+</td>
+<td class="last-prescription-date" data-sort-value="<?php echo $date_timestamp; ?>">
+    <?php echo $formatted_date; ?>
+</td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -1373,14 +1386,14 @@ $today_date = date('Y-m-d');
             });
         }
 
-        const printModal = document.getElementById('printModal');
-        if (printModal) {
-            printModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closePrintModal();
-                }
-            });
-        }
+        //const printModal = document.getElementById('printModal');
+        //if (printModal) {
+           // printModal.addEventListener('click', function(e) {
+                //if (e.target === this) {
+                    //closePrintModal();
+                //}
+            //});
+        //}
 
         function generateBulkPDF(ids, refillDay) {
             const pdfLoader = document.getElementById('pdfLoader');

@@ -189,69 +189,9 @@ if ($barangayFilterActive) {
                 Add New Patient
             </a>
         </form>
-        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
-            <!-- Add this button somewhere in your Patiententry.php -->
-            <div style="text-align: right; margin: 20px 0;">
-                <button onclick="showInactivePatientsModal()"
-                    style="background-color: #dc3545; color: white; border: none; padding: 10px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                    View Inactive Patients
-                </button>
-            </div>
 
-            <!-- Modal container -->
-            <div id="inactivePatientsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-                <div style="background:white; padding:20px; border-radius:8px; width:90%; max-width:1200px; max-height:80vh; overflow-y:auto;">
-                    <!-- Content will be loaded here -->
-                </div>
-            </div>
 
-            <script>
-                function showInactivePatientsModal() {
-                    const modal = document.getElementById('inactivePatientsModal');
-                    modal.style.display = 'flex';
 
-                    // Load content via AJAX
-                    fetch('inactive_patients_modal.php')
-                        .then(response => response.text())
-                        .then(html => {
-                            modal.querySelector('div').innerHTML = html;
-                        })
-                        .catch(error => {
-                            modal.querySelector('div').innerHTML = '<p style="color:red;">Error loading inactive patients</p>';
-                            console.error('Error:', error);
-                        });
-                }
-
-                // Update this function in your parent window
-                function reloadInactiveModal(url) {
-                    console.log('reloadInactiveModal called with URL:', url);
-                    const modal = document.getElementById('inactivePatientsModal');
-                    const modalContent = modal.querySelector('div'); // The div inside the modal
-
-                    fetch(url)
-                        .then(response => response.text())
-                        .then(html => {
-                            modalContent.innerHTML = html;
-                            console.log('Modal content reloaded successfully');
-                        })
-                        .catch(error => {
-                            console.error('Error reloading modal:', error);
-                            modalContent.innerHTML = '<p style="color:red; padding:20px;">Error reloading content: ' + error.message + '</p>';
-                        });
-                }
-
-                function closeInactiveModal() {
-                    document.getElementById('inactivePatientsModal').style.display = 'none';
-                }
-
-                // Close with Escape key
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape') {
-                        closeInactiveModal();
-                    }
-                });
-            </script>
-        <?php endif; ?>
     </div>
 
     <?php
