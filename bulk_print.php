@@ -319,13 +319,16 @@ $today_date = date('Y-m-d');
         }
 
         /* Patient list table styles */
-        .patient-list-container {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 0px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
+ .patient-list-container {
+    max-height: 400px;
+    height: 400px;
+    overflow-y: auto;
+    border: 0px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: -50px;
+    position: relative;
+    display: block;
+}
 
         .patient-table {
             width: 95%;
@@ -732,19 +735,29 @@ $today_date = date('Y-m-d');
     <?php if (!empty($message)): ?>
         <div id="successMessage" class="success-message <?php echo $message_class; ?>">
             <?php echo $message; ?>
-
-            <?php if ($has_prescriptions_for_pdf && !empty($prescription_ids_for_pdf)): ?>
-                <div style="margin-top:10px;">
-                    <a href="javascript:void(0);"
-                        onclick="generateBulkPDF('<?php echo $prescription_ids_for_pdf; ?>', '<?php echo htmlspecialchars($refill_day_for_pdf); ?>')"
-                        style="background:#007bff; color:white; padding:8px 16px; border-radius:4px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M2 7a2 2 0 0 0-2 2v3h4v3h8v-3h4V9a2 2 0 0 0-2-2H2zm11 5H3v-3h10v3zM2 4V0h12v4H2z" />
-                        </svg>
-                        View/Print PDF
-                    </a>
-                </div>
-            <?php endif; ?>
+<?php if ($has_prescriptions_for_pdf && !empty($prescription_ids_for_pdf)): ?>
+    <div style="margin-top:10px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <!-- Prescription PDF Button -->
+        <a href="javascript:void(0);"
+            onclick="generateBulkPDF('<?php echo $prescription_ids_for_pdf; ?>', '<?php echo htmlspecialchars($refill_day_for_pdf); ?>')"
+            style="background:#007bff; color:white; padding:8px 16px; border-radius:4px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M2 7a2 2 0 0 0-2 2v3h4v3h8v-3h4V9a2 2 0 0 0-2-2H2zm11 5H3v-3h10v3zM2 4V0h12v4H2z" />
+            </svg>
+            View/Print Prescriptions
+        </a>
+        
+        <!-- Transmittal PDF Button -->
+<a href="javascript:void(0);"
+    onclick="generateTransmittalPDF(event, '<?php echo $prescription_ids_for_pdf; ?>', '<?php echo htmlspecialchars($refill_day_for_pdf); ?>')"
+    style="background:#17a2b8; color:white; padding:8px 16px; border-radius:4px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H2zm6 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+    </svg>
+    View/Print Transmittal
+</a>
+    </div>
+<?php endif; ?>
 
             <?php if (isset($bulk_result['errors']) && !empty($bulk_result['errors'])): ?>
                 <div style="margin-top:10px; text-align:left; font-weight:normal; font-size:12px;">
@@ -1136,6 +1149,44 @@ $today_date = date('Y-m-d');
     padding: 1px 6px;
     border-radius: 10px;
 }
+.btn-transmittal {
+    background: #17a2b8;
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.btn-transmittal:hover {
+    background: #138496;
+}
+
+.btn-transmittal-disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    pointer-events: none;
+    position: relative;
+}
+
+.btn-transmittal-disabled .disabled-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #DC143C;
+    font-weight: bold;
+    font-size: 35px;
+    pointer-events: none;
+}
 </style>
 
 <!-- Replace the entire JavaScript section starting from line 564 with this corrected version -->
@@ -1152,13 +1203,12 @@ function toggleDateFilter() {
     const button = document.getElementById('dateFilterBtn');
     
     if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-        // Position dropdown near the button
-        const buttonRect = button.getBoundingClientRect();
-        const containerRect = button.closest('.patient-list-container').getBoundingClientRect();
-        
-        dropdown.style.left = (buttonRect.left - containerRect.left - 250) + 'px';
-        dropdown.style.top = (buttonRect.bottom - containerRect.top + 5) + 'px';
+        // Position dropdown relative to the button's parent wrapper
         dropdown.style.position = 'absolute';
+        dropdown.style.left = '70%';
+        dropdown.style.top = '35%'; // Directly below the button
+        dropdown.style.marginTop = '5px';
+        dropdown.style.zIndex = '1000';
         
         dropdown.style.display = 'block';
         populateDateCheckboxes();
@@ -1469,7 +1519,49 @@ function initializeDateFiltering() {
 
 <!-- Then replace the main JavaScript section (starting around line 800) with this: -->
 
-<script>
+<script>function generateTransmittalPDF(event, ids, refillDay) {
+    console.log('Transmittal PDF function called with:', ids, refillDay);
+    
+    const pdfLoader = document.getElementById('pdfLoader');
+    if (!pdfLoader) {
+        console.error('PDF Loader element not found');
+        return false;
+    }
+    
+    pdfLoader.style.display = 'flex';
+    
+    // Update loading text for transmittal
+    const loadingText = pdfLoader.querySelector('.pdf-loading-text');
+    if (loadingText) {
+        loadingText.textContent = 'Generating Transmittal PDF...';
+    }
+
+    // Get the button that was clicked
+    const viewBtn = event.target.closest('a');
+    if (!viewBtn) {
+        console.error('Could not find the clicked button');
+        return false;
+    }
+    
+    if (viewBtn.hasAttribute('data-processing')) {
+        return false;
+    }
+    viewBtn.setAttribute('data-processing', 'true');
+
+    // New endpoint for transmittal PDF
+    const pdfUrl = 'Pdfs/bulk_transmittal_pdf.php?bulk_ids=' + encodeURIComponent(ids) + '&dosearch=' + encodeURIComponent(refillDay);
+    console.log('Opening PDF URL:', pdfUrl);
+
+    setTimeout(() => {
+        pdfLoader.style.display = 'none';
+        window.open(pdfUrl, '_blank');
+        viewBtn.removeAttribute('data-processing');
+    }, 1500);
+    
+    // Prevent default link behavior
+    event.preventDefault();
+    return false;
+}
         document.addEventListener('DOMContentLoaded', function() {
             const searchForm = document.querySelector('form[method="post"]');
             const searchButton = searchForm.querySelector('button[type="submit"]');
@@ -2324,6 +2416,7 @@ function initializeDateFiltering() {
                 closePrintModal();
             }
         });
+        
     </script>
     
 </body>
