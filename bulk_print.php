@@ -365,12 +365,15 @@ $today_date = date('Y-m-d');
             width: 40px;
             text-align: center;
         }
+.patient-checkbox:disabled {    
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
-        .patient-checkbox {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
+.patient-checkbox:disabled + .checkbox-label {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
         /* Summary and action buttons */
         .selection-summary {
@@ -1014,7 +1017,7 @@ $today_date = date('Y-m-d');
 
 <!-- Date Filter Dropdown -->
 <div id="dateFilterDropdown" class="date-filter-dropdown" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; padding: 15px; width: 300px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
         <h4 style="margin: 0; font-size: 14px;">Filter by Date</h4>
         <button type="button" onclick="clearDateFilter()" style="background: none; border: none; color: #666; cursor: pointer; font-size: 12px;">Clear</button>
     </div>
@@ -1087,6 +1090,19 @@ $today_date = date('Y-m-d');
 .date-filter-dropdown {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+.date-filter-btn {
+    background: none;
+    border: 1px solid white; /* Change border to white */
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white; /* Change to white */
+    transition: all 0.3s;
+    position: relative;
+}
 
 .date-checkbox-item {
     display: flex;
@@ -1154,6 +1170,28 @@ function toggleDateFilter() {
     } else {
         closeDateFilter();
     }
+}
+function updateCheckboxStates() {
+    const rows = document.querySelectorAll('#patientListBody tr');
+    rows.forEach(row => {
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox) {
+            if (row.classList.contains('hidden')) {
+                checkbox.disabled = true;
+                // Also uncheck hidden rows to ensure they're not submitted
+                checkbox.checked = false;
+            } else {
+                checkbox.disabled = false;
+            }
+        }
+    });
+}
+function updateSelectedPatientsHiddenInput() {
+    const visibleRows = document.querySelectorAll('#patientListBody tr:not(.hidden)');
+    const checkedBoxes = document.querySelectorAll('#patientListBody tr:not(.hidden) .patient-select:checked');
+    
+    const selectedPatients = Array.from(checkedBoxes).map(cb => cb.value);
+    document.getElementById('selectedPatientsInput').value = selectedPatients.join(',');
 }
 
 function closeDateFilter() {
@@ -1270,26 +1308,22 @@ function handleDateSelection(dateValue, isChecked) {
 
 function toggleAllDates(isChecked) {
     const checkboxes = document.querySelectorAll('#dateCheckboxContainer input[type="checkbox"]');
-    
-    if (isChecked) {
-        // Select all dates
-        selectedDates = new Set(allDateValues);
-        checkboxes.forEach(cb => {
-            cb.checked = true;
-            const dateValue = cb.value;
-            selectedDates.add(dateValue);
-        });
-    } else {
-        // Deselect all dates (actually means select none)
-        selectedDates.clear();
-        checkboxes.forEach(cb => {
-            cb.checked = false;
-        });
+    if (checkboxes.length > 0) {
+        checkboxes.forEach(cb => cb.checked = true);
     }
     
-    // Apply the filter immediately
-    applyFilterImmediately();
-    updateFilterButtonState();
+    // Update UI
+    if (document.getElementById('selectAllDates')) {
+        document.getElementById('selectAllDates').checked = true;
+    }
+    
+    const button = document.getElementById('dateFilterBtn');
+    if (button) button.classList.remove('active');
+    
+    updateCheckboxStates(); // Add this line
+    updatePatientCounts();
+    updateSelectionSummary();
+    updateSelectedPatientsHiddenInput();
 }
 
 function applyFilterImmediately() {
@@ -1298,7 +1332,11 @@ function applyFilterImmediately() {
     
     // If no dates selected or all dates selected, show all
     if (selectedDates.size === 0) {
-        rows.forEach(row => row.classList.remove('hidden'));
+        rows.forEach(row => {
+            row.classList.remove('hidden');
+            const checkbox = row.querySelector('.patient-select');
+            if (checkbox) checkbox.disabled = false;
+        });
         if (button) button.classList.remove('active');
         dateFilterActive = false;
     } else {
@@ -1307,7 +1345,11 @@ function applyFilterImmediately() {
         
         if (allSelected) {
             // Show all rows
-            rows.forEach(row => row.classList.remove('hidden'));
+            rows.forEach(row => {
+                row.classList.remove('hidden');
+                const checkbox = row.querySelector('.patient-select');
+                if (checkbox) checkbox.disabled = false;
+            });
             if (button) button.classList.remove('active');
             dateFilterActive = false;
         } else {
@@ -1316,8 +1358,15 @@ function applyFilterImmediately() {
                 const dateValue = row.getAttribute('data-date-value');
                 if (selectedDates.has(dateValue)) {
                     row.classList.remove('hidden');
+                    const checkbox = row.querySelector('.patient-select');
+                    if (checkbox) checkbox.disabled = false;
                 } else {
                     row.classList.add('hidden');
+                    const checkbox = row.querySelector('.patient-select');
+                    if (checkbox) {
+                        checkbox.disabled = true;
+                        checkbox.checked = false; // Uncheck hidden rows
+                    }
                 }
             });
             if (button) button.classList.add('active');
@@ -1325,8 +1374,10 @@ function applyFilterImmediately() {
         }
     }
     
+    updateCheckboxStates(); // Add this line
     updatePatientCounts();
     updateSelectionSummary();
+    updateSelectedPatientsHiddenInput();
 }
 
 function updateFilterButtonState() {
@@ -1346,28 +1397,18 @@ function clearDateFilter() {
     selectedDates = new Set(allDateValues); // Select all dates
     dateFilterActive = false;
     
-    // Show all rows
+    // Show all rows and enable all checkboxes
     const rows = document.querySelectorAll('#patientListBody tr');
-    rows.forEach(row => row.classList.remove('hidden'));
-    
-    // Update checkboxes
-    const checkboxes = document.querySelectorAll('#dateCheckboxContainer input[type="checkbox"]');
-    if (checkboxes.length > 0) {
-        checkboxes.forEach(cb => cb.checked = true);
-    }
-    
-    // Update UI
-    if (document.getElementById('selectAllDates')) {
-        document.getElementById('selectAllDates').checked = true;
-    }
-    
-    const button = document.getElementById('dateFilterBtn');
-    if (button) button.classList.remove('active');
-    
-    updatePatientCounts();
-    updateSelectionSummary();
+    rows.forEach(row => {
+        row.classList.remove('hidden');
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox) {
+            checkbox.disabled = false;
+            // Reset to original checked state (all should be checked initially)
+            checkbox.checked = true;
+        }
+    });
 }
-
 // Initialize when modal opens
 function initializeDateFilterOnModalOpen() {
     // Clear any previous filter state
@@ -1383,15 +1424,23 @@ function initializeDateFilterOnModalOpen() {
             selectedDates.add(dateValue);
             allDateValues.push(dateValue);
         }
+        // Make sure all checkboxes are enabled
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox) {
+            checkbox.disabled = false;
+            checkbox.checked = true; // Ensure all are checked
+        }
     });
     
-    // Reset filter button state
+      // Reset filter button state
     const button = document.getElementById('dateFilterBtn');
     if (button) button.classList.remove('active');
     
     // Update counts
+    updateCheckboxStates(); // Add this line
     updatePatientCounts();
     updateSelectionSummary();
+    updateSelectedPatientsHiddenInput();
 }
 
 // Initialize on page load
@@ -1986,16 +2035,17 @@ function initializeDateFiltering() {
             }
         }
 
-        function updatePatientCounts() {
-            const visibleRows = document.querySelectorAll('#patientListBody tr:not(.hidden)');
-            const checkedBoxes = document.querySelectorAll('#patientListBody tr:not(.hidden) .patient-select:checked');
-            
-            const includedElement = document.getElementById('includedCount');
-            const excludedElement = document.getElementById('excludedCount');
-            
-            if (includedElement) includedElement.textContent = checkedBoxes.length;
-            if (excludedElement) excludedElement.textContent = visibleRows.length - checkedBoxes.length;
-        }
+     function updatePatientCounts() {
+    const visibleRows = document.querySelectorAll('#patientListBody tr:not(.hidden)');
+    // Only count checkboxes that are not disabled
+    const checkedBoxes = document.querySelectorAll('#patientListBody tr:not(.hidden) .patient-select:checked:not(:disabled)');
+    
+    const includedElement = document.getElementById('includedCount');
+    const excludedElement = document.getElementById('excludedCount');
+    
+    if (includedElement) includedElement.textContent = checkedBoxes.length;
+    if (excludedElement) excludedElement.textContent = visibleRows.length - checkedBoxes.length;
+}
 
         function updateSelectionSummary() {
             const patientCheckboxes = document.querySelectorAll('.patient-select:not(:disabled)');
@@ -2119,85 +2169,90 @@ function initializeDateFiltering() {
             });
         }
 
-        function startBulkProcessing() {
-            const doctorName = doctorInputModal ? doctorInputModal.value.trim() : '';
-            const licenseNo = licenseInputModal ? licenseInputModal.value.trim() : '';
-            const prescriptionDateInput = document.getElementById('prescription_date');
+ function startBulkProcessing() {
+    const doctorName = doctorInputModal ? doctorInputModal.value.trim() : '';
+    const licenseNo = licenseInputModal ? licenseInputModal.value.trim() : '';
+    const prescriptionDateInput = document.getElementById('prescription_date');
 
-            // Validate date first
-            if (prescriptionDateInput && !validateDateInput(prescriptionDateInput)) {
-                prescriptionDateInput.focus();
-                return false;
-            }
+    // Validate date first
+    if (prescriptionDateInput && !validateDateInput(prescriptionDateInput)) {
+        prescriptionDateInput.focus();
+        return false;
+    }
 
-            const prescriptionDate = prescriptionDateInput ? prescriptionDateInput.value : '';
+    const prescriptionDate = prescriptionDateInput ? prescriptionDateInput.value : '';
 
-            if (doctorName === '' || licenseNo === '') {
-                alert('Please select a valid doctor from the list.');
-                if (doctorInputModal) doctorInputModal.focus();
-                return false;
-            }
+    if (doctorName === '' || licenseNo === '') {
+        alert('Please select a valid doctor from the list.');
+        if (doctorInputModal) doctorInputModal.focus();
+        return false;
+    }
 
-            // Get selected patients
-            const patientCheckboxes = document.querySelectorAll('.patient-select');
-            const selectedPatients = [];
-            const excludedPatients = [];
-            
-            patientCheckboxes.forEach(cb => {
-                if (cb.checked) {
-                    selectedPatients.push(cb.value);
-                } else {
-                    excludedPatients.push(cb.value);
-                }
-            });
-            
-            if (selectedPatients.length === 0) {
-                alert('Please select at least one patient to process.');
-                return false;
-            }
-            
-            // Store selected patients in hidden field
-            document.getElementById('selectedPatientsInput').value = selectedPatients.join(',');
-
-            const overlay = document.getElementById('modalProcessingOverlay');
-            const createBtn = document.getElementById('createBtn');
-            const progressBar = document.getElementById('progressBar');
-            const timerDisplay = document.getElementById('processingTimer');
-
-            if (overlay) overlay.style.display = 'flex';
-            if (createBtn) {
-                createBtn.disabled = true;
-                createBtn.classList.add('loading');
-                createBtn.querySelector('.button-text').textContent = 'Processing...';
-            }
-
-            let secondsLeft = 5;
-            const countdownInterval = setInterval(() => {
-                if (timerDisplay) {
-                    timerDisplay.textContent = `Starting in ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''}...`;
-                }
-
-                if (progressBar) {
-                    const progressPercent = ((5 - secondsLeft) / 5) * 100;
-                    progressBar.style.width = `${progressPercent}%`;
-                }
-
-                secondsLeft--;
-
-                if (secondsLeft < 0) {
-                    clearInterval(countdownInterval);
-
-                    if (timerDisplay) timerDisplay.textContent = 'Submitting form...';
-                    if (progressBar) progressBar.style.width = '100%';
-
-                    setTimeout(() => {
-                        document.getElementById('printForm').submit();
-                    }, 500);
-                }
-            }, 1000);
-
-            return true;
+    // Get selected patients - ONLY enabled checkboxes
+    const patientCheckboxes = document.querySelectorAll('.patient-select:not(:disabled)');
+    const selectedPatients = [];
+    const excludedPatients = [];
+    
+    patientCheckboxes.forEach(cb => {
+        if (cb.checked) {
+            selectedPatients.push(cb.value);
+        } else {
+            excludedPatients.push(cb.value);
         }
+    });
+    
+    if (selectedPatients.length === 0) {
+        alert('Please select at least one patient to process.');
+        return false;
+    }
+    
+    // Store selected patients in hidden field
+    document.getElementById('selectedPatientsInput').value = selectedPatients.join(',');
+    
+    // Debug log
+    console.log('Selected patients:', selectedPatients);
+    console.log('Total checkboxes:', patientCheckboxes.length);
+    console.log('Hidden rows:', document.querySelectorAll('#patientListBody tr.hidden').length);
+
+    const overlay = document.getElementById('modalProcessingOverlay');
+    const createBtn = document.getElementById('createBtn');
+    const progressBar = document.getElementById('progressBar');
+    const timerDisplay = document.getElementById('processingTimer');
+
+    if (overlay) overlay.style.display = 'flex';
+    if (createBtn) {
+        createBtn.disabled = true;
+        createBtn.classList.add('loading');
+        createBtn.querySelector('.button-text').textContent = 'Processing...';
+    }
+
+    let secondsLeft = 5;
+    const countdownInterval = setInterval(() => {
+        if (timerDisplay) {
+            timerDisplay.textContent = `Starting in ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''}...`;
+        }
+
+        if (progressBar) {
+            const progressPercent = ((5 - secondsLeft) / 5) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+        }
+
+        secondsLeft--;
+
+        if (secondsLeft < 0) {
+            clearInterval(countdownInterval);
+
+            if (timerDisplay) timerDisplay.textContent = 'Submitting form...';
+            if (progressBar) progressBar.style.width = '100%';
+
+            setTimeout(() => {
+                document.getElementById('printForm').submit();
+            }, 500);
+        }
+    }, 1000);
+
+    return true;
+}
 
         const printForm = document.getElementById('printForm');
         if (printForm) {

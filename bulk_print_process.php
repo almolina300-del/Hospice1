@@ -53,7 +53,8 @@ $patient_sql = "SELECT pd.Patient_id,
                        TIMESTAMPDIFF(YEAR, pd.Birthday, CURDATE()) AS Age,
                        p.Prescription_id as latest_prescription_id,
                        p.Refill_day as patient_refill_day,
-                       p.Date as last_prescription_date
+                       p.Date as last_prescription_date,
+                       CONCAT(pd.Last_name, ', ', pd.First_name, ' ', COALESCE(pd.Middle_name, '')) AS Patient_name
                 FROM patient_details pd
                 INNER JOIN prescription p ON pd.Patient_id = p.Patient_id
                 WHERE pd.is_active = 1 
@@ -65,8 +66,9 @@ $patient_sql = "SELECT pd.Patient_id,
                 )
                 AND p.Refill_day = ?";
 
-// Add condition for selected patients if provided
-if (!empty($selected_patients)) {
+// IMPORTANT: Always filter by selected patients from the hidden input
+// This ensures only visible/selected patients are processed
+if (!empty($selected_patients) && $selected_patients[0] !== '') {
     $placeholders = implode(',', array_fill(0, count($selected_patients), '?'));
     $patient_sql .= " AND pd.Patient_id IN ($placeholders)";
 }
@@ -79,7 +81,7 @@ if (!$stmt) {
 }
 
 // Bind parameters
-if (!empty($selected_patients)) {
+if (!empty($selected_patients) && $selected_patients[0] !== '') {
     $types = "i" . str_repeat("i", count($selected_patients));
     $params = array_merge([$dosearch], $selected_patients);
     mysqli_stmt_bind_param($stmt, $types, ...$params);
@@ -106,6 +108,34 @@ while ($patient = mysqli_fetch_assoc($patient_result)) {
 
 mysqli_stmt_close($stmt);
 
+// Log how many patients are being processed
+error_log("Processing $total_patients patients for bulk print");
+
+// Check if any patients were found
+if ($total_patients === 0) {
+    $_SESSION['bulk_print_result'] = [
+        'success' => false,
+        'count' => 0,
+        'created_count' => 0,
+        'existing_count' => 0,
+        'total_patients' => 0,
+        'excluded_count' => count($excluded_patients),
+        'errors' => ['No patients found to process. Please select patients and try again.'],
+        'refill_day' => $dosearch,
+        'prescription_date' => $prescription_date,
+        'doctor_name' => $doctor_name,
+        'doctor_license' => $doctor_license,
+        'doctor_ptr' => $doctor_ptr,
+        'all_prescription_ids' => [],
+        'created_ids' => [],
+        'selected_patients' => $selected_patients,
+        'action' => 'create'
+    ];
+    
+    header("Location: bulk_print.php?dosearch=" . urlencode($dosearch));
+    exit();
+}
+
 // PROCESS PATIENTS
 foreach ($patients as $patient) {
     $patient_id = $patient['Patient_id'];
@@ -113,9 +143,10 @@ foreach ($patients as $patient) {
     $latest_prescription_id = $patient['latest_prescription_id'];
     $patient_refill_day = $patient['patient_refill_day'];
     $last_prescription_date = $patient['last_prescription_date'];
+    $patient_name = $patient['Patient_name'];
     
     // Log processing
-    error_log("Processing Patient ID: $patient_id, Last Prescription: $last_prescription_date, Age: $age");
+    error_log("Processing Patient: $patient_name (ID: $patient_id), Last Prescription: $last_prescription_date, Age: $age");
     
     // Check if prescription already exists for this patient on the same date
     $check_sql = "SELECT Prescription_id FROM prescription 
@@ -123,7 +154,7 @@ foreach ($patients as $patient) {
     
     $check_stmt = mysqli_prepare($conn, $check_sql);
     if (!$check_stmt) {
-        $errors[] = "Check failed for Patient ID: $patient_id - " . mysqli_error($conn);
+        $errors[] = "Check failed for Patient: $patient_name - " . mysqli_error($conn);
         continue;
     }
     
@@ -139,7 +170,7 @@ foreach ($patients as $patient) {
         $all_prescription_ids[] = $existing_prescription_id;
         $existing_count++;
         
-        error_log("Using existing prescription $existing_prescription_id for Patient $patient_id (Date: $prescription_date)");
+        error_log("Using existing prescription $existing_prescription_id for Patient: $patient_name (Date: $prescription_date)");
         continue;
     }
     
@@ -156,7 +187,7 @@ foreach ($patients as $patient) {
         
         $insert_stmt = mysqli_prepare($conn, $insert_sql);
         if (!$insert_stmt) {
-            throw new Exception("Prepare failed for Patient ID: $patient_id - " . mysqli_error($conn));
+            throw new Exception("Prepare failed for Patient: $patient_name - " . mysqli_error($conn));
         }
         
         mysqli_stmt_bind_param($insert_stmt, "isiii", 
@@ -168,7 +199,7 @@ foreach ($patients as $patient) {
         );
         
         if (!mysqli_stmt_execute($insert_stmt)) {
-            throw new Exception("Failed to create prescription for Patient ID: $patient_id - " . mysqli_error($conn));
+            throw new Exception("Failed to create prescription for Patient: $patient_name - " . mysqli_error($conn));
         }
         
         $new_prescription_id = mysqli_insert_id($conn);
@@ -184,13 +215,13 @@ foreach ($patients as $patient) {
             
             $copy_stmt = mysqli_prepare($conn, $copy_meds_sql);
             if (!$copy_stmt) {
-                throw new Exception("Failed to prepare medicine copy for Patient ID: $patient_id");
+                throw new Exception("Failed to prepare medicine copy for Patient: $patient_name");
             }
             
             mysqli_stmt_bind_param($copy_stmt, "ii", $new_prescription_id, $latest_prescription_id);
             
             if (!mysqli_stmt_execute($copy_stmt)) {
-                throw new Exception("Failed to copy medicines for Patient ID: $patient_id - " . mysqli_error($conn));
+                throw new Exception("Failed to copy medicines for Patient: $patient_name - " . mysqli_error($conn));
             }
             
             mysqli_stmt_close($copy_stmt);
@@ -206,10 +237,10 @@ foreach ($patients as $patient) {
             
             mysqli_stmt_close($med_count_stmt);
             
-            error_log("Copied $med_count medicines from prescription $latest_prescription_id to $new_prescription_id");
+            error_log("Copied $med_count medicines from prescription $latest_prescription_id to $new_prescription_id for Patient: $patient_name");
         } else {
             $med_count = 0;
-            error_log("No previous prescription found for Patient $patient_id to copy medicines from");
+            error_log("No previous prescription found for Patient: $patient_name to copy medicines from");
         }
         
         mysqli_stmt_close($insert_stmt);
@@ -220,13 +251,13 @@ foreach ($patients as $patient) {
         $created_count++;
         
         // Log success
-        error_log("✅ Created BULK prescription $new_prescription_id for Patient $patient_id (Refill Day: $patient_refill_day, Date: $prescription_date) with $med_count medicines");
+        error_log("✅ Created BULK prescription $new_prescription_id for Patient: $patient_name (Refill Day: $patient_refill_day, Date: $prescription_date) with $med_count medicines");
         
     } catch (Exception $e) {
         // Rollback transaction on error
         mysqli_rollback($conn);
-        $errors[] = $e->getMessage();
-        error_log("❌ Error for Patient $patient_id: " . $e->getMessage());
+        $errors[] = "Patient: $patient_name - " . $e->getMessage();
+        error_log("❌ Error for Patient: $patient_name: " . $e->getMessage());
         continue;
     }
 }
@@ -266,9 +297,12 @@ $_SESSION['doctor_license'] = $doctor_license;
 $_SESSION['doctor_ptr'] = $doctor_ptr;
 $_SESSION['refill_day'] = $dosearch;
 
+// Log success
+error_log("✅ Bulk print processing complete: $created_count new prescriptions, $existing_count existing prescriptions, $total_count total");
 
 // Redirect back to bulk_print.php
 header("Location: bulk_print.php?dosearch=" . urlencode($dosearch) . "&bulk_created=true");
 exit();
 
 mysqli_close($conn);
+?>
