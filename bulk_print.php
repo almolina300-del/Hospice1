@@ -325,7 +325,7 @@ $today_date = date('Y-m-d');
     overflow-y: auto;
     border: 0px solid #ddd;
     border-radius: 5px;
-    margin-bottom: -50px;
+    margin-bottom: 25px;
     position: relative;
     display: block;
 }
