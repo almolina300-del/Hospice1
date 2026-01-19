@@ -692,6 +692,9 @@ $today_date = date('Y-m-d');
         <a href="patiententry.php">
             Patient Records
         </a>
+         <a href="inactive_patient.php">
+            Inactive Patients
+        </a>    
         <a href="bulk_print.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
             Bulk Print
         </a>

@@ -34,14 +34,14 @@ if (is_numeric($ord_patients)) {
     $ord_patients = 1;
 }
 
-// Define order clauses
+// Define order clauses - UPDATED line 6 to use r.Reason
 $order_patients = array(
     1 => array('asc' => 'p.Last_name ASC', 'desc' => 'p.Last_name DESC'),
     2 => array('asc' => 'p.First_name ASC', 'desc' => 'p.First_name DESC'),
     3 => array('asc' => 'p.Middle_name ASC', 'desc' => 'p.Middle_name DESC'),
     4 => array('asc' => 'p.Barangay ASC', 'desc' => 'p.Barangay DESC'),
     5 => array('asc' => 'r.Date ASC', 'desc' => 'r.Date DESC'),
-    6 => array('asc' => 'r.Details ASC', 'desc' => 'r.Details DESC')
+    6 => array('asc' => 'r.Reason ASC', 'desc' => 'r.Reason DESC')  // Changed from r.Details to r.Reason
 );
 
 $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
@@ -63,7 +63,7 @@ $start = ($page - 1) * $limit;
 // Check for reason filter
 $reason_filter = '';
 if (isset($_GET['reason']) && !empty($_GET['reason']) && $_GET['reason'] != 'all') {
-    $reason_filter = " AND r.Details LIKE '%REASON: " . mysqli_real_escape_string($conn, $_GET['reason']) . "%'";
+    $reason_filter = " AND r.Reason = '" . mysqli_real_escape_string($conn, $_GET['reason']) . "'";
 }
 
 $table_patients = "<table align='center'>
@@ -117,6 +117,7 @@ $table_patients = "<table align='center'>
         <a href="bulk_print.php">
             Bulk Print
         </a>
+        <a href="Medicines.php">Medicines</a>
 
         <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
             <a href="Doctors.php">Doctors</a>
@@ -152,30 +153,15 @@ $table_patients = "<table align='center'>
     $count_total_query = mysqli_query($conn, "SELECT COUNT(*) AS total_inactive FROM patient_details WHERE is_active = 0");
     $count_total_result = mysqli_fetch_assoc($count_total_query);
 
-    // Count by reason
+    // Count by reason - USING r.Reason column directly
     $reasons_query = mysqli_query($conn, "
         SELECT 
             COUNT(*) as total,
-            CASE 
-                WHEN r.Details LIKE '%REASON: DECEASED%' THEN 'DECEASED'
-                WHEN r.Details LIKE '%REASON: PATIENT UNLOCATED%' THEN 'PATIENT UNLOCATED'
-                WHEN r.Details LIKE '%REASON: EXPIRED MHP CARD%' THEN 'EXPIRED MHP CARD'
-                WHEN r.Details LIKE '%REASON: REFUSED DELIVERY%' THEN 'REFUSED DELIVERY'
-                WHEN r.Details LIKE '%REASON: OTHER%' THEN 'OTHER'
-                ELSE 'UNKNOWN'
-            END as reason
+            COALESCE(r.Reason, 'UNKNOWN') as reason
         FROM patient_details p
         LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
         WHERE p.is_active = 0
-        GROUP BY 
-            CASE 
-                WHEN r.Details LIKE '%REASON: DECEASED%' THEN 'DECEASED'
-                WHEN r.Details LIKE '%REASON: PATIENT UNLOCATED%' THEN 'PATIENT UNLOCATED'
-                WHEN r.Details LIKE '%REASON: EXPIRED MHP CARD%' THEN 'EXPIRED MHP CARD'
-                WHEN r.Details LIKE '%REASON: REFUSED DELIVERY%' THEN 'REFUSED DELIVERY'
-                WHEN r.Details LIKE '%REASON: OTHER%' THEN 'OTHER'
-                ELSE 'UNKNOWN'
-            END
+        GROUP BY r.Reason
     ");
 
     $reason_counts = [];
@@ -295,7 +281,7 @@ $table_patients = "<table align='center'>
             $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
                             p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
                             p.Barangay, p.Birthday, p.House_nos_street_name,
-                            r.Date as deactivation_date, r.Details, r.is_set_by
+                            r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
                          FROM patient_details p
                          LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
                          WHERE p.is_active = 0 
@@ -308,7 +294,7 @@ $table_patients = "<table align='center'>
             $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
                             p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
                             p.Barangay, p.Birthday, p.House_nos_street_name,
-                            r.Date as deactivation_date, r.Details, r.is_set_by
+                            r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
                          FROM patient_details p
                          LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
                          WHERE p.is_active = 0 
@@ -326,88 +312,151 @@ $table_patients = "<table align='center'>
         $totalRows = mysqli_fetch_assoc($totalResult)['total'];
         $totalPages = ceil($totalRows / $limit);
 
-        if (mysqli_num_rows($result_patients) > 0) {
-            echo "<div class='center-container'>";
-            echo "<div class='table-container'>";
-            echo "<table class='patients-table'>";
-            echo "<thead>";
-            echo "<tr>";
-            echo "<th>No.</th>";
-            echo "<th>
-                <a href='" . $_SERVER['PHP_SELF'] . "?op=1" . ($ord_patients == 1 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
-                   style='color: white; text-decoration: none;'>
-                   Last Name
-                   " . ($ord_patients == 1 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-                </a>
-              </th>";
-            echo "<th>
-                <a href='" . $_SERVER['PHP_SELF'] . "?op=2" . ($ord_patients == 2 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "'
-                   style='color: white; text-decoration: none;'>
-                   First Name
-                   " . ($ord_patients == 2 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-                </a>
-              </th>";
-            echo "<th>
-                <a href='" . $_SERVER['PHP_SELF'] . "?op=3" . ($ord_patients == 3 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
-                   style='color: white; text-decoration: none;'>
-                   Middle Name
-                   " . ($ord_patients == 3 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-                </a>
-              </th>";
-            echo "<th>
-                <a href='" . $_SERVER['PHP_SELF'] . "?op=4" . ($ord_patients == 4 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
-                   style='color: white; text-decoration: none;'>
-                   Barangay
-                   " . ($ord_patients == 4 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-                </a>
-              </th>";
-            echo "<th>Birthday</th>";
-            echo "<th>
-                <a href='" . $_SERVER['PHP_SELF'] . "?op=5" . ($ord_patients == 5 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
-                   style='color: white; text-decoration: none;'>
-                   Deactivation Date
-                   " . ($ord_patients == 5 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-                </a>
-              </th>";
-            echo "<th>
-                <a href='" . $_SERVER['PHP_SELF'] . "?op=6" . ($ord_patients == 6 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
-                   style='color: white; text-decoration: none;'>
-                   Reason
-                   " . ($ord_patients == 6 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-                </a>
-              </th>";
-            echo "<th>Details</th>";
-            echo "<th>Deactivated By</th>";
-            echo "<th>Status</th>";
-            echo "</tr>";
-            echo "</thead>";
-            echo "<tbody>";
+      if (mysqli_num_rows($result_patients) > 0) {
+    echo "<div style='margin-left: 40px; margin-right: 10px;'>"; // Reduced from 180px
+    echo "<div class='table-container' style='margin: 0;'>"; // Remove any margins
+    echo "<table class='patients-table' style='width: 100%; table-layout: fixed; margin-left: 0;'>";
+    echo "<thead>";
+    echo "<tr>";
+    echo "<th style='width: 10px; padding: 10px 5px; text-align: center;'>No.</th>";
+    echo "<th style='width: 120px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=1" . ($ord_patients == 1 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
+           style='color: white; text-decoration: none; display: block;'>
+           Last Name
+           " . ($ord_patients == 1 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+    echo "<th style='width: 120px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=2" . ($ord_patients == 2 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "'
+           style='color: white; text-decoration: none; display: block;'>
+           First Name
+           " . ($ord_patients == 2 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+    echo "<th style='width: 100px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=3" . ($ord_patients == 3 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
+           style='color: white; text-decoration: none; display: block;'>
+           Middle Name
+           " . ($ord_patients == 3 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+    echo "<th style='width: 120px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=4" . ($ord_patients == 4 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
+           style='color: white; text-decoration: none; display: block;'>
+           Barangay
+           " . ($ord_patients == 4 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+    echo "<th style='width: 100px; padding: 10px 5px; text-align: center;'>Birthday</th>";
+    echo "<th style='width: 120px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=5" . ($ord_patients == 5 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
+           style='color: white; text-decoration: none; display: block;'>
+           Deactivation Date
+           " . ($ord_patients == 5 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+    echo "<th style='width: 150px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=6" . ($ord_patients == 6 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
+           style='color: white; text-decoration: none; display: block;'>
+           Reason
+           " . ($ord_patients == 6 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+    echo "<th style='width: 200px; padding: 10px 5px;'>Details</th>";
+    echo "<th style='width: 120px; padding: 10px 5px;'>Deactivated By</th>";
+    echo "<th style='width: 80px; padding: 10px 5px; text-align: center;'>Status</th>";
+    echo "</tr>";
+    echo "</thead>";
+    echo "<tbody>";
+
+    $row_count = $start + 1;
+    while ($row = mysqli_fetch_assoc($result_patients)) {
+        $bg_color = ($row_count % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
+
+        // Get reason from Reason column directly - SEPARATED FROM DETAILS
+        $reason = $row['Reason'] ?? 'UNKNOWN';
+        $details = $row['Details'] ?? '';
+        
+        // Apply CSS class based on reason
+        switch ($reason) {
+            case 'DECEASED':
+                $reason_class = 'reason-deceased';
+                break;
+            case 'PATIENT UNLOCATED':
+                $reason_class = 'reason-unlocated';
+                break;
+            case 'EXPIRED MHP CARD':
+                $reason_class = 'reason-expired';
+                break;
+            case 'REFUSED DELIVERY':
+                $reason_class = 'reason-refused';
+                break;
+            default:
+                $reason_class = '';
+                break;
+        }
+
+        echo "<tr style='background-color: " . $bg_color . ";'>";
+        echo "<td style='padding: 8px 5px; text-align: center;'>" . $row_count . "</td>";
+        echo "<td style='padding: 8px 5px;'>
+                <div style='display: flex; align-items: center; justify-content: center; gap: 5px;'>
+                    " . htmlspecialchars(strtoupper($row['Last_name'] ?? '')) . "
+                </div>
+              </td>";
+        echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['First_name'] ?? '')) . "</td>";
+        echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Middle_name'] ?? '')) . "</td>";
+        echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Barangay'] ?? '')) . "</td>";
+        echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['Birthday'] ?? '') . "</td>";
+        echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['deactivation_date'] ?? '') . "</td>";
+        echo "<td style='padding: 8px 5px;'><span class='" . $reason_class . "'>" . $reason . "</span></td>";
+        echo "<td style='padding: 8px 5px; word-wrap: break-word; font-size: 12px;'>" .
+            nl2br(htmlspecialchars(substr($details, 0, 200))) .
+            (strlen($details) > 200 ? '...' : '') . "</td>";
+        echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['is_set_by'] ?? 'Unknown') . "</td>";
+        echo "<td style='padding: 8px 5px; text-align: center;'>";
+        // Reactivate button - AVAILABLE TO ALL USERS
+        echo "<a href='transact/reactivate_patient.php?c=" . urlencode($row['Patient_id']) . "' 
+      class='btn-danger'
+      style='padding:6px 8px; border-radius:3px; text-decoration:none; font-size:11px; 
+             background-color:#dc3545; color:white; display:inline-block;' 
+      onclick=\"return confirm('Are you sure you want to reactivate this patient?');\">
+      Inactive</a>";
+        echo "</td>";
+        echo "</tr>";
+
+        $row_count++;
+    }
+
+    echo "</tbody>";
+    echo "</table>";
+    echo "</div>";
+    echo "</div>";
 
             $row_count = $start + 1;
             while ($row = mysqli_fetch_assoc($result_patients)) {
                 $bg_color = ($row_count % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
 
-                // Extract reason from details
-                $reason = 'UNKNOWN';
+                // Get reason from Reason column directly - SEPARATED FROM DETAILS
+                $reason = $row['Reason'] ?? 'UNKNOWN';
                 $details = $row['Details'] ?? '';
-
-                if (strpos($details, 'REASON: DECEASED') !== false) {
-                    $reason = 'DECEASED';
-                    $reason_class = 'reason-deceased';
-                } elseif (strpos($details, 'REASON: PATIENT UNLOCATED') !== false) {
-                    $reason = 'PATIENT UNLOCATED';
-                    $reason_class = 'reason-unlocated';
-                } elseif (strpos($details, 'REASON: EXPIRED MHP CARD') !== false) {
-                    $reason = 'EXPIRED MHP CARD';
-                    $reason_class = 'reason-expired';
-                } elseif (strpos($details, 'REASON: REFUSED DELIVERY') !== false) {
-                    $reason = 'REFUSED DELIVERY';
-                    $reason_class = 'reason-refused';
-                } elseif (strpos($details, 'REASON: OTHER') !== false) {
-                    $reason = 'OTHER';
-                    $reason_class = 'reason-other';
-                } else {
-                    $reason_class = '';
+                
+                // Apply CSS class based on reason
+                switch ($reason) {
+                    case 'DECEASED':
+                        $reason_class = 'reason-deceased';
+                        break;
+                    case 'PATIENT UNLOCATED':
+                        $reason_class = 'reason-unlocated';
+                        break;
+                    case 'EXPIRED MHP CARD':
+                        $reason_class = 'reason-expired';
+                        break;
+                    case 'REFUSED DELIVERY':
+                        $reason_class = 'reason-refused';
+                        break;
+                    default:
+                        $reason_class = '';
+                        break;
                 }
 
                 echo "<tr style='background-color: " . $bg_color . ";'>";

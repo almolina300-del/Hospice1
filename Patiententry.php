@@ -448,6 +448,7 @@ if ($barangayFilterActive) {
             </form>
         </div>
     </div>
+
     <!-- Deactivate Patient Modal -->
     <div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
         <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
@@ -536,6 +537,15 @@ if ($barangayFilterActive) {
                         placeholder="ENTER DETAILS FOR DEACTIVATION..."
                         oninput="this.value = this.value.toUpperCase()" required></textarea>
                 </div>
+<div style="margin-bottom:20px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <label style="font-weight:bold;">SET BY:</label>
+        <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
+            <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
+        </div>
+    </div>
+    <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
+</div>
 
                 <div style="display:flex; gap:10px; margin-top:20px;">
                     <button type="submit"
@@ -665,81 +675,116 @@ if ($barangayFilterActive) {
         setInterval(updateDateTime, 1000);
     </script>
 
-    <script>
-        // Deactivate Modal Functions
-        function showDeactivateModal(patientId, lastName, firstName) {
-            // Set patient information
-            document.getElementById('patientId').value = patientId;
-            document.getElementById('patientName').textContent = lastName + ', ' + firstName;
+<script>
+    // Deactivate Modal Functions
+    function showDeactivateModal(patientId, lastName, firstName) {
+        // Set patient information
+        document.getElementById('patientId').value = patientId;
+        document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
 
-            // Reset form
-            document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('deactivationRemarks').value = '';
+        // Reset form
+        document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('deactivationReason').value = '';
+        document.getElementById('deactivationRemarks').value = '';
 
-            // Show modal
-            document.getElementById('deactivateModal').style.display = 'flex';
+        // Show modal
+        document.getElementById('deactivateModal').style.display = 'flex';
+    }
+
+    function hideDeactivateModal() {
+        document.getElementById('deactivateModal').style.display = 'none';
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideDeactivateModal();
+            hideBarangayFilter(); // Close barangay filter if open
         }
+    });
 
-        function hideDeactivateModal() {
-            document.getElementById('deactivateModal').style.display = 'none';
+    // Prevent modal close when clicking inside modal
+    document.getElementById('deactivateModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideDeactivateModal();
         }
+    });
 
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideDeactivateModal();
-                hideBarangayFilter(); // Close barangay filter if open
+// AJAX form submission
+document.getElementById('deactivateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    // Show loading
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Processing...';
+    submitBtn.disabled = true;
+
+    // Use the correct path - try this:
+    fetch('transact/deactivate_transact.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json',
             }
-        });
-
-        // Prevent modal close when clicking inside modal
-        document.getElementById('deactivateModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideDeactivateModal();
+        })
+        .then(response => {
+            if (!response.ok) {
+                // If we get a 404, the path is wrong
+                if (response.status === 404) {
+                    throw new Error(`File not found (404). Check if deactivate_transact.php exists in the transact folder.`);
+                }
+                throw new Error(`HTTP ${response.status}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert(data.message || 'Patient deactivated successfully!');
+                
+                // Reload the page to reflect changes
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to deactivate patient'));
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+            console.error('Error details:', error);
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         });
+});
+    // Color the select options dynamically
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.getElementById('deactivationReason');
+        
+        const optionsWithColors = [
+            { value: "", text: "SELECT REASON FOR DEACTIVATION", color: "#000" },
+            { value: "DECEASED", text: "DECEASED", color: "#dc3545" },
+            { value: "PATIENT UNLOCATED", text: "PATIENT UNLOCATED", color: "#fd7e14" },
+            { value: "EXPIRED MHP CARD", text: "EXPIRED MHP CARD", color: "#ffc107" },
+            { value: "REFUSED DELIVERY", text: "REFUSED DELIVERY", color: "#6c757d" },
+        ];
 
-        // AJAX form submission
-        document.getElementById('deactivateForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-
-            // Add username who performed the action
-            formData.append('set_by', '<?php echo $_SESSION['Username'] ?? 'Unknown'; ?>');
-
-            // Show loading
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Processing...';
-            submitBtn.disabled = true;
-
-            fetch('deactivate_patient.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show success message
-                        alert('Patient deactivated successfully!');
-
-                        // Reload the page to reflect changes
-                        window.location.reload();
-                    } else {
-                        alert('Error: ' + (data.message || 'Failed to deactivate patient'));
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    alert('Network error. Please try again.');
-                    console.error('Error:', error);
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                });
+        // Clear and rebuild with colored text
+        select.innerHTML = '';
+        optionsWithColors.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.value ? option.text : option.text;
+            opt.style.color = option.color;
+            opt.style.fontWeight = option.value ? 'normal' : 'italic';
+            select.appendChild(opt);
         });
-    </script>
+    });
+
+</script>
 
 </body>
 

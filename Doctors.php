@@ -169,6 +169,9 @@ $table_doctors = "<table align='center'>
         <a href="patiententry.php">
             Patient Records
         </a>
+        <a href="inactive_patient.php">
+            Inactive Patients
+        </a>
         <a href="bulk_print.php">
             Bulk Print
         </a>
