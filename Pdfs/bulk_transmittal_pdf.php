@@ -107,9 +107,10 @@ class PDF extends FPDF
         $this->currentPagePatients++;
     }
 
+    // Changed from 20 to 25 patients per page
     function needsNewPage()
     {
-        return $this->currentPagePatients >= 20;
+        return $this->currentPagePatients >= 25;
     }
 
     // Draw table header (reusable method)
@@ -120,9 +121,11 @@ class PDF extends FPDF
         $this->SetTextColor(255, 255, 255);
         
         // Calculate widths for A4 (210mm width with 10mm margins on each side = 190mm usable width)
-        $this->Cell(15, 10, '#', 1, 0, 'C', true);
-        $this->Cell(85, 10, 'PATIENT NAME', 1, 0, 'C', true);
-        $this->Cell(90, 10, 'ADDRESS', 1, 1, 'C', true);
+        // Adjusted widths: # (10), Patient Name (50), Address (100), Remarks (30)
+        $this->Cell(10, 10, '#', 1, 0, 'C', true);
+        $this->Cell(50, 10, 'PATIENT NAME', 1, 0, 'C', true);
+        $this->Cell(100, 10, 'ADDRESS', 1, 0, 'C', true);
+        $this->Cell(30, 10, 'REMARKS', 1, 1, 'C', true);
         
         // Reset text color for data rows
         $this->SetTextColor(0, 0, 0);
@@ -191,7 +194,7 @@ $counter = 1;
 $fill = false;
 
 foreach ($patients as $patient) {
-    // Check if we need a new page
+    // Check if we need a new page (now checks for 25 patients)
     if ($pdf->needsNewPage()) {
         $pdf->AddPage();
         $pdf->resetPageCounter();
@@ -216,10 +219,11 @@ foreach ($patients as $patient) {
     }
     $address = strtoupper(implode(', ', $address_parts));
 
-    // Add row with adjusted widths
-    $pdf->Cell(15, 8, $counter, 'LR', 0, 'C', $fill);
-    $pdf->Cell(85, 8, strtoupper($patient['Patient_name']), 'LR', 0, 'L', $fill);
-    $pdf->Cell(90, 8, $address, 'LR', 1, 'L', $fill);
+    // Add row with adjusted widths - MUST MATCH THE HEADER WIDTHS
+    $pdf->Cell(10, 8, $counter, 'LR', 0, 'C', $fill);
+    $pdf->Cell(50, 8, strtoupper($patient['Patient_name']), 'LR', 0, 'L', $fill);
+    $pdf->Cell(100, 8, $address, 'LR', 0, 'L', $fill);
+    $pdf->Cell(30, 8, '', 'LR', 1, 'L', $fill); // Empty remarks column
 
     // Add horizontal lines between rows
     if ($counter < count($patients)) {
