@@ -279,27 +279,27 @@ $table_patients = "<table align='center'>
         if (!empty($search)) {
             $runsearch = mysqli_real_escape_string($conn, $search);
             $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
-                            p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
-                            p.Barangay, p.Birthday, p.House_nos_street_name,
-                            r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
-                         FROM patient_details p
-                         LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
-                         WHERE p.is_active = 0 
-                         AND (p.Last_name LIKE '%$runsearch%' 
-                              OR p.First_name LIKE '%$runsearch%'
-                              OR CONCAT(p.Last_name, ' ', p.First_name) LIKE '%$runsearch%')
-                         $reason_filter
-                         ORDER BY " . $order_patients[$ord_patients][$dir];
+                    p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
+                    p.Barangay, p.Birthday, p.House_nos_street_name,
+                    r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
+                 FROM patient_details p
+                 LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
+                 WHERE p.is_active = 0 
+                 AND (p.Last_name LIKE '%$runsearch%' 
+                      OR p.First_name LIKE '%$runsearch%'
+                      OR CONCAT(p.Last_name, ' ', p.First_name) LIKE '%$runsearch%')
+                 $reason_filter
+                 ORDER BY " . $order_patients[$ord_patients][$dir];
         } else {
             $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
-                            p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
-                            p.Barangay, p.Birthday, p.House_nos_street_name,
-                            r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
-                         FROM patient_details p
-                         LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
-                         WHERE p.is_active = 0 
-                         $reason_filter
-                         ORDER BY " . $order_patients[$ord_patients][$dir];
+                    p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
+                    p.Barangay, p.Birthday, p.House_nos_street_name,
+                    r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
+                 FROM patient_details p
+                 LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
+                 WHERE p.is_active = 0 
+                 $reason_filter
+                 ORDER BY " . $order_patients[$ord_patients][$dir];
         }
 
         // Apply limit for pagination
@@ -312,125 +312,62 @@ $table_patients = "<table align='center'>
         $totalRows = mysqli_fetch_assoc($totalResult)['total'];
         $totalPages = ceil($totalRows / $limit);
 
-      if (mysqli_num_rows($result_patients) > 0) {
-    echo "<div style='margin-left: 40px; margin-right: 10px;'>"; // Reduced from 180px
-    echo "<div class='table-container' style='margin: 0;'>"; // Remove any margins
-    echo "<table class='patients-table' style='width: 100%; table-layout: fixed; margin-left: 0;'>";
-    echo "<thead>";
-    echo "<tr>";
-    echo "<th style='width: 10px; padding: 10px 5px; text-align: center;'>No.</th>";
-    echo "<th style='width: 120px; padding: 10px 5px;'>
+        if (mysqli_num_rows($result_patients) > 0) {
+            echo "<div style='margin-left: 40px; margin-right: 10px;'>"; // Reduced from 180px
+            echo "<div class='table-container' style='margin: 0;'>"; // Remove any margins
+            echo "<table class='patients-table' style='width: 100%; table-layout: fixed; margin-left: 0;'>";
+            echo "<thead>";
+            echo "<tr>";
+            echo "<th style='width: 10px; padding: 10px 5px; text-align: center;'>No.</th>";
+            echo "<th style='width: 120px; padding: 10px 5px;'>
         <a href='" . $_SERVER['PHP_SELF'] . "?op=1" . ($ord_patients == 1 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
            style='color: white; text-decoration: none; display: block;'>
            Last Name
            " . ($ord_patients == 1 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
         </a>
     </th>";
-    echo "<th style='width: 120px; padding: 10px 5px;'>
+            echo "<th style='width: 120px; padding: 10px 5px;'>
         <a href='" . $_SERVER['PHP_SELF'] . "?op=2" . ($ord_patients == 2 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "'
            style='color: white; text-decoration: none; display: block;'>
            First Name
            " . ($ord_patients == 2 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
         </a>
     </th>";
-    echo "<th style='width: 100px; padding: 10px 5px;'>
+            echo "<th style='width: 100px; padding: 10px 5px;'>
         <a href='" . $_SERVER['PHP_SELF'] . "?op=3" . ($ord_patients == 3 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
            style='color: white; text-decoration: none; display: block;'>
            Middle Name
            " . ($ord_patients == 3 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
         </a>
     </th>";
-    echo "<th style='width: 120px; padding: 10px 5px;'>
+            echo "<th style='width: 120px; padding: 10px 5px;'>
         <a href='" . $_SERVER['PHP_SELF'] . "?op=4" . ($ord_patients == 4 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
            style='color: white; text-decoration: none; display: block;'>
            Barangay
            " . ($ord_patients == 4 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
         </a>
     </th>";
-    echo "<th style='width: 100px; padding: 10px 5px; text-align: center;'>Birthday</th>";
-    echo "<th style='width: 120px; padding: 10px 5px;'>
-        <a href='" . $_SERVER['PHP_SELF'] . "?op=5" . ($ord_patients == 5 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
-           style='color: white; text-decoration: none; display: block;'>
-           Deactivation Date
-           " . ($ord_patients == 5 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
-        </a>
-    </th>";
-    echo "<th style='width: 150px; padding: 10px 5px;'>
+            echo "<th style='width: 100px; padding: 10px 5px; text-align: center;'>Birthday</th>";
+            echo "<th style='width: 150px; padding: 10px 5px;'>
         <a href='" . $_SERVER['PHP_SELF'] . "?op=6" . ($ord_patients == 6 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
            style='color: white; text-decoration: none; display: block;'>
            Reason
            " . ($ord_patients == 6 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
         </a>
     </th>";
-    echo "<th style='width: 200px; padding: 10px 5px;'>Details</th>";
-    echo "<th style='width: 120px; padding: 10px 5px;'>Deactivated By</th>";
-    echo "<th style='width: 80px; padding: 10px 5px; text-align: center;'>Status</th>";
-    echo "</tr>";
-    echo "</thead>";
-    echo "<tbody>";
-
-    $row_count = $start + 1;
-    while ($row = mysqli_fetch_assoc($result_patients)) {
-        $bg_color = ($row_count % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
-
-        // Get reason from Reason column directly - SEPARATED FROM DETAILS
-        $reason = $row['Reason'] ?? 'UNKNOWN';
-        $details = $row['Details'] ?? '';
-        
-        // Apply CSS class based on reason
-        switch ($reason) {
-            case 'DECEASED':
-                $reason_class = 'reason-deceased';
-                break;
-            case 'PATIENT UNLOCATED':
-                $reason_class = 'reason-unlocated';
-                break;
-            case 'EXPIRED MHP CARD':
-                $reason_class = 'reason-expired';
-                break;
-            case 'REFUSED DELIVERY':
-                $reason_class = 'reason-refused';
-                break;
-            default:
-                $reason_class = '';
-                break;
-        }
-
-        echo "<tr style='background-color: " . $bg_color . ";'>";
-        echo "<td style='padding: 8px 5px; text-align: center;'>" . $row_count . "</td>";
-        echo "<td style='padding: 8px 5px;'>
-                <div style='display: flex; align-items: center; justify-content: center; gap: 5px;'>
-                    " . htmlspecialchars(strtoupper($row['Last_name'] ?? '')) . "
-                </div>
-              </td>";
-        echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['First_name'] ?? '')) . "</td>";
-        echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Middle_name'] ?? '')) . "</td>";
-        echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Barangay'] ?? '')) . "</td>";
-        echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['Birthday'] ?? '') . "</td>";
-        echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['deactivation_date'] ?? '') . "</td>";
-        echo "<td style='padding: 8px 5px;'><span class='" . $reason_class . "'>" . $reason . "</span></td>";
-        echo "<td style='padding: 8px 5px; word-wrap: break-word; font-size: 12px;'>" .
-            nl2br(htmlspecialchars(substr($details, 0, 200))) .
-            (strlen($details) > 200 ? '...' : '') . "</td>";
-        echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['is_set_by'] ?? 'Unknown') . "</td>";
-        echo "<td style='padding: 8px 5px; text-align: center;'>";
-        // Reactivate button - AVAILABLE TO ALL USERS
-        echo "<a href='transact/reactivate_patient.php?c=" . urlencode($row['Patient_id']) . "' 
-      class='btn-danger'
-      style='padding:6px 8px; border-radius:3px; text-decoration:none; font-size:11px; 
-             background-color:#dc3545; color:white; display:inline-block;' 
-      onclick=\"return confirm('Are you sure you want to reactivate this patient?');\">
-      Inactive</a>";
-        echo "</td>";
-        echo "</tr>";
-
-        $row_count++;
-    }
-
-    echo "</tbody>";
-    echo "</table>";
-    echo "</div>";
-    echo "</div>";
+            echo "<th style='width: 200px; padding: 10px 5px;'>Details</th>";
+            echo "<th style='width: 120px; padding: 10px 5px;'>
+        <a href='" . $_SERVER['PHP_SELF'] . "?op=5" . ($ord_patients == 5 && $dir == 'asc' ? "&dir=desc" : "&dir=asc") . "&page=" . $page . "&dosearch=" . urlencode($search) . "&reason=" . urlencode($_GET['reason'] ?? '') . "' 
+           style='color: white; text-decoration: none; display: block;'>
+           Deactivation Date
+           " . ($ord_patients == 5 ? '<span class="sort-indicator">' . ($dir == 'asc' ? '↑' : '↓') . '</span>' : '') . "
+        </a>
+    </th>";
+            echo "<th style='width: 120px; padding: 10px 5px;'>Deactivated By</th>";
+            echo "<th style='width: 80px; padding: 10px 5px; text-align: center;'>Status</th>";
+            echo "</tr>";
+            echo "</thead>";
+            echo "<tbody>";
 
             $row_count = $start + 1;
             while ($row = mysqli_fetch_assoc($result_patients)) {
@@ -439,7 +376,7 @@ $table_patients = "<table align='center'>
                 // Get reason from Reason column directly - SEPARATED FROM DETAILS
                 $reason = $row['Reason'] ?? 'UNKNOWN';
                 $details = $row['Details'] ?? '';
-                
+
                 // Apply CSS class based on reason
                 switch ($reason) {
                     case 'DECEASED':
@@ -460,30 +397,37 @@ $table_patients = "<table align='center'>
                 }
 
                 echo "<tr style='background-color: " . $bg_color . ";'>";
-                echo "<td>" . $row_count . "</td>";
-                echo "<td>
-                        <div style='display: flex; align-items: center; justify-content: center; gap: 5px;'>
-                            " . htmlspecialchars(strtoupper($row['Last_name'] ?? '')) . "
-                        </div>
-                      </td>";
-                echo "<td>" . htmlspecialchars(strtoupper($row['First_name'] ?? '')) . "</td>";
-                echo "<td>" . htmlspecialchars(strtoupper($row['Middle_name'] ?? '')) . "</td>";
-                echo "<td>" . htmlspecialchars(strtoupper($row['Barangay'] ?? '')) . "</td>";
-                echo "<td>" . htmlspecialchars($row['Birthday'] ?? '') . "</td>";
-                echo "<td>" . htmlspecialchars($row['deactivation_date'] ?? '') . "</td>";
-                echo "<td><span class='" . $reason_class . "'>" . $reason . "</span></td>";
-                echo "<td style='max-width: 200px; word-wrap: break-word; font-size: 12px;'>" .
-                    nl2br(htmlspecialchars(substr($details, 0, 100))) .
-                    (strlen($details) > 100 ? '...' : '') . "</td>";
-                echo "<td>" . htmlspecialchars($row['is_set_by'] ?? 'Unknown') . "</td>";
-                echo "<td>";
-                // Reactivate button - AVAILABLE TO ALL USERS
-                echo "<a href='transact/reactivate_patient.php?c=" . urlencode($row['Patient_id']) . "' 
-      class='btn-danger'
-      style='padding:6px 8px; border-radius:3px; text-decoration:none; font-size:11px; 
-             background-color:#dc3545; color:white; display:inline-block;' 
-      onclick=\"return confirm('Are you sure you want to reactivate this patient?');\">
-      Inactive</a>";
+                echo "<td style='padding: 8px 5px; text-align: center;'>" . $row_count . "</td>";
+                echo "<td style='padding: 8px 5px;'>
+                <div style='display: flex; align-items: center; justify-content: center; gap: 5px;'>
+                    " . htmlspecialchars(strtoupper($row['Last_name'] ?? '')) . "
+                </div>
+              </td>";
+                echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['First_name'] ?? '')) . "</td>";
+                echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Middle_name'] ?? '')) . "</td>";
+                echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Barangay'] ?? '')) . "</td>";
+                echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['Birthday'] ?? '') . "</td>";
+                echo "<td style='padding: 8px 5px;'><span class='" . $reason_class . "'>" . $reason . "</span></td>";
+                echo "<td style='padding: 8px 5px; word-wrap: break-word; font-size: 12px;'>" .
+                    nl2br(htmlspecialchars(substr($details, 0, 200))) .
+                    (strlen($details) > 200 ? '...' : '') . "</td>";
+                echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['deactivation_date'] ?? '') . "</td>";
+                echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['is_set_by'] ?? 'Unknown') . "</td>";
+                echo "<td style='padding: 2px 2px; text-align: center;'>";
+                // Reactivate button - DISABLE IF REASON IS DECEASED
+                if ($reason === 'DECEASED') {
+                    echo "<button disabled
+        style='padding:6px 8px; border-radius:3px; font-size:11px; 
+               background-color:#6c757d; color:white; border:none; cursor:not-allowed; opacity:0.65;'>
+        INACTIVE</button>";
+                } else {
+                    echo "<a href='transact/reactivate_patient.php?c=" . urlencode($row['Patient_id']) . "' 
+        class='btn-danger'
+        style='padding:6px 8px; border-radius:3px; text-decoration:none; font-size:11px; 
+               background-color:#dc3545; color:white; display:inline-block;' 
+        onclick=\"return confirm('Are you sure you want to reactivate this patient?');\">
+        INACTIVE</a>";
+                }
                 echo "</td>";
                 echo "</tr>";
 
@@ -496,26 +440,58 @@ $table_patients = "<table align='center'>
             echo "</div>";
 
             // PAGINATION DISPLAY
-            echo "<div class='page-info'>Page $page / $totalPages</div>";
+            // PAGINATION DISPLAY - MOVED TO THE MIDDLE
+            echo "<div style='text-align: center; margin: 20px 0;'>";
 
             // PAGINATION LINKS - Only show if more than 1 page
             if ($totalPages > 1) {
-                echo "<div class='pagination'>";
+                echo "<div class='pagination' style='display: inline-block;'>";
+
+                // Page info at the top
+                echo "<div class='page-info' style='margin-bottom: 10px;'>Page $page of $totalPages</div>";
+
+                // Pagination buttons
+                echo "<div style='display: flex; justify-content: center; align-items: center; gap: 10px;'>";
+
+                // Previous button
                 if ($page > 1) {
                     $prev_link = "?page=" . ($page - 1) . "&op=" . $ord_patients . "&dir=" . $dir . "&reason=" . urlencode($_GET['reason'] ?? '');
                     if (!empty($search)) $prev_link .= "&dosearch=" . urlencode($search);
 
-                    echo "<a href='$prev_link' class='pagination-btn prev'>Previous</a>";
+                    echo "<a href='$prev_link' class='pagination-btn prev' style='padding: 8px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;'>Previous</a>";
                 }
 
+                // Page numbers
+                echo "<div style='display: flex; gap: 5px;'>";
+                for ($i = 1; $i <= $totalPages; $i++) {
+                    if ($i == $page) {
+                        echo "<span style='padding: 8px 12px; background: #28a745; color: white; border-radius: 4px; font-weight: bold;'>$i</span>";
+                    } else {
+                        $page_link = "?page=" . $i . "&op=" . $ord_patients . "&dir=" . $dir . "&reason=" . urlencode($_GET['reason'] ?? '');
+                        if (!empty($search)) $page_link .= "&dosearch=" . urlencode($search);
+
+                        echo "<a href='$page_link' style='padding: 8px 12px; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 4px;'>$i</a>";
+                    }
+                }
+                echo "</div>";
+
+                // Next button
                 if ($page < $totalPages) {
                     $next_link = "?page=" . ($page + 1) . "&op=" . $ord_patients . "&dir=" . $dir . "&reason=" . urlencode($_GET['reason'] ?? '');
                     if (!empty($search)) $next_link .= "&dosearch=" . urlencode($search);
 
-                    echo "<a href='$next_link' class='pagination-btn next'>Next</a>";
+                    echo "<a href='$next_link' class='pagination-btn next' style='padding: 8px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;'>Next</a>";
                 }
-                echo "</div>";
+
+                echo "</div>"; // End flex container
+                echo "</div>"; // End pagination div
+            } else {
+                // If only one page, still show page info in the middle
+                echo "<div class='page-info' style='margin: 20px 0;'>Page $page of $totalPages</div>";
             }
+
+            echo "</div>"; // End center container
+
         } else {
             echo "<div class='center-container'>";
             echo $table_patients;
