@@ -39,6 +39,7 @@ $order = array(
     1 => 'Last_name ASC',
     2 => 'First_name ASC',
     3 => 'Middle_name ASC',
+    4 => 'LastRefillDay ASC',
 );
 
 // A $CONN VARIABLE IS ASSIGNED THE DATA OBTAINED FROM CONNECTING TO THE MYSQL SERVER. SQL_HOST, SQL_USER, SQL_PASS ALL HOLD VALUES STORED IN CONFIG.PHP
@@ -216,7 +217,7 @@ if ($barangayFilterActive) {
             // If single term, search in both first and last name
             if (count($searchTerms) == 1) {
                 $term = mysqli_real_escape_string($conn, $searchTerms[0]);
-                $whereClauses[] = "(`Last_name` LIKE '%$term%' OR `First_name` LIKE '%$term%')";
+                $whereClauses[] = "(`pd.Last_name` LIKE '%$term%' OR `pd.First_name` LIKE '%$term%')";
             }
             // If two terms, assume first is firstname and second is lastname
             elseif (count($searchTerms) == 2) {
@@ -224,16 +225,16 @@ if ($barangayFilterActive) {
                 $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
 
                 // Search for exact combination: firstname + lastname
-                $whereClauses[] = "(`First_name` LIKE '%$term1%' AND `Last_name` LIKE '%$term2%')";
+                $whereClauses[] = "(`pd.First_name` LIKE '%$term1%' AND `pd.Last_name` LIKE '%$term2%')";
                 // Also search for reversed combination: lastname + firstname
-                $whereClauses[] = "(`Last_name` LIKE '%$term1%' AND `First_name` LIKE '%$term2%')";
+                $whereClauses[] = "(`pd.Last_name` LIKE '%$term1%' AND `pd.First_name` LIKE '%$term2%')";
             }
             // If more than two terms, search for each term in either field
             else {
                 foreach ($searchTerms as $term) {
                     $safeTerm = mysqli_real_escape_string($conn, $term);
                     if (!empty($safeTerm)) {
-                        $whereClauses[] = "(`Last_name` LIKE '%$safeTerm%' OR `First_name` LIKE '%$safeTerm%' OR `Middle_name` LIKE '%$safeTerm%')";
+                        $whereClauses[] = "(`pd.Last_name` LIKE '%$safeTerm%' OR `pd.First_name` LIKE '%$safeTerm%' OR `pd.Middle_name` LIKE '%$safeTerm%')";
                     }
                 }
             }
@@ -241,43 +242,57 @@ if ($barangayFilterActive) {
 
         // Build the final SQL query
         if (!empty($whereClauses)) {
-            $whereCondition = "(" . implode(" OR ", $whereClauses) . ") AND is_active = 1";
+            $whereCondition = "(" . implode(" OR ", $whereClauses) . ") AND pd.is_active = 1";
         } else {
-            $whereCondition = "is_active = 1";
+            $whereCondition = "pd.is_active = 1";
         }
 
-        $sql = "SELECT * FROM patient_details 
+        // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
+        $sql = "SELECT pd.*, 
+                   (SELECT p.Refill_day 
+                    FROM prescription p 
+                    WHERE p.Patient_id = pd.Patient_id 
+                    ORDER BY p.Date DESC 
+                    LIMIT 1) as LastRefillDay
+            FROM patient_details pd 
             WHERE $whereCondition";
 
         if (!empty($barangay_filter)) {
-            $sql .= " AND Barangay = '$barangay_filter'";
+            $sql .= " AND pd.Barangay = '$barangay_filter'";
         }
 
-        $sql .= " ORDER BY " . $order[$ord] . " LIMIT $start, $limit";
+        $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
 
-        // Count query
-        $countSql = "SELECT COUNT(*) AS total FROM patient_details 
-                 WHERE $whereCondition";
+        // Count query remains the same (but needs pd. prefix)
+        $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
+             WHERE $whereCondition";
 
         if (!empty($barangay_filter)) {
-            $countSql .= " AND Barangay = '$barangay_filter'";
+            $countSql .= " AND pd.Barangay = '$barangay_filter'";
         }
     } else {
         // NO SEARCH - SHOW ALL RECORDS
-        $sql = "SELECT * FROM patient_details 
-            WHERE is_active = 1";
+        // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
+        $sql = "SELECT pd.*, 
+                   (SELECT p.Refill_day 
+                    FROM prescription p 
+                    WHERE p.Patient_id = pd.Patient_id 
+                    ORDER BY p.Date DESC 
+                    LIMIT 1) as LastRefillDay
+            FROM patient_details pd 
+            WHERE pd.is_active = 1";
 
         if (!empty($barangay_filter)) {
-            $sql .= " AND Barangay = '$barangay_filter'";
+            $sql .= " AND pd.Barangay = '$barangay_filter'";
         }
 
-        $sql .= " ORDER BY " . $order[$ord] . " LIMIT $start, $limit";
+        $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
 
-        $countSql = "SELECT COUNT(*) AS total FROM patient_details 
-                 WHERE is_active = 1";
+        $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
+             WHERE pd.is_active = 1";
 
         if (!empty($barangay_filter)) {
-            $countSql .= " AND Barangay = '$barangay_filter'";
+            $countSql .= " AND pd.Barangay = '$barangay_filter'";
         }
     }
 
@@ -292,10 +307,10 @@ if ($barangayFilterActive) {
 
         echo "<table align='center' border='5' cellpadding='2' width='100%'>";
         echo "<tr style='background-color:#263F73; color:white;'>";
+        echo "<th style='width: 70px;'><a href='" . $_SERVER['PHP_SELF'] . "?o=4' style='color:white; text-decoration:none;'>Refill Day</a></th>";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=1' style='color:white; text-decoration:none;'>Last name</a></th>";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=2' style='color:white; text-decoration:none;'>First name</a></th>";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=3' style='color:white; text-decoration:none;'>Middle name</a></th>";
-
         // Barangay header with filter button
         echo "<th>";
         echo "<div class='barangay-header-container'>";
@@ -333,22 +348,43 @@ if ($barangayFilterActive) {
         echo "<th>Status</th></tr>";
 
         while ($row = mysqli_fetch_assoc($result)) {
-            echo "<tr>
-            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Last_name']) . "</td>
-            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['First_name']) . "</td>
-            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Middle_name']) . "</td>
-            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Barangay']) . "</td>
-            <td align='center' style='cursor: pointer;' onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row['Birthday']) . "</td>
-            <td align='center'>
-                    <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
-                    style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; 
-                    border:none; font-size:10px; cursor:pointer;'>
-                    Active
-                </button>
-            </td>
-        </tr>";
-        }
+            $refillDay = !empty($row['LastRefillDay']) ? $row['LastRefillDay'] : 'No Rx';
 
+            // Alternate row background
+            static $rowNum = 0;
+            $rowBg = ($rowNum % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
+            $rowNum++;
+
+            echo "<tr style='background-color:" . $rowBg . ";'>";
+
+            // Refill Day Column
+            $refillColor = ($refillDay !== 'No Rx') ? 'color:#2c5282; font-weight:bold;' : 'color:#666; font-style:italic;';
+            echo "<td align='center' style='cursor: pointer; " . $refillColor . " background-color:" . $rowBg . ";'
+          onmouseover=\"this.style.backgroundColor='#e6f3ff'\"
+          onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\"
+          onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . $refillDay . "</td>";
+
+            // Other columns with same styling
+            $otherColumns = ['Last_name', 'First_name', 'Middle_name', 'Barangay', 'Birthday'];
+            foreach ($otherColumns as $col) {
+                echo "<td align='center' style='cursor: pointer; background-color:" . $rowBg . ";'
+              onmouseover=\"this.style.backgroundColor='#e6f3ff'\"
+              onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\"
+              onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row[$col]) . "</td>";
+            }
+
+            // Status Column
+            echo "<td align='center' style='background-color:" . $rowBg . ";'>
+            <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
+            style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; border:none; font-size:10px; cursor:pointer;'
+            onmouseover=\"this.style.backgroundColor='#2E8B57'\"
+            onmouseout=\"this.style.backgroundColor='#3CB371'\">
+            Active
+        </button>
+    </td>";
+
+            echo "</tr>";
+        }
         echo "</table>";
         echo "</div>";
     } else {
@@ -537,15 +573,15 @@ if ($barangayFilterActive) {
                         placeholder="ENTER DETAILS FOR DEACTIVATION..."
                         oninput="this.value = this.value.toUpperCase()" required></textarea>
                 </div>
-<div style="margin-bottom:20px;">
-    <div style="display:flex; align-items:center; gap:10px;">
-        <label style="font-weight:bold;">SET BY:</label>
-        <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
-            <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
-        </div>
-    </div>
-    <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
-</div>
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <label style="font-weight:bold;">SET BY:</label>
+                        <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
+                            <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
+                        </div>
+                    </div>
+                    <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
+                </div>
 
                 <div style="display:flex; gap:10px; margin-top:20px;">
                     <button type="submit"
@@ -675,116 +711,134 @@ if ($barangayFilterActive) {
         setInterval(updateDateTime, 1000);
     </script>
 
-<script>
-    // Deactivate Modal Functions
-    function showDeactivateModal(patientId, lastName, firstName) {
-        // Set patient information
-        document.getElementById('patientId').value = patientId;
-        document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
+    <script>
+        // Deactivate Modal Functions
+        function showDeactivateModal(patientId, lastName, firstName) {
+            // Set patient information
+            document.getElementById('patientId').value = patientId;
+            document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
 
-        // Reset form
-        document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('deactivationReason').value = '';
-        document.getElementById('deactivationRemarks').value = '';
+            // Reset form
+            document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('deactivationReason').value = '';
+            document.getElementById('deactivationRemarks').value = '';
 
-        // Show modal
-        document.getElementById('deactivateModal').style.display = 'flex';
-    }
-
-    function hideDeactivateModal() {
-        document.getElementById('deactivateModal').style.display = 'none';
-    }
-
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            hideDeactivateModal();
-            hideBarangayFilter(); // Close barangay filter if open
+            // Show modal
+            document.getElementById('deactivateModal').style.display = 'flex';
         }
-    });
 
-    // Prevent modal close when clicking inside modal
-    document.getElementById('deactivateModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideDeactivateModal();
+        function hideDeactivateModal() {
+            document.getElementById('deactivateModal').style.display = 'none';
         }
-    });
 
-// AJAX form submission
-document.getElementById('deactivateForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-
-    // Show loading
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Processing...';
-    submitBtn.disabled = true;
-
-    // Use the correct path - try this:
-    fetch('transact/deactivate_transact.php', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Accept': 'application/json',
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideDeactivateModal();
+                hideBarangayFilter(); // Close barangay filter if open
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                // If we get a 404, the path is wrong
-                if (response.status === 404) {
-                    throw new Error(`File not found (404). Check if deactivate_transact.php exists in the transact folder.`);
-                }
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Show success message
-                alert(data.message || 'Patient deactivated successfully!');
-                
-                // Reload the page to reflect changes
-                window.location.reload();
-            } else {
-                alert('Error: ' + (data.message || 'Failed to deactivate patient'));
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-            }
-        })
-        .catch(error => {
-            alert('Error: ' + error.message);
-            console.error('Error details:', error);
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
         });
-});
-    // Color the select options dynamically
-    document.addEventListener('DOMContentLoaded', function() {
-        const select = document.getElementById('deactivationReason');
-        
-        const optionsWithColors = [
-            { value: "", text: "SELECT REASON FOR DEACTIVATION", color: "#000" },
-            { value: "DECEASED", text: "DECEASED", color: "#dc3545" },
-            { value: "PATIENT UNLOCATED", text: "PATIENT UNLOCATED", color: "#fd7e14" },
-            { value: "EXPIRED MHP CARD", text: "EXPIRED MHP CARD", color: "#ffc107" },
-            { value: "REFUSED DELIVERY", text: "REFUSED DELIVERY", color: "#6c757d" },
-        ];
 
-        // Clear and rebuild with colored text
-        select.innerHTML = '';
-        optionsWithColors.forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = option.value;
-            opt.textContent = option.value ? option.text : option.text;
-            opt.style.color = option.color;
-            opt.style.fontWeight = option.value ? 'normal' : 'italic';
-            select.appendChild(opt);
+        // Prevent modal close when clicking inside modal
+        document.getElementById('deactivateModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideDeactivateModal();
+            }
         });
-    });
 
-</script>
+        // AJAX form submission
+        document.getElementById('deactivateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            // Show loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+
+            // Use the correct path - try this:
+            fetch('transact/deactivate_transact.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        // If we get a 404, the path is wrong
+                        if (response.status === 404) {
+                            throw new Error(`File not found (404). Check if deactivate_transact.php exists in the transact folder.`);
+                        }
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        alert(data.message || 'Patient deactivated successfully!');
+
+                        // Reload the page to reflect changes
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to deactivate patient'));
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                    console.error('Error details:', error);
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
+        // Color the select options dynamically
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('deactivationReason');
+
+            const optionsWithColors = [{
+                    value: "",
+                    text: "SELECT REASON FOR DEACTIVATION",
+                    color: "#000"
+                },
+                {
+                    value: "DECEASED",
+                    text: "DECEASED",
+                    color: "#dc3545"
+                },
+                {
+                    value: "PATIENT UNLOCATED",
+                    text: "PATIENT UNLOCATED",
+                    color: "#fd7e14"
+                },
+                {
+                    value: "EXPIRED MHP CARD",
+                    text: "EXPIRED MHP CARD",
+                    color: "#ffc107"
+                },
+                {
+                    value: "REFUSED DELIVERY",
+                    text: "REFUSED DELIVERY",
+                    color: "#6c757d"
+                },
+            ];
+
+            // Clear and rebuild with colored text
+            select.innerHTML = '';
+            optionsWithColors.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.value ? option.text : option.text;
+                opt.style.color = option.color;
+                opt.style.fontWeight = option.value ? 'normal' : 'italic';
+                select.appendChild(opt);
+            });
+        });
+    </script>
 
 </body>
 
