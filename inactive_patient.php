@@ -131,10 +131,8 @@ $table_patients = "<table align='center'>
             Bulk Print
         </a>
         <a href="Medicines.php">Medicines</a>
-
         <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
             <a href="Doctors.php">Doctors</a>
-            <a href="Medicines.php">Medicines</a>
             <a href="user_management.php">User Management</a>
         <?php endif; ?>
 

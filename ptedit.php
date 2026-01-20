@@ -358,10 +358,10 @@ if ($ycExpiryDate) {
     <form action='pttransact.php' name='theform' method='post'>
         <table align="center" border="1" cellpadding="5" width="70%" bgcolor="<?php echo $tablebg; ?>">
             <tr>
-            <th style="white-space:nowrap; padding-left:30px; position:relative;">
-    <img src="img/personal_det_icon.png" alt="Patient Details Icon" style="position:absolute; left:2px; top:40%; transform:translateY(-50%); height:30px; width:30px;">
-    Patient Details
-</th>
+                <th style="white-space:nowrap; padding-left:30px; position:relative;">
+                    <img src="img/personal_det_icon.png" alt="Patient Details Icon" style="position:absolute; left:2px; top:40%; transform:translateY(-50%); height:30px; width:30px;">
+                    Patient Details
+                </th>
             </tr>
             <!-- Last Name -->
             <tr>
@@ -464,12 +464,11 @@ if ($ycExpiryDate) {
             <!-- Action Buttons -->
             <tr>
                 <td align="center">
-                    <?php if ($subtype == "Update"): ?>
-                        <input type="submit"
-                            value="Deactivate Record"
-                            name="action"
-                            style="background-color:#d9534f; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;"
-                            onclick="return confirm('Deactivate this patient?');">
+                    <?php if ($subtype == "Update" && $char > 0): ?>
+                        <button type="button" onclick="showDeactivateModal(<?php echo $char; ?>, '<?php echo htmlspecialchars(addslashes($ch['Last_name'] ?? '')); ?>', '<?php echo htmlspecialchars(addslashes($ch['First_name'] ?? '')); ?>')"
+                            style="background-color:#d9534f; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                            Deactivate Record
+                        </button>
                     <?php endif; ?>
                 </td>
                 <td align="center"><input type="reset"></td>
@@ -515,7 +514,7 @@ if ($ycExpiryDate) {
                                     <div style="color: #dc3545; font-weight: bold; margin-top: 10px; font-size: 14px;">
                                         ⚠ This card has expired<br>
                                         <button onclick="openYellowCardModal('edit')"
-  style="background-color:#3CB371; color:white; border:none; padding: 8px 16px; border-radius: 4px; cursor:pointer; font-weight:bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%;">                                            Edit Yellow Card
+                                            style="background-color:#3CB371; color:white; border:none; padding: 8px 16px; border-radius: 4px; cursor:pointer; font-weight:bold; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%;"> Edit Yellow Card
                                         </button>
                                     </div>
                                 <?php else: ?>
@@ -630,30 +629,30 @@ if ($ycExpiryDate) {
         </div>
     <?php endif; ?>
 
-<!-- Yellow Card Modal -->
-<div id="yellowCardModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:10001; justify-content:center; align-items:center;">
-    <div style="background:white; padding:20px; border-radius:8px; width:600px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative; max-height:80vh; overflow-y:auto;">
-        <h3 style="margin-top:0; margin-bottom:20px; color:#333; border-bottom:2px solid #3CB371; padding-bottom:10px;">
-            <img src="img/yellow_card_pic.png" alt="Yellow Card" style="width:24px; height:24px; vertical-align:middle; margin-right:8px;">
-            <span id="yellowCardModalTitle">Add Yellow Card</span>
-        </h3>
+    <!-- Yellow Card Modal -->
+    <div id="yellowCardModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:10001; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:600px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-top:0; margin-bottom:20px; color:#333; border-bottom:2px solid #3CB371; padding-bottom:10px;">
+                <img src="img/yellow_card_pic.png" alt="Yellow Card" style="width:24px; height:24px; vertical-align:middle; margin-right:8px;">
+                <span id="yellowCardModalTitle">Add Yellow Card</span>
+            </h3>
 
-        <form id="yellowCardForm" method="post" action="transact/yc_transact.php">
-            <input type="hidden" name="Patient_id" id="yellowCardPatientId" value="<?php echo $char; ?>">
-            <input type="hidden" name="action" id="yellowCardAction" value="Create Yellow Card">
+            <form id="yellowCardForm" method="post" action="transact/yc_transact.php">
+                <input type="hidden" name="Patient_id" id="yellowCardPatientId" value="<?php echo $char; ?>">
+                <input type="hidden" name="action" id="yellowCardAction" value="Create Yellow Card">
 
-            <div style="margin-bottom:15px;">
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Yellow Card Number: <span style="color:red;">*</span></label>
-                <input type="text"
-                    name="Yellow_card_nos"
-                    id="yellowCardNos"
-                    maxlength="12"
-                    pattern="^\d{4}-\d{7}$"
-                    title="Format: 1234-1234567"
-                    placeholder="XXXX-XXXXXXX"
-                    required
-                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"
-                    oninput="
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Yellow Card Number: <span style="color:red;">*</span></label>
+                    <input type="text"
+                        name="Yellow_card_nos"
+                        id="yellowCardNos"
+                        maxlength="12"
+                        pattern="^\d{4}-\d{7}$"
+                        title="Format: 1234-1234567"
+                        placeholder="XXXX-XXXXXXX"
+                        required
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"
+                        oninput="
                 let v = this.value.replace(/[^0-9]/g,'');
                 if(v.length > 4) {
                     this.value = v.slice(0,4) + '-' + v.slice(4,11);
@@ -661,56 +660,56 @@ if ($ycExpiryDate) {
                     this.value = v;
                 }
             ">
-                <div style="font-size:12px; color:#666; margin-top:5px;">
-                    Format: XXXX-XXXXXXX (e.g., 1234-1234567)
-                </div>
-            </div>
-
-            <div style="display:flex; gap:15px; margin-bottom:15px;">
-                <div style="flex:1;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Membership Type: <span style="color:red;">*</span></label>
-                    <select name="Membership_type" id="membershipType" required
-                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
-                        <option value="">-- Select --</option>
-                        <option value="MCG-SOLO">MCG-SOLO</option>
-                        <option value="PERMANENT">PERMANENT</option>
-                        <option value="SENIOR CITIZEN">SENIOR CITIZEN</option>
-                        <option value="FAMILY">FAMILY</option>
-                        <option value="MCG-SENIOR">MCG-SENIOR</option>
-                        <option value="MCG-FAMILY">MCG-FAMILY</option>
-                        <option value="SC-PERMANENT">SC-PERMANENT</option>
-                        <option value="SOLO-CLR">SOLO-CLR</option>
-                    </select>
+                    <div style="font-size:12px; color:#666; margin-top:5px;">
+                        Format: XXXX-XXXXXXX (e.g., 1234-1234567)
+                    </div>
                 </div>
 
-                <div style="flex:1;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Expiry Date: <span style="color:red;">*</span></label>
-                    <input type="date"
-                        name="Yc_expiry_date"
-                        id="ycExpiryDate"
-                        required
-                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+                <div style="display:flex; gap:15px; margin-bottom:15px;">
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Membership Type: <span style="color:red;">*</span></label>
+                        <select name="Membership_type" id="membershipType" required
+                            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+                            <option value="">-- Select --</option>
+                            <option value="MCG-SOLO">MCG-SOLO</option>
+                            <option value="PERMANENT">PERMANENT</option>
+                            <option value="SENIOR CITIZEN">SENIOR CITIZEN</option>
+                            <option value="FAMILY">FAMILY</option>
+                            <option value="MCG-SENIOR">MCG-SENIOR</option>
+                            <option value="MCG-FAMILY">MCG-FAMILY</option>
+                            <option value="SC-PERMANENT">SC-PERMANENT</option>
+                            <option value="SOLO-CLR">SOLO-CLR</option>
+                        </select>
+                    </div>
+
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Expiry Date: <span style="color:red;">*</span></label>
+                        <input type="date"
+                            name="Yc_expiry_date"
+                            id="ycExpiryDate"
+                            required
+                            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+                    </div>
                 </div>
-            </div>
 
-            <div id="existingYellowCardInfo" style="display:none; margin-bottom:15px; padding:10px; background:#f9f9f9; border-radius:4px; border-left:4px solid #ffc107;">
-                <div style="font-size:12px; color:#666; margin-bottom:5px;">Current Yellow Card:</div>
-                <div id="currentYellowCardDetails" style="font-weight:bold;"></div>
-            </div>
+                <div id="existingYellowCardInfo" style="display:none; margin-bottom:15px; padding:10px; background:#f9f9f9; border-radius:4px; border-left:4px solid #ffc107;">
+                    <div style="font-size:12px; color:#666; margin-bottom:5px;">Current Yellow Card:</div>
+                    <div id="currentYellowCardDetails" style="font-weight:bold;"></div>
+                </div>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button type="button" onclick="closeYellowCardModal()"
-                    style="background:#ccc; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">
-                    Cancel
-                </button>
-                <button type="submit" id="yellowCardSubmitBtn"
-                    style="background:#3CB371; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">
-                    Save
-                </button>
-            </div>
-        </form>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" onclick="closeYellowCardModal()"
+                        style="background:#ccc; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="yellowCardSubmitBtn"
+                        style="background:#3CB371; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
     <!-- Add Remark Modal -->
     <div id="addRemarkModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
@@ -898,7 +897,6 @@ if ($ycExpiryDate) {
             document.getElementById('viewRemarkModal').style.display = 'none';
             currentRemarkCreatedBy = '';
         }
- 
     </script>
 
     <!-- JavaScript for yellow card modal -->
@@ -955,43 +953,42 @@ if ($ycExpiryDate) {
             <?php endif; ?>
         }
 
-    // Simple form validation - NO FUTURE DATE CHECKING
-document.getElementById('yellowCardForm').addEventListener('submit', function(e) {
-    const yellowCardNos = document.getElementById('yellowCardNos').value.trim();
-    const membershipType = document.getElementById('membershipType').value;
-    const expiryDate = document.getElementById('ycExpiryDate').value;
+        // Simple form validation - NO FUTURE DATE CHECKING
+        document.getElementById('yellowCardForm').addEventListener('submit', function(e) {
+            const yellowCardNos = document.getElementById('yellowCardNos').value.trim();
+            const membershipType = document.getElementById('membershipType').value;
+            const expiryDate = document.getElementById('ycExpiryDate').value;
 
-    // Validate Yellow Card format
-    const pattern = /^\d{4}-\d{7}$/;
-    if (!pattern.test(yellowCardNos)) {
-        e.preventDefault();
-        alert('Please enter Yellow Card number in format: XXXX-XXXXXXX (e.g., 1234-1234567)');
-        document.getElementById('yellowCardNos').focus();
-        return false;
-    }
+            // Validate Yellow Card format
+            const pattern = /^\d{4}-\d{7}$/;
+            if (!pattern.test(yellowCardNos)) {
+                e.preventDefault();
+                alert('Please enter Yellow Card number in format: XXXX-XXXXXXX (e.g., 1234-1234567)');
+                document.getElementById('yellowCardNos').focus();
+                return false;
+            }
 
-    if (!membershipType) {
-        e.preventDefault();
-        alert('Please select Membership Type');
-        document.getElementById('membershipType').focus();
-        return false;
-    }
+            if (!membershipType) {
+                e.preventDefault();
+                alert('Please select Membership Type');
+                document.getElementById('membershipType').focus();
+                return false;
+            }
 
-    if (!expiryDate) {
-        e.preventDefault();
-        alert('Please select Expiry Date');
-        document.getElementById('ycExpiryDate').focus();
-        return false;
-    }
+            if (!expiryDate) {
+                e.preventDefault();
+                alert('Please select Expiry Date');
+                document.getElementById('ycExpiryDate').focus();
+                return false;
+            }
 
-    // Show loading state
-    const submitBtn = document.getElementById('yellowCardSubmitBtn');
-    submitBtn.innerHTML = 'Processing...';
-    submitBtn.disabled = true;
+            // Show loading state
+            const submitBtn = document.getElementById('yellowCardSubmitBtn');
+            submitBtn.innerHTML = 'Processing...';
+            submitBtn.disabled = true;
 
-    return true;
-});
-
+            return true;
+        });
     </script>
 
 
@@ -1064,25 +1061,25 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
         }
     </style>
 
- <!-- Prescription Table -->
-<?php if ($char > 0): ?>
-    <?php
-    $sql = "SELECT p.*, CONCAT(d.Last_name, ', ', d.First_name, ' ', d.Middle_name) AS DoctorName
+    <!-- Prescription Table -->
+    <?php if ($char > 0): ?>
+        <?php
+        $sql = "SELECT p.*, CONCAT(d.Last_name, ', ', d.First_name, ' ', d.Middle_name) AS DoctorName
     FROM prescription AS p
     LEFT JOIN doctors AS d ON p.License_number = d.License_number
     WHERE p.Patient_id = $char
     ORDER BY p.Date DESC";
-    $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
-    $total_rows = mysqli_num_rows($result);
-    $needScroll = $total_rows >= 10;
+        $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
+        $total_rows = mysqli_num_rows($result);
+        $needScroll = $total_rows >= 10;
 
-    // Get today's date for comparison
-    $today = new DateTime();
-    $todayStr = $today->format('Y-m-d');
+        // Get today's date for comparison
+        $today = new DateTime();
+        $todayStr = $today->format('Y-m-d');
 
-    // Check if patient has sex/gender
-    $hasSex = !empty($ch['Sex']);
-    ?>
+        // Check if patient has sex/gender
+        $hasSex = !empty($ch['Sex']);
+        ?>
 
         <div style='width: 100%; margin: 0 auto;'>
             <!-- Main table with headers -->
@@ -1092,35 +1089,35 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-                     <?php if ($hasBirthday && $hasSex): ?>
-                        <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
-                            Add Prescription</a>
-                    <?php else: ?>
-                        <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-                            title='Cannot add prescription: <?php 
-                                if (!$hasBirthday && !$hasSex) {
-                                    echo "Patient birthday and sex are missing";
-                                } elseif (!$hasBirthday) {
-                                    echo "Patient birthday is missing";
-                                } elseif (!$hasSex) {
-                                    echo "Patient sex/gender is missing";
-                                }
-                            ?>'>
-                            Add Prescription</button>
-                        <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-                            ⚠ <?php 
-                                if (!$hasBirthday && !$hasSex) {
-                                    echo "Add patient birthday and select sex first to create a prescription";
-                                } elseif (!$hasBirthday) {
-                                    echo "Add patient birthday first to create a prescription";
-                                } elseif (!$hasSex) {
-                                    echo "Select patient sex (MALE/FEMALE) to create a prescription";
-                                }
-                            ?>
-                        </span>
-                    <?php endif; ?>
-                </th>
-            </tr>
+                        <?php if ($hasBirthday && $hasSex): ?>
+                            <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
+                                Add Prescription</a>
+                        <?php else: ?>
+                            <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
+                                title='Cannot add prescription: <?php
+                                                                if (!$hasBirthday && !$hasSex) {
+                                                                    echo "Patient birthday and sex are missing";
+                                                                } elseif (!$hasBirthday) {
+                                                                    echo "Patient birthday is missing";
+                                                                } elseif (!$hasSex) {
+                                                                    echo "Patient sex/gender is missing";
+                                                                }
+                                                                ?>'>
+                                Add Prescription</button>
+                            <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
+                                ⚠ <?php
+                                    if (!$hasBirthday && !$hasSex) {
+                                        echo "Add patient birthday and select sex first to create a prescription";
+                                    } elseif (!$hasBirthday) {
+                                        echo "Add patient birthday first to create a prescription";
+                                    } elseif (!$hasSex) {
+                                        echo "Select patient sex (MALE/FEMALE) to create a prescription";
+                                    }
+                                    ?>
+                            </span>
+                        <?php endif; ?>
+                    </th>
+                </tr>
 
                 <!-- Column headers -->
                 <tr style='background-color:#f8f9fa; text-align:center; font-weight:bold;'>
@@ -1179,7 +1176,7 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
                                             <a href='Pdfs/generate_pdf.php?prescription_id=<?php echo $row['Prescription_id']; ?>'
                                                 target='_blank'
                                                 style='background-color:#007bff; color:white; border:none; padding:6px 10px; font-size:13px; border-radius:4px; font-weight:bold; text-decoration:none;'>
-                                                 <img src="img/pdf_icon.png" alt="PDF Icon" style="vertical-align:middle; margin-right:5px; height:16px; width:16px;">Prescription
+                                                <img src="img/pdf_icon.png" alt="PDF Icon" style="vertical-align:middle; margin-right:5px; height:16px; width:16px;">Prescription
                                             </a>
 
                                             <?php if ($canEdit): ?>
@@ -1226,115 +1223,115 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
         </div>
     <?php endif; ?>
 
-        <!-- Add Prescription Modal -->
-        <div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
-            <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
-                <h3 style="margin-top:0;">Add Prescription</h3>
-                <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
-                    <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
+    <!-- Add Prescription Modal -->
+    <div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
+            <h3 style="margin-top:0;">Add Prescription</h3>
+            <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
+                <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-                    <input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-                    <br>
-                    <input type="display" name="PatientAddress" value="<?php echo $patientAddress; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-                    <br>
+                <input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+                <br>
+                <input type="display" name="PatientAddress" value="<?php echo $patientAddress; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+                <br>
 
-                    <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
-                        <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
-                            Date: <span style="color:red;">*</span>
-                        </label>
-                        <input type="date" id="Date" name="Date"
-                            value="<?php echo date('Y-m-d'); ?>"
-                            min="<?php echo date('Y-m-d'); ?>"
-                            required
-                            style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
+                <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
+                    <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
+                        Date: <span style="color:red;">*</span>
+                    </label>
+                    <input type="date" id="Date" name="Date"
+                        value="<?php echo date('Y-m-d'); ?>"
+                        min="<?php echo date('Y-m-d'); ?>"
+                        required
+                        style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
 
-                        <!-- You can remove this hidden input since the visible field will now submit the date -->
+                    <!-- You can remove this hidden input since the visible field will now submit the date -->
 
-                        <label for="refill_day" style="width:100px; margin-left:220px; font-size:13px;">
-                            Refill Day: <span style="color:red;">*</span>
-                        </label>
+                    <label for="refill_day" style="width:100px; margin-left:220px; font-size:13px;">
+                        Refill Day: <span style="color:red;">*</span>
+                    </label>
 
-                        <select id="refill_day" name="refill_day" required
-                            style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
-                            <option value="">Select day</option>
-                            <?php
-                            for ($i = 1; $i <= 31; $i++) {
-                                $selected = ($latestRefillDay == $i) ? 'selected' : '';
-                                echo "<option value='$i' $selected>$i</option>";
-                            }
-                            ?>
-                        </select>
-                        <?php if ($latestRefillDay): ?>
-                            <span style="margin-left:10px; font-size:12px; color:#3CB371; font-style:italic;">
-                                (Auto-filled from latest prescription)
-                            </span>
-                        <?php endif; ?>
-                    </div>
+                    <select id="refill_day" name="refill_day" required
+                        style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
+                        <option value="">Select day</option>
+                        <?php
+                        for ($i = 1; $i <= 31; $i++) {
+                            $selected = ($latestRefillDay == $i) ? 'selected' : '';
+                            echo "<option value='$i' $selected>$i</option>";
+                        }
+                        ?>
+                    </select>
+                    <?php if ($latestRefillDay): ?>
+                        <span style="margin-left:10px; font-size:12px; color:#3CB371; font-style:italic;">
+                            (Auto-filled from latest prescription)
+                        </span>
+                    <?php endif; ?>
+                </div>
 
-                    <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
-                        <label style="width:50px; margin-right:8px; font-size:13px;">
-                            Doctor: <span style="color:red;">*</span>
-                        </label>
+                <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
+                    <label style="width:50px; margin-right:8px; font-size:13px;">
+                        Doctor: <span style="color:red;">*</span>
+                    </label>
 
-                        <input list="doctorsList"
-                            id="doctorName"
-                            name="DoctorName"
-                            required
-                            style="flex:2; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px;"
-                            placeholder="Type doctor name"
-                            oninput="this.value = this.value.toUpperCase()">
+                    <input list="doctorsList"
+                        id="doctorName"
+                        name="DoctorName"
+                        required
+                        style="flex:2; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px;"
+                        placeholder="Type doctor name"
+                        oninput="this.value = this.value.toUpperCase()">
 
-                        <label style="width:80px; margin-left:12px; font-size:13px;">License No:</label>
-                        <input type="text"
-                            id="doctorLicense"
-                            name="License_number"
-                            placeholder="Auto-filled"
-                            readonly
-                            style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
+                    <label style="width:80px; margin-left:12px; font-size:13px;">License No:</label>
+                    <input type="text"
+                        id="doctorLicense"
+                        name="License_number"
+                        placeholder="Auto-filled"
+                        readonly
+                        style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
 
-                        <!-- ADD THIS PTR NUMBER FIELD -->
-                        <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
-                        <input type="text"
-                            id="doctorPtr"
-                            name="Ptr_number"
-                            placeholder="Auto-filled"
-                            readonly
-                            style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
+                    <!-- ADD THIS PTR NUMBER FIELD -->
+                    <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
+                    <input type="text"
+                        id="doctorPtr"
+                        name="Ptr_number"
+                        placeholder="Auto-filled"
+                        readonly
+                        style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
 
-                        <datalist id="doctorsList">
-                            <?php
-                            $docQuery = "SELECT License_number, Ptr_number, Last_name, First_name, Middle_name
+                    <datalist id="doctorsList">
+                        <?php
+                        $docQuery = "SELECT License_number, Ptr_number, Last_name, First_name, Middle_name
                 FROM doctors
                 WHERE is_active = 1
                 ORDER BY Last_name ASC";
-                            $docResult = mysqli_query($conn, $docQuery);
+                        $docResult = mysqli_query($conn, $docQuery);
 
-                            while ($doc = mysqli_fetch_assoc($docResult)) {
-                                $DoctorName = trim($doc['Last_name'] . ', ' . $doc['First_name'] . ' ' . $doc['Middle_name']);
-                                $LicenseNo  = htmlspecialchars($doc['License_number']);
-                                $PtrNo      = htmlspecialchars($doc['Ptr_number'] ?? '');
-                                echo "<option value=\"{$DoctorName}\" data-license=\"{$LicenseNo}\" data-ptr=\"{$PtrNo}\"></option>";
-                            }
-                            ?>
-                        </datalist>
-                    </div>
-                    <div id="doctorError" style="color:red; font-size:12px; margin-top:2px; display:none;">Doctor not found</div>
+                        while ($doc = mysqli_fetch_assoc($docResult)) {
+                            $DoctorName = trim($doc['Last_name'] . ', ' . $doc['First_name'] . ' ' . $doc['Middle_name']);
+                            $LicenseNo  = htmlspecialchars($doc['License_number']);
+                            $PtrNo      = htmlspecialchars($doc['Ptr_number'] ?? '');
+                            echo "<option value=\"{$DoctorName}\" data-license=\"{$LicenseNo}\" data-ptr=\"{$PtrNo}\"></option>";
+                        }
+                        ?>
+                    </datalist>
+                </div>
+                <div id="doctorError" style="color:red; font-size:12px; margin-top:2px; display:none;">Doctor not found</div>
 
-                    <h3>Medicines</h3>
-                    <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px;">
-                        <button type="button" onclick="addMedicine()" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">+ Add Medicine</button>
-                    </div>
-                    <div id="medicineContainerWrapper" style="max-height:320px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fafafa; margin-bottom:12px;">
-                        <div id="medicineContainer"></div>
-                    </div>
+                <h3>Medicines</h3>
+                <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px;">
+                    <button type="button" onclick="addMedicine()" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">+ Add Medicine</button>
+                </div>
+                <div id="medicineContainerWrapper" style="max-height:320px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fafafa; margin-bottom:12px;">
+                    <div id="medicineContainer"></div>
+                </div>
 
-                    <input type="hidden" name="Age" value="<?php echo $patientAge; ?>">
+                <input type="hidden" name="Age" value="<?php echo $patientAge; ?>">
 
-                    <button type="button" onclick="closePrescriptionModal()" style="background:#ccc; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Cancel</button>
-                    <button type="submit" name="action" value="Add Prescription" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Save</button>
-                </form>
-            </div>
+                <button type="button" onclick="closePrescriptionModal()" style="background:#ccc; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button type="submit" name="action" value="Add Prescription" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Save</button>
+            </form>
         </div>
+    </div>
 
     <!-- Edit Prescription Modal -->
     <div id="editPrescriptionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
@@ -1927,8 +1924,186 @@ document.getElementById('yellowCardForm').addEventListener('submit', function(e)
             }
         });
     </script>
+<!-- Deactivate Patient Modal -->
+<div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+    <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
+        <h3 style="margin-top:0; color:#dc3545; border-bottom:1px solid #eee; padding-bottom:10px;">
+            Deactivate Patient
+        </h3>
 
+        <div id="patientInfo" style="margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:5px;">
+            <strong>Patient:</strong> <span id="patientName"></span>
+        </div>
 
+        <form id="deactivateForm" method="post" action="transact/deactivate_transact.php">
+            <input type="hidden" id="patientId" name="patient_id">
 
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Date of Deactivation:</label>
+                <input type="date" id="deactivationDate" name="deactivation_date"
+                    value="<?php echo date('Y-m-d'); ?>"
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
+            </div>
+            
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
+                <select id="deactivationReason" name="reason"
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"
+                    required>
+                    <option value="">SELECT REASON FOR DEACTIVATION</option>
+                    <option value="DECEASED">DECEASED</option>
+                    <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
+                    <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
+                    <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
+                <textarea id="deactivationRemarks" name="remarks"
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
+                    text-transform: uppercase; font-size:14px;"
+                    placeholder="ENTER DETAILS FOR DEACTIVATION..."
+                    oninput="this.value = this.value.toUpperCase()" required></textarea>
+            </div>
+            
+            <div style="margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label style="font-weight:bold;">SET BY:</label>
+                    <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
+                        <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
+                    </div>
+                </div>
+                <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit"
+                    style="flex:1; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+                    Confirm Deactivation
+                </button>
+                <button type="button" onclick="hideDeactivateModal()"
+                    style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>// ========== DEACTIVATE MODAL FUNCTIONS ==========
+function showDeactivateModal(patientId, lastName, firstName) {
+    // Set patient information
+    document.getElementById('patientId').value = patientId;
+    document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
+
+    // Reset form
+    document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('deactivationReason').value = '';
+    document.getElementById('deactivationRemarks').value = '';
+
+    // Show modal
+    document.getElementById('deactivateModal').style.display = 'flex';
+}
+
+function hideDeactivateModal() {
+    document.getElementById('deactivateModal').style.display = 'none';
+}
+
+// Color the select options dynamically
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('deactivationReason');
+    if (select) {
+        const optionsWithColors = [
+            { value: "", text: "SELECT REASON FOR DEACTIVATION", color: "#000" },
+            { value: "DECEASED", text: "DECEASED", color: "#dc3545" },
+            { value: "PATIENT UNLOCATED", text: "PATIENT UNLOCATED", color: "#fd7e14" },
+            { value: "EXPIRED MHP CARD", text: "EXPIRED MHP CARD", color: "#ffc107" },
+            { value: "REFUSED DELIVERY", text: "REFUSED DELIVERY", color: "#6c757d" },
+        ];
+
+        // Clear and rebuild with colored text
+        select.innerHTML = '';
+        optionsWithColors.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.value ? option.text : option.text;
+            opt.style.color = option.color;
+            opt.style.fontWeight = option.value ? 'normal' : 'italic';
+            select.appendChild(opt);
+        });
+    }
+});
+
+// AJAX form submission for deactivation
+if (document.getElementById('deactivateForm')) {
+    document.getElementById('deactivateForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Confirm with user
+        if (!confirm('Are you sure you want to deactivate this patient?')) {
+            return false;
+        }
+        
+        const formData = new FormData(this);
+        
+        // Show loading
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Processing...';
+        submitBtn.disabled = true;
+        
+        // Send request
+        fetch('transact/deactivate_transact.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Response:', data);
+            
+            if (data.success) {
+                // Show success message
+                alert(data.message || 'Patient deactivated successfully!');
+                
+                // Close the modal
+                hideDeactivateModal();
+                
+                // Redirect to patiententry.php
+                window.location.href = 'patiententry.php';
+            } else {
+                alert('Error: ' + (data.message || 'Failed to deactivate patient'));
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error. Please try again.');
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideDeactivateModal();
+    }
+});
+
+// Close modal when clicking outside
+if (document.getElementById('deactivateModal')) {
+    document.getElementById('deactivateModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideDeactivateModal();
+        }
+    });
+}</script>
 </body>
+
 </html>
