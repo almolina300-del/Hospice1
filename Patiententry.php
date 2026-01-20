@@ -63,7 +63,30 @@ if ($barangayFilterActive) {
         $barangay_count = $row['count'];
     }
 }
+// Check if refill day filter is active
+$refill_filter = isset($_GET['refill_filter']) ? mysqli_real_escape_string($conn, $_GET['refill_filter']) : '';
+$refillFilterActive = !empty($refill_filter) && $refill_filter != 'all';
 
+// Get count for selected refill day
+$refill_count = 0;
+if ($refillFilterActive) {
+    $count_query = "SELECT COUNT(DISTINCT pd.Patient_id) as count 
+                    FROM patient_details pd 
+                    LEFT JOIN (
+                        SELECT Patient_id, MAX(Date) as max_date 
+                        FROM prescription 
+                        GROUP BY Patient_id
+                    ) latest_p ON pd.Patient_id = latest_p.Patient_id
+                    LEFT JOIN prescription p ON latest_p.Patient_id = p.Patient_id AND latest_p.max_date = p.Date
+                    WHERE pd.is_active = 1 
+                    AND (p.Refill_day = '$refill_filter' 
+                         OR (p.Refill_day IS NULL AND '$refill_filter' = 'No Rx'))";
+    $result = mysqli_query($conn, $count_query);
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $refill_count = $row['count'];
+    }
+}
 ?>
 
 <html>
@@ -269,45 +292,136 @@ if ($barangayFilterActive) {
 
         if (!empty($barangay_filter)) {
             $countSql .= " AND pd.Barangay = '$barangay_filter'";
+        } 
+       // Refill Day filter
+    if (!empty($refill_filter)) {
+        if ($refill_filter == 'No Rx') {
+            // Patients with no prescription
+            $sql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+        } else {
+            // Patients with specific refill day
+            $sql .= " AND pd.Patient_id IN (
+                SELECT DISTINCT p.Patient_id 
+                FROM prescription p 
+                INNER JOIN (
+                    SELECT Patient_id, MAX(Date) as max_date 
+                    FROM prescription 
+                    GROUP BY Patient_id
+                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                WHERE p.Refill_day = '$refill_filter'
+            )";
         }
-    } else {
-        // NO SEARCH - SHOW ALL RECORDS
-        // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
-        $sql = "SELECT pd.*, 
-                   (SELECT p.Refill_day 
-                    FROM prescription p 
-                    WHERE p.Patient_id = pd.Patient_id 
-                    ORDER BY p.Date DESC 
-                    LIMIT 1) as LastRefillDay
-            FROM patient_details pd 
-            WHERE pd.is_active = 1";
+    }
+} else {
+    // NO SEARCH - SHOW ALL RECORDS
+    // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
+    $sql = "SELECT pd.*, 
+               (SELECT p.Refill_day 
+                FROM prescription p 
+                WHERE p.Patient_id = pd.Patient_id 
+                ORDER BY p.Date DESC 
+                LIMIT 1) as LastRefillDay
+        FROM patient_details pd 
+        WHERE pd.is_active = 1";
 
-        if (!empty($barangay_filter)) {
-            $sql .= " AND pd.Barangay = '$barangay_filter'";
-        }
+    if (!empty($barangay_filter)) {
+        $sql .= " AND pd.Barangay = '$barangay_filter'";
+    }
 
-        $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
-
-        $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
-             WHERE pd.is_active = 1";
-
-        if (!empty($barangay_filter)) {
-            $countSql .= " AND pd.Barangay = '$barangay_filter'";
+    // Refill Day filter for MAIN QUERY
+    if (!empty($refill_filter)) {
+        if ($refill_filter == 'No Rx') {
+            // Patients with no prescription
+            $sql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+        } else {
+            // Patients with specific refill day
+            $sql .= " AND pd.Patient_id IN (
+                SELECT DISTINCT p.Patient_id 
+                FROM prescription p 
+                INNER JOIN (
+                    SELECT Patient_id, MAX(Date) as max_date 
+                    FROM prescription 
+                    GROUP BY Patient_id
+                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                WHERE p.Refill_day = '$refill_filter'
+            )";
         }
     }
 
-    // EXECUTE QUERIES
-    $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
-    $countResult = mysqli_query($conn, $countSql) or die(mysqli_error($conn));
-    $totalRows = mysqli_fetch_assoc($countResult)['total'];
-    $totalPages = ceil($totalRows / $limit);
+    $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
+
+    // COUNT QUERY
+    $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
+         WHERE pd.is_active = 1";
+
+    if (!empty($barangay_filter)) {
+        $countSql .= " AND pd.Barangay = '$barangay_filter'";
+    }
+
+    // Refill Day filter for COUNT QUERY
+    if (!empty($refill_filter)) {
+        if ($refill_filter == 'No Rx') {
+            // Patients with no prescription
+            $countSql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+        } else {
+            // Patients with specific refill day
+            $countSql .= " AND pd.Patient_id IN (
+                SELECT DISTINCT p.Patient_id 
+                FROM prescription p 
+                INNER JOIN (
+                    SELECT Patient_id, MAX(Date) as max_date 
+                    FROM prescription 
+                    GROUP BY Patient_id
+                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                WHERE p.Refill_day = '$refill_filter'
+            )";
+        }
+    }
+}
+
+// EXECUTE QUERIES
+$result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
+$countResult = mysqli_query($conn, $countSql) or die(mysqli_error($conn));
+$totalRows = mysqli_fetch_assoc($countResult)['total'];
+$totalPages = ceil($totalRows / $limit);
     // TABLE
     if (mysqli_num_rows($result) > 0) {
         echo "<div style='max-height:500px; overflow-y:auto;'>";
 
         echo "<table align='center' border='5' cellpadding='2' width='100%'>";
         echo "<tr style='background-color:#263F73; color:white;'>";
-        echo "<th style='width: 70px;'><a href='" . $_SERVER['PHP_SELF'] . "?o=4' style='color:white; text-decoration:none;'>Refill Day</a></th>";
+        // Refill Day header with filter button
+        echo "<th style='width: 120px;'>";
+        echo "<div class='barangay-header-container'>";
+
+        // Refill Day link
+        echo "<span style='color:white;'>Refill Day</span>";
+
+        // Show filter indicator if active
+        if ($refillFilterActive) {
+            echo "<span class='filter-indicator'>🔍</span>";
+
+            // Show count badge in the header
+            echo "<span class='barangay-count-badge' title='$refill_count patients with $refill_filter refill'>$refill_count</span>";
+        }
+
+        // Filter button with dynamic icon
+        $filterIcon = $refillFilterActive ? "🔽" : "▼";
+        echo "<button class='filter-btn' onclick=\"showRefillDayFilter()\" title='Filter by Refill Day'>$filterIcon</button>";
+
+        // Clear filter button (only show when filter is active)
+        if ($refillFilterActive) {
+            // Build clear URL
+            $queryParams = $_GET;
+            unset($queryParams['refill_filter']);
+            unset($queryParams['page']); // Reset to page 1
+            $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
+
+            echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Refill Day Filter'>❌</a>";
+        }
+
+        echo "</div>";
+        echo "</th>";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=1' style='color:white; text-decoration:none;'>Last name</a></th>";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=2' style='color:white; text-decoration:none;'>First name</a></th>";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=3' style='color:white; text-decoration:none;'>Middle name</a></th>";
@@ -347,46 +461,47 @@ if ($barangayFilterActive) {
         echo "<th>Birthday</th>";
         echo "<th>Status</th></tr>";
 
-        while ($row = mysqli_fetch_assoc($result)) {
-            $refillDay = !empty($row['LastRefillDay']) ? $row['LastRefillDay'] : 'No Rx';
-
-            // Alternate row background
-            static $rowNum = 0;
-            $rowBg = ($rowNum % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
-            $rowNum++;
-
-            echo "<tr style='background-color:" . $rowBg . ";'>";
-
-            // Refill Day Column
-            $refillColor = ($refillDay !== 'No Rx') ? 'color:#2c5282; font-weight:bold;' : 'color:#666; font-style:italic;';
-            echo "<td align='center' style='cursor: pointer; " . $refillColor . " background-color:" . $rowBg . ";'
-          onmouseover=\"this.style.backgroundColor='#e6f3ff'\"
-          onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\"
-          onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . $refillDay . "</td>";
-
-            // Other columns with same styling
-            $otherColumns = ['Last_name', 'First_name', 'Middle_name', 'Barangay', 'Birthday'];
-            foreach ($otherColumns as $col) {
-                echo "<td align='center' style='cursor: pointer; background-color:" . $rowBg . ";'
-              onmouseover=\"this.style.backgroundColor='#e6f3ff'\"
-              onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\"
-              onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">" . strtoupper($row[$col]) . "</td>";
-            }
-
-            // Status Column
-            echo "<td align='center' style='background-color:" . $rowBg . ";'>
-            <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
-            style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; border:none; font-size:10px; cursor:pointer;'
-            onmouseover=\"this.style.backgroundColor='#2E8B57'\"
-            onmouseout=\"this.style.backgroundColor='#3CB371'\">
-            Active
-        </button>
+while ($row = mysqli_fetch_assoc($result)) {
+    $refillDay = !empty($row['LastRefillDay']) ? $row['LastRefillDay'] : 'No Rx';
+    
+    // Alternate row background
+    static $rowNum = 0;
+    $rowBg = ($rowNum % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
+    $rowNum++;
+    
+    // Refill Day color
+    $refillColor = ($refillDay !== 'No Rx') ? 'color:#2c5282; font-weight:bold;' : 'color:#666; font-style:italic;';
+    
+    // Start row with hover effect on the entire row
+    echo "<tr style='background-color:" . $rowBg . "; cursor: pointer;' 
+          onmouseover=\"this.style.backgroundColor='#e6f3ff'\" 
+          onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\" 
+          onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">";
+    
+    // Refill Day Column (without individual hover)
+    echo "<td align='center' style='" . $refillColor . "'>" . $refillDay . "</td>";
+    
+    // Other columns (without individual hover)
+    $otherColumns = ['Last_name', 'First_name', 'Middle_name', 'Barangay', 'Birthday'];
+    foreach ($otherColumns as $col) {
+        echo "<td align='center'>" . strtoupper($row[$col]) . "</td>";
+    }
+    
+    // Status Column (needs special handling since it has a button)
+    echo "<td align='center' onclick=\"event.stopPropagation();\">
+        <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
+        style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; border:none; font-size:10px; cursor:pointer;'
+        onmouseover=\"this.style.backgroundColor='#2E8B57'\"
+        onmouseout=\"this.style.backgroundColor='#3CB371'\">
+        Active
+    </button>
     </td>";
-
-            echo "</tr>";
-        }
+    
+    echo "</tr>";
+}
         echo "</table>";
         echo "</div>";
+
     } else {
         echo "<div style='text-align:center; margin-top:20px;'>
             <div style='color:#b30000; background-color:#ffe6e6;
@@ -405,31 +520,33 @@ if ($barangayFilterActive) {
     // PAGINATION LINKS
     echo "<div style='text-align:center; margin-top:10px;'>";
 
-    if ($page > 1) {
-        $prev_link = "?page=" . ($page - 1) . "&o=" . $ord;
-        if (!empty($runsearch)) $prev_link .= "&dosearch=" . urlencode($runsearch);
-        if (!empty($barangay_filter)) $prev_link .= "&barangay_filter=" . urlencode($barangay_filter);
+ if ($page > 1) {
+    $prev_link = "?page=" . ($page - 1) . "&o=" . $ord;
+    if (!empty($runsearch)) $prev_link .= "&dosearch=" . urlencode($runsearch);
+    if (!empty($barangay_filter)) $prev_link .= "&barangay_filter=" . urlencode($barangay_filter);
+    if (!empty($refill_filter)) $prev_link .= "&refill_filter=" . urlencode($refill_filter);
+    
+    echo "<a href='" . $prev_link . "' 
+        style='padding:8px 15px; margin-right:10px; 
+               background:#DAA520; color:white; 
+               text-decoration:none; border-radius:5px;'>
+        Previous
+      </a>";
+}
 
-        echo "<a href='" . $prev_link . "' 
-            style='padding:8px 15px; margin-right:10px; 
-                   background:#DAA520; color:white; 
-                   text-decoration:none; border-radius:5px;'>
-            Previous
-          </a>";
-    }
+   if ($page < $totalPages) {
+    $next_link = "?page=" . ($page + 1) . "&o=" . $ord;
+    if (!empty($runsearch)) $next_link .= "&dosearch=" . urlencode($runsearch);
+    if (!empty($barangay_filter)) $next_link .= "&barangay_filter=" . urlencode($barangay_filter);
+    if (!empty($refill_filter)) $next_link .= "&refill_filter=" . urlencode($refill_filter);
+    echo "<a href='" . $next_link . "' 
+        style='padding:8px 15px; 
+               background:#28A745; color:white; 
+               text-decoration:none; border-radius:5px;'>
+        Next
+      </a>";
+}
 
-    if ($page < $totalPages) {
-        $next_link = "?page=" . ($page + 1) . "&o=" . $ord;
-        if (!empty($runsearch)) $next_link .= "&dosearch=" . urlencode($runsearch);
-        if (!empty($barangay_filter)) $next_link .= "&barangay_filter=" . urlencode($barangay_filter);
-
-        echo "<a href='" . $next_link . "' 
-            style='padding:8px 15px; 
-                   background:#28A745; color:white; 
-                   text-decoration:none; border-radius:5px;'>
-            Next
-          </a>";
-    }
 
     echo "</div>";
     ?>
@@ -839,7 +956,92 @@ if ($barangayFilterActive) {
             });
         });
     </script>
+    <!-- Refill Day Filter Modal -->
+    <div id="refillDayFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-top:0; color:#263F73;">Filter by Refill Day</h3>
+            <form method="get" action="Patiententry.php" id="refillDayFilterForm">
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Refill Day:</label>
+                    <select name="refill_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="">All Refill Days</option>
+                        <option value="No Rx" <?php echo ($refill_filter == 'No Rx') ? 'selected' : ''; ?>>No Rx</option>
+                        <?php
+                        // Get distinct refill days from latest prescriptions
+                        $refill_query = mysqli_query($conn, "
+                        SELECT DISTINCT p.Refill_day, COUNT(DISTINCT pd.Patient_id) as count
+                        FROM prescription p
+                        INNER JOIN (
+                            SELECT Patient_id, MAX(Date) as max_date 
+                            FROM prescription 
+                            GROUP BY Patient_id
+                        ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                        INNER JOIN patient_details pd ON p.Patient_id = pd.Patient_id
+                        WHERE pd.is_active = 1 AND p.Refill_day IS NOT NULL
+                        GROUP BY p.Refill_day
+                        ORDER BY CASE 
+                            WHEN p.Refill_day = 'Monday' THEN 1
+                            WHEN p.Refill_day = 'Tuesday' THEN 2
+                            WHEN p.Refill_day = 'Wednesday' THEN 3
+                            WHEN p.Refill_day = 'Thursday' THEN 4
+                            WHEN p.Refill_day = 'Friday' THEN 5
+                            WHEN p.Refill_day = 'Saturday' THEN 6
+                            WHEN p.Refill_day = 'Sunday' THEN 7
+                            ELSE 8
+                        END
+                    ");
 
+                        $current_filter = $_GET['refill_filter'] ?? '';
+                        while ($refill_row = mysqli_fetch_assoc($refill_query)) {
+                            $refill_day = $refill_row['Refill_day'];
+                            $count = $refill_row['count'];
+                            $selected = ($current_filter == $refill_day) ? 'selected' : '';
+                            echo "<option value='" . htmlspecialchars($refill_day) . "' $selected>" . $refill_day . " ($count patients)</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="o" value="<?php echo $ord; ?>">
+                <?php if (!empty($barangay_filter)): ?>
+                    <input type="hidden" name="barangay_filter" value="<?php echo htmlspecialchars($barangay_filter); ?>">
+                <?php endif; ?>
+                <?php if (!empty($runsearch)): ?>
+                    <input type="hidden" name="dosearch" value="<?php echo htmlspecialchars($runsearch); ?>">
+                <?php endif; ?>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
+                    <button type="button" onclick="hideRefillDayFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                    <?php if (!empty($current_filter)): ?>
+                        <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?><?php echo !empty($barangay_filter) ? '&barangay_filter=' . urlencode($barangay_filter) : ''; ?>"
+                            style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">
+                            Clear Filter
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function showRefillDayFilter() {
+            document.getElementById('refillDayFilterModal').style.display = 'flex';
+        }
+
+        function hideRefillDayFilter() {
+            document.getElementById('refillDayFilterModal').style.display = 'none';
+        }
+
+        // Update the existing Escape key handler to include refill filter
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideBarangayFilter();
+                hideRefillDayFilter();
+                hideDeactivateModal();
+            }
+        });
+    </script>
 </body>
 
 </html>
