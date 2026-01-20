@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Start output buffering
 session_start();
 require('../Config/Config.php');
 // Enable error reporting for debugging
@@ -76,14 +77,16 @@ try {
     // Commit transaction
     mysqli_commit($conn);
     
-    echo json_encode([
-        'success' => true, 
-        'message' => 'Patient deactivated successfully',
-        'patient_id' => $patient_id,
-        'is_set_by' => $is_set_by,
-        'date' => $deactivation_date,
-        'reason' => $reason
-    ]);
+ob_end_clean(); // Clean any output buffers
+echo json_encode([
+    'success' => true, 
+    'message' => 'Patient deactivated successfully',
+    'patient_id' => $patient_id,
+    'is_set_by' => $is_set_by,
+    'date' => $deactivation_date,
+    'reason' => $reason
+]);
+exit();
     
 } catch (Exception $e) {
     // Rollback transaction on error
