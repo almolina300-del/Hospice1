@@ -411,7 +411,7 @@ $table_patients = "<table align='center'>
                                background-color:#6c757d; color:white; border:none; cursor:not-allowed; opacity:0.65;'>
                         INACTIVE</button>";
                 } else {
-                    echo "<a href='transact/reactivate_patient.php?c=" . urlencode($row['Patient_id']) . "' 
+                    echo "<a href='transact/inactive_transact.php?c=" . urlencode($row['Patient_id']) . "' 
                         class='btn-danger'
                         style='padding:6px 8px; border-radius:3px; text-decoration:none; font-size:11px; 
                                background-color:#dc3545; color:white; display:inline-block;' 

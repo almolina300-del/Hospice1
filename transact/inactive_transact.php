@@ -2,33 +2,29 @@
 session_start();
 require('../Config/Config.php');
 
-// Check if user is SUADMIN
-if (!isset($_SESSION['Role']) || strtoupper($_SESSION['Role']) != 'SUADMIN') {
-    die('<div style="text-align:center; padding:20px; color:red;">Access Denied</div>');
+// Check if user is authenticated
+if (!isset($_SESSION['Username'])) {
+    header("Location: ../index.php");
+    exit();
 }
 
 $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB) 
     or die('Could not connect to database: ' . mysqli_connect_error());
 
-// Get patient ID and action
+// Get patient ID
 $patient_id = isset($_GET['c']) ? intval($_GET['c']) : 0;
-$action = isset($_GET['a']) ? trim($_GET['a']) : '';
-
-// Get search and page parameters to maintain them
-$search = isset($_GET['search']) ? $_GET['search'] : '';
-$page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 
 // Only process if patient ID is valid
-if ($patient_id > 0 && $action == 'Restore Record') {
+if ($patient_id > 0) {
     
     // Verify patient exists and is inactive
-    $check_sql = "SELECT Patient_id FROM patient_details WHERE Patient_id = ? AND is_active = 0";
+    $check_sql = "SELECT Patient_id, Last_name, First_name FROM patient_details WHERE Patient_id = ? AND is_active = 0";
     $stmt = mysqli_prepare($conn, $check_sql);
     mysqli_stmt_bind_param($stmt, "i", $patient_id);
     mysqli_stmt_execute($stmt);
-    mysqli_stmt_store_result($stmt);
+    $result = mysqli_stmt_get_result($stmt);
     
-    if (mysqli_stmt_num_rows($stmt) > 0) {
+    if ($row = mysqli_fetch_assoc($result)) {
         mysqli_stmt_close($stmt);
         
         // Restore patient (set is_active = 1)
@@ -37,29 +33,18 @@ if ($patient_id > 0 && $action == 'Restore Record') {
         mysqli_stmt_bind_param($stmt, "i", $patient_id);
         
         if (mysqli_stmt_execute($stmt)) {
-            // Build the redirect URL with search and page parameters
-            $redirect_url = '../inactive_patients_modal.php';
-            $params = [];
+            // Remove from remarks_inactive table
+            $delete_remark = "DELETE FROM remarks_inactive WHERE Patient_id = ?";
+            $stmt2 = mysqli_prepare($conn, $delete_remark);
+            mysqli_stmt_bind_param($stmt2, "i", $patient_id);
+            mysqli_stmt_execute($stmt2);
+            mysqli_stmt_close($stmt2);
             
-            if (!empty($search)) {
-                $params[] = 'search=' . urlencode($search);
-            }
-            if ($page > 1) {
-                $params[] = 'page=' . $page;
-            }
-            
-            if (!empty($params)) {
-                $redirect_url .= '?' . implode('&', $params);
-            }
+            $patient_name = $row['Last_name'] . ', ' . $row['First_name'];
             
             echo "<script>
-                    alert('Patient has been restored successfully!');
-                    // Use parent's function to reload modal
-                    if (window.parent && window.parent.reloadInactiveModal) {
-                        window.parent.reloadInactiveModal('" . $redirect_url . "');
-                    } else {
-                        window.history.back();
-                    }
+                    alert('Patient {$patient_name} has been restored successfully!');
+                    window.location.href = '../inactive_patient.php';
                   </script>";
         } else {
             echo "<script>
@@ -77,7 +62,7 @@ if ($patient_id > 0 && $action == 'Restore Record') {
     }
 } else {
     echo "<script>
-            alert('Invalid request.');
+            alert('Invalid patient ID.');
             window.history.back();
           </script>";
 }
