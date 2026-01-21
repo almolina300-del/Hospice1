@@ -233,35 +233,35 @@ if ($refillFilterActive) {
         // Split the search term by spaces
         $searchTerms = explode(' ', trim($runsearch));
 
-       // Build the WHERE clause dynamically
-$whereClauses = [];
+        // Build the WHERE clause dynamically
+        $whereClauses = [];
 
-if (!empty($searchTerms)) {
-    // If single term, search in both first and last name
-    if (count($searchTerms) == 1) {
-        $term = mysqli_real_escape_string($conn, $searchTerms[0]);
-        $whereClauses[] = "(pd.Last_name LIKE '%$term%' OR pd.First_name LIKE '%$term%')";
-    }
-    // If two terms, assume first is firstname and second is lastname
-    elseif (count($searchTerms) == 2) {
-        $term1 = mysqli_real_escape_string($conn, $searchTerms[0]); // First name
-        $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
+        if (!empty($searchTerms)) {
+            // If single term, search in both first and last name
+            if (count($searchTerms) == 1) {
+                $term = mysqli_real_escape_string($conn, $searchTerms[0]);
+                $whereClauses[] = "(pd.Last_name LIKE '%$term%' OR pd.First_name LIKE '%$term%')";
+            }
+            // If two terms, assume first is firstname and second is lastname
+            elseif (count($searchTerms) == 2) {
+                $term1 = mysqli_real_escape_string($conn, $searchTerms[0]); // First name
+                $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
 
-        // Search for exact combination: firstname + lastname
-        $whereClauses[] = "(pd.First_name LIKE '%$term1%' AND pd.Last_name LIKE '%$term2%')";
-        // Also search for reversed combination: lastname + firstname
-        $whereClauses[] = "(pd.Last_name LIKE '%$term1%' AND pd.First_name LIKE '%$term2%')";
-    }
-    // If more than two terms, search for each term in either field
-    else {
-        foreach ($searchTerms as $term) {
-            $safeTerm = mysqli_real_escape_string($conn, $term);
-            if (!empty($safeTerm)) {
-                $whereClauses[] = "(pd.Last_name LIKE '%$safeTerm%' OR pd.First_name LIKE '%$safeTerm%' OR pd.Middle_name LIKE '%$safeTerm%')";
+                // Search for exact combination: firstname + lastname
+                $whereClauses[] = "(pd.First_name LIKE '%$term1%' AND pd.Last_name LIKE '%$term2%')";
+                // Also search for reversed combination: lastname + firstname
+                $whereClauses[] = "(pd.Last_name LIKE '%$term1%' AND pd.First_name LIKE '%$term2%')";
+            }
+            // If more than two terms, search for each term in either field
+            else {
+                foreach ($searchTerms as $term) {
+                    $safeTerm = mysqli_real_escape_string($conn, $term);
+                    if (!empty($safeTerm)) {
+                        $whereClauses[] = "(pd.Last_name LIKE '%$safeTerm%' OR pd.First_name LIKE '%$safeTerm%' OR pd.Middle_name LIKE '%$safeTerm%')";
+                    }
+                }
             }
         }
-    }
-}
 
         // Build the final SQL query
         if (!empty($whereClauses)) {
@@ -632,7 +632,7 @@ if (!empty($searchTerms)) {
                         <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
                         <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
                         <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
-
+                        <option value="HOLD BY MAC">HOLD BY MAC</option>
                     </select>
                 </div>
 
@@ -667,6 +667,11 @@ if (!empty($searchTerms)) {
                                 text: "REFUSED DELIVERY",
                                 color: "#6c757d"
                             },
+                            {
+                                value: "HOLD BY MAC",
+                                text: "HOLD BY MAC",
+                                color: "#008b8b"
+                            },
                         ];
 
                         // Clear and rebuild with colored text
@@ -687,7 +692,7 @@ if (!empty($searchTerms)) {
                         style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
                      text-transform: uppercase; font-size:14px;"
                         placeholder="ENTER DETAILS FOR DEACTIVATION..."
-                        oninput="this.value = this.value.toUpperCase()" required></textarea>
+                        oninput="this.value = this.value.toUpperCase()"S></textarea>
                 </div>
                 <div style="margin-bottom:20px;">
                     <div style="display:flex; align-items:center; gap:10px;">

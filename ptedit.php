@@ -1961,6 +1961,7 @@ if ($ycExpiryDate) {
                         <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
                         <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
                         <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
+                        <option value="HOLD BY MAC">HOLD BY MAC</option>
                     </select>
                 </div>
 
@@ -1970,7 +1971,7 @@ if ($ycExpiryDate) {
                         style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
                     text-transform: uppercase; font-size:14px;"
                         placeholder="ENTER DETAILS FOR DEACTIVATION..."
-                        oninput="this.value = this.value.toUpperCase()" required></textarea>
+                        oninput="this.value = this.value.toUpperCase()" ></textarea>
                 </div>
 
                 <div style="margin-bottom:20px;">
@@ -2045,6 +2046,11 @@ if ($ycExpiryDate) {
                         value: "REFUSED DELIVERY",
                         text: "REFUSED DELIVERY",
                         color: "#6c757d"
+                    },
+                    {
+                        value: "HOLD BY MAC",
+                        text: "HOLD BY MAC",
+                        color: "#008b8b"
                     },
                 ];
 

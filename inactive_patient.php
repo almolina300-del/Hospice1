@@ -197,8 +197,8 @@ $table_patients = "<table align='center'>
             'DECEASED' => '#dc3545',
             'PATIENT UNLOCATED' => '#fd7e14',
             'EXPIRED MHP CARD' => '#ffc107',
-            'REFUSED DELIVERY' => '#6c757d',
-            'OTHER' => '#6f42c1',
+            'REFUSED DELIVERY' => '#1d2951',
+            'HOLD BY MAC' => '#008b8b',
             'UNKNOWN' => '#adb5bd'
         ];
 
@@ -250,7 +250,8 @@ $table_patients = "<table align='center'>
                         'DECEASED' => ['label' => 'DECEASED', 'color' => '#dc3545'],
                         'PATIENT UNLOCATED' => ['label' => 'PATIENT UNLOCATED', 'color' => '#fd7e14'],
                         'EXPIRED MHP CARD' => ['label' => 'EXPIRED MHP CARD', 'color' => '#ffc107'],
-                        'REFUSED DELIVERY' => ['label' => 'REFUSED DELIVERY', 'color' => '#6c757d'],
+                        'REFUSED DELIVERY' => ['label' => 'REFUSED DELIVERY', 'color' => '#1d2951'],
+                        'HOLD BY MAC' => ['label' => 'HOLD BY MAC', 'color' => '#008b8b'],
                     ];
                     
                     // Generate filter buttons
@@ -387,6 +388,9 @@ $table_patients = "<table align='center'>
                         break;
                     case 'REFUSED DELIVERY':
                         $reason_class = 'reason-refused';
+                        break;
+                    case 'HOLD BY MAC':
+                        $reason_class = 'reason-hold';
                         break;
                 }
                 
