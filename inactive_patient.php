@@ -59,8 +59,7 @@ $reason_filter = '';
 $current_reason = isset($_GET['reason']) ? trim($_GET['reason']) : 'all';
 
 if ($current_reason !== '' && strtoupper($current_reason) !== 'ALL') {
-    // Use LOWER() for case-insensitive comparison
-    $reason_filter = " AND LOWER(r.Reason) = LOWER('" . mysqli_real_escape_string($conn, $current_reason) . "')";
+    $reason_filter = " AND r.Reason = '" . mysqli_real_escape_string($conn, $current_reason) . "'";
 }
 
 $table_patients = "<table align='center'>
@@ -166,15 +165,17 @@ $table_patients = "<table align='center'>
     $count_total_result = mysqli_fetch_assoc($count_total_query);
 
     // Count by reason
-    $reasons_query = mysqli_query($conn, "
-        SELECT 
-            COUNT(*) as total,
-            COALESCE(r.Reason, 'UNKNOWN') as reason
-        FROM patient_details p
-        LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
-        WHERE p.is_active = 0
-        GROUP BY r.Reason
-    ");
+$reasons_query = mysqli_query($conn, "
+    SELECT 
+        COUNT(*) as total,
+        r.Reason as reason
+    FROM patient_details p
+    LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
+    WHERE p.is_active = 0
+      AND r.Reason IS NOT NULL
+      AND TRIM(r.Reason) != ''
+    GROUP BY r.Reason
+");
 
     $reason_counts = [];
     while ($row = mysqli_fetch_assoc($reasons_query)) {
