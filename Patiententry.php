@@ -946,6 +946,11 @@ if ($refillFilterActive) {
                     text: "REFUSED DELIVERY",
                     color: "#6c757d"
                 },
+                 {
+                    value: "HOLD BY MAC",
+                    text: "HOLD BY MAC",
+                    color: "#008b8b"
+                },
             ];
 
             // Clear and rebuild with colored text
