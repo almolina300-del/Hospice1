@@ -45,13 +45,25 @@ if ($char > 0) {
         }
     }
 }
+// ========== ADD THIS SECTION RIGHT HERE ==========
+// Get the actual birthday and sex values from $ch array
+$birthday = isset($ch['Birthday']) ? $ch['Birthday'] : '';
+$sex = isset($ch['Sex']) ? $ch['Sex'] : '';
+
+// Now check for the specific invalid values
+$hasValidBirthday = !empty($birthday) && $birthday != '1900-01-01' && $birthday != '0000-00-00';
+$hasValidSex = !empty($sex) && strtoupper($sex) !== 'ENTER' && in_array(strtoupper($sex), ['MALE', 'FEMALE']);
+
 
 // ---------- FETCH PATIENT SUMMARY ----------
 $patientName = '';
 $patientAddress = '';
 $patientSex = '';
 $patientAge = '';
-$hasBirthday = false; // Add this variable
+
+
+$hasBirthday = $hasValidBirthday; // Update this to use the new variable
+$hasSex = $hasValidSex; // Update this to use the new variable
 
 if ($char > 0) {
     $sql = "
@@ -1089,31 +1101,25 @@ if ($ycExpiryDate) {
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-                        <?php if ($hasBirthday && $hasSex): ?>
+                        <?php if ($hasValidBirthday && $hasValidSex): ?>
                             <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
                                 Add Prescription</a>
                         <?php else: ?>
+                            <?php
+                            $errorMessage = '';
+                            if ((!$hasValidBirthday && !$hasValidSex) || ($birthday == '1900-01-01' && strtoupper($sex) == 'ENTER')) {
+                                $errorMessage = "Patient birthday and sex/gender are missing or invalid";
+                            } elseif (!$hasValidBirthday || $birthday == '1900-01-01') {
+                                $errorMessage = "Patient birthday is missing or invalid (1900-01-01)";
+                            } elseif (!$hasValidSex || strtoupper($sex) == 'ENTER') {
+                                $errorMessage = "Patient sex/gender is missing or invalid (enter)";
+                            }
+                            ?>
                             <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-                                title='Cannot add prescription: <?php
-                                                                if (!$hasBirthday && !$hasSex) {
-                                                                    echo "Patient birthday and sex are missing";
-                                                                } elseif (!$hasBirthday) {
-                                                                    echo "Patient birthday is missing";
-                                                                } elseif (!$hasSex) {
-                                                                    echo "Patient sex/gender is missing";
-                                                                }
-                                                                ?>'>
+                                title='Cannot add prescription: <?php echo $errorMessage; ?>'>
                                 Add Prescription</button>
                             <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-                                ⚠ <?php
-                                    if (!$hasBirthday && !$hasSex) {
-                                        echo "Add patient birthday and select sex first to create a prescription";
-                                    } elseif (!$hasBirthday) {
-                                        echo "Add patient birthday first to create a prescription";
-                                    } elseif (!$hasSex) {
-                                        echo "Select patient sex (MALE/FEMALE) to create a prescription";
-                                    }
-                                    ?>
+                                ⚠ <?php echo $errorMessage; ?>
                             </span>
                         <?php endif; ?>
                     </th>
@@ -1924,186 +1930,207 @@ if ($ycExpiryDate) {
             }
         });
     </script>
-<!-- Deactivate Patient Modal -->
-<div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
-    <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
-        <h3 style="margin-top:0; color:#dc3545; border-bottom:1px solid #eee; padding-bottom:10px;">
-            Deactivate Patient
-        </h3>
+    <!-- Deactivate Patient Modal -->
+    <div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+        <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-top:0; color:#dc3545; border-bottom:1px solid #eee; padding-bottom:10px;">
+                Deactivate Patient
+            </h3>
 
-        <div id="patientInfo" style="margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:5px;">
-            <strong>Patient:</strong> <span id="patientName"></span>
-        </div>
-
-        <form id="deactivateForm" method="post" action="transact/deactivate_transact.php">
-            <input type="hidden" id="patientId" name="patient_id">
-
-            <div style="margin-bottom:15px;">
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Date of Deactivation:</label>
-                <input type="date" id="deactivationDate" name="deactivation_date"
-                    value="<?php echo date('Y-m-d'); ?>"
-                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
-            </div>
-            
-            <div style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
-                <select id="deactivationReason" name="reason"
-                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"
-                    required>
-                    <option value="">SELECT REASON FOR DEACTIVATION</option>
-                    <option value="DECEASED">DECEASED</option>
-                    <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
-                    <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
-                    <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
-                </select>
+            <div id="patientInfo" style="margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:5px;">
+                <strong>Patient:</strong> <span id="patientName"></span>
             </div>
 
-            <div style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
-                <textarea id="deactivationRemarks" name="remarks"
-                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
-                    text-transform: uppercase; font-size:14px;"
-                    placeholder="ENTER DETAILS FOR DEACTIVATION..."
-                    oninput="this.value = this.value.toUpperCase()" required></textarea>
-            </div>
-            
-            <div style="margin-bottom:20px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label style="font-weight:bold;">SET BY:</label>
-                    <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
-                        <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
-                    </div>
+            <form id="deactivateForm" method="post" action="transact/deactivate_transact.php">
+                <input type="hidden" id="patientId" name="patient_id">
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Date of Deactivation:</label>
+                    <input type="date" id="deactivationDate" name="deactivation_date"
+                        value="<?php echo date('Y-m-d'); ?>"
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
                 </div>
-                <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
-            </div>
 
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button type="submit"
-                    style="flex:1; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
-                    Confirm Deactivation
-                </button>
-                <button type="button" onclick="hideDeactivateModal()"
-                    style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">
-                    Cancel
-                </button>
-            </div>
-        </form>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
+                    <select id="deactivationReason" name="reason"
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"
+                        required>
+                        <option value="">SELECT REASON FOR DEACTIVATION</option>
+                        <option value="DECEASED">DECEASED</option>
+                        <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
+                        <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
+                        <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
+                    <textarea id="deactivationRemarks" name="remarks"
+                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
+                    text-transform: uppercase; font-size:14px;"
+                        placeholder="ENTER DETAILS FOR DEACTIVATION..."
+                        oninput="this.value = this.value.toUpperCase()" required></textarea>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <label style="font-weight:bold;">SET BY:</label>
+                        <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
+                            <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
+                        </div>
+                    </div>
+                    <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit"
+                        style="flex:1; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        Confirm Deactivation
+                    </button>
+                    <button type="button" onclick="hideDeactivateModal()"
+                        style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<script>// ========== DEACTIVATE MODAL FUNCTIONS ==========
-function showDeactivateModal(patientId, lastName, firstName) {
-    // Set patient information
-    document.getElementById('patientId').value = patientId;
-    document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
+    <script>
+        // ========== DEACTIVATE MODAL FUNCTIONS ==========
+        function showDeactivateModal(patientId, lastName, firstName) {
+            // Set patient information
+            document.getElementById('patientId').value = patientId;
+            document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
 
-    // Reset form
-    document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('deactivationReason').value = '';
-    document.getElementById('deactivationRemarks').value = '';
+            // Reset form
+            document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('deactivationReason').value = '';
+            document.getElementById('deactivationRemarks').value = '';
 
-    // Show modal
-    document.getElementById('deactivateModal').style.display = 'flex';
-}
-
-function hideDeactivateModal() {
-    document.getElementById('deactivateModal').style.display = 'none';
-}
-
-// Color the select options dynamically
-document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('deactivationReason');
-    if (select) {
-        const optionsWithColors = [
-            { value: "", text: "SELECT REASON FOR DEACTIVATION", color: "#000" },
-            { value: "DECEASED", text: "DECEASED", color: "#dc3545" },
-            { value: "PATIENT UNLOCATED", text: "PATIENT UNLOCATED", color: "#fd7e14" },
-            { value: "EXPIRED MHP CARD", text: "EXPIRED MHP CARD", color: "#ffc107" },
-            { value: "REFUSED DELIVERY", text: "REFUSED DELIVERY", color: "#6c757d" },
-        ];
-
-        // Clear and rebuild with colored text
-        select.innerHTML = '';
-        optionsWithColors.forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = option.value;
-            opt.textContent = option.value ? option.text : option.text;
-            opt.style.color = option.color;
-            opt.style.fontWeight = option.value ? 'normal' : 'italic';
-            select.appendChild(opt);
-        });
-    }
-});
-
-// AJAX form submission for deactivation
-if (document.getElementById('deactivateForm')) {
-    document.getElementById('deactivateForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Confirm with user
-        if (!confirm('Are you sure you want to deactivate this patient?')) {
-            return false;
+            // Show modal
+            document.getElementById('deactivateModal').style.display = 'flex';
         }
-        
-        const formData = new FormData(this);
-        
-        // Show loading
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Processing...';
-        submitBtn.disabled = true;
-        
-        // Send request
-        fetch('transact/deactivate_transact.php', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Accept': 'application/json',
+
+        function hideDeactivateModal() {
+            document.getElementById('deactivateModal').style.display = 'none';
+        }
+
+        // Color the select options dynamically
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('deactivationReason');
+            if (select) {
+                const optionsWithColors = [{
+                        value: "",
+                        text: "SELECT REASON FOR DEACTIVATION",
+                        color: "#000"
+                    },
+                    {
+                        value: "DECEASED",
+                        text: "DECEASED",
+                        color: "#dc3545"
+                    },
+                    {
+                        value: "PATIENT UNLOCATED",
+                        text: "PATIENT UNLOCATED",
+                        color: "#fd7e14"
+                    },
+                    {
+                        value: "EXPIRED MHP CARD",
+                        text: "EXPIRED MHP CARD",
+                        color: "#ffc107"
+                    },
+                    {
+                        value: "REFUSED DELIVERY",
+                        text: "REFUSED DELIVERY",
+                        color: "#6c757d"
+                    },
+                ];
+
+                // Clear and rebuild with colored text
+                select.innerHTML = '';
+                optionsWithColors.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.value;
+                    opt.textContent = option.value ? option.text : option.text;
+                    opt.style.color = option.color;
+                    opt.style.fontWeight = option.value ? 'normal' : 'italic';
+                    select.appendChild(opt);
+                });
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Response:', data);
-            
-            if (data.success) {
-                // Show success message
-                alert(data.message || 'Patient deactivated successfully!');
-                
-                // Close the modal
+        });
+
+        // AJAX form submission for deactivation
+        if (document.getElementById('deactivateForm')) {
+            document.getElementById('deactivateForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Confirm with user
+                if (!confirm('Are you sure you want to deactivate this patient?')) {
+                    return false;
+                }
+
+                const formData = new FormData(this);
+
+                // Show loading
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Processing...';
+                submitBtn.disabled = true;
+
+                // Send request
+                fetch('transact/deactivate_transact.php', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Response:', data);
+
+                        if (data.success) {
+                            // Show success message
+                            alert(data.message || 'Patient deactivated successfully!');
+
+                            // Close the modal
+                            hideDeactivateModal();
+
+                            // Redirect to patiententry.php
+                            window.location.href = 'patiententry.php';
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to deactivate patient'));
+                            submitBtn.textContent = originalText;
+                            submitBtn.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Network error. Please try again.');
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    });
+            });
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
                 hideDeactivateModal();
-                
-                // Redirect to patiententry.php
-                window.location.href = 'patiententry.php';
-            } else {
-                alert('Error: ' + (data.message || 'Failed to deactivate patient'));
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Network error. Please try again.');
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
         });
-    });
-}
 
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        hideDeactivateModal();
-    }
-});
-
-// Close modal when clicking outside
-if (document.getElementById('deactivateModal')) {
-    document.getElementById('deactivateModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideDeactivateModal();
+        // Close modal when clicking outside
+        if (document.getElementById('deactivateModal')) {
+            document.getElementById('deactivateModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideDeactivateModal();
+                }
+            });
         }
-    });
-}</script>
+    </script>
 </body>
 
 </html>
