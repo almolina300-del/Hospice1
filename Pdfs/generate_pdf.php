@@ -324,7 +324,7 @@ try {
                 $pdf->Cell(15, 4, '___________', 0, 1); // Reduced height from 6 to 4
             }
             // Signa line - frequency only in signa field (UPDATED to match bulk with wrapping logic)
-            $pdf->SetX(2);
+            $pdf->SetX(0.5);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 4, '', 0, 0); // Reduced height from 6 to 4
             $pdf->Cell(11, 4, 'Signa:', 0, 0); // Reduced height from 6 to 4

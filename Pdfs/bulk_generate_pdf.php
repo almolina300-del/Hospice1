@@ -355,7 +355,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             }
 
             // Signa line - APPLYING THE FREQUENCY WRAPPING LOGIC FROM GENERATE_PDF
-            $pdf->SetX(2);
+            $pdf->SetX(0.5);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 4, '', 0, 0);
             $pdf->Cell(11, 4, 'Signa:', 0, 0);
