@@ -129,11 +129,13 @@ $table_patients = "<table align='center'>
         <a href="bulk_print.php">
             Bulk Print
         </a>
-        <a href="Medicines.php">Medicines</a>
+        
         <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
-            <a href="Doctors.php">Doctors</a>
-            <a href="user_management.php">User Management</a>
-        <?php endif; ?>
+            <a href="Doctors.php">Doctors</a><?php endif; ?>
+        <a href="Medicines.php">Medicines</a>    
+        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>    
+            <a href="user_management.php">User Management</a><?php endif; ?>
+        
 
         <div class="spacer"></div>
         <div class="logout-container">
