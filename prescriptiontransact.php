@@ -23,17 +23,6 @@ case "Add Prescription":
     $License_number = $_POST['License_number'] ?? '';
     $Age = intval($_POST['Age'] ?? 0);
     
-    // Get PTR number from doctors table
-    $Ptr_number = '';
-    if (!empty($License_number)) {
-        $ptrQuery = "SELECT Ptr_number FROM doctors WHERE License_number = '$License_number' LIMIT 1";
-        $ptrResult = mysqli_query($conn, $ptrQuery);
-        if ($ptrResult && mysqli_num_rows($ptrResult) > 0) {
-            $ptrRow = mysqli_fetch_assoc($ptrResult);
-            $Ptr_number = $ptrRow['Ptr_number'] ?? '';
-        }
-    }
-
     // NEW: refill day (1–31)
     $refill_day = isset($_POST['refill_day']) ? (int)$_POST['refill_day'] : 0;
     if ($refill_day < 1 || $refill_day > 31) {
@@ -56,6 +45,46 @@ case "Add Prescription":
         exit;
     }
 
+    // FIRST: Check for duplicate medicines in the submitted data BEFORE creating prescription
+    if (isset($_POST['Medicine']) && is_array($_POST['Medicine'])) {
+        $medicine_entries = []; // Array to track unique medicine combinations
+        
+        foreach ($_POST['Medicine'] as $med) {
+            $dose          = mysqli_real_escape_string($conn, $med['Dose'] ?? '');
+            $form          = mysqli_real_escape_string($conn, $med['Form'] ?? '');
+            $medicine_name = mysqli_real_escape_string($conn, $med['Medicine_name'] ?? '');
+            
+            if ($medicine_name === '') continue;
+            
+            // Create a unique key for this medicine combination
+            $medicine_key = strtolower($medicine_name . '|' . $dose . '|' . $form);
+            
+            // Check for duplicate medicine within the same prescription
+            if (isset($medicine_entries[$medicine_key])) {
+                echo "<script>
+                        alert('Duplicate medicine entry detected: \"$medicine_name ($dose $form)\" is already in this prescription.\\n\\nPrescription was NOT created.');
+                        window.history.back();
+                      </script>";
+                exit;
+            }
+            
+            // Mark this medicine combination as used
+            $medicine_entries[$medicine_key] = true;
+        }
+    }
+
+    // Only proceed with prescription creation if no duplicates found
+    // Get PTR number from doctors table
+    $Ptr_number = '';
+    if (!empty($License_number)) {
+        $ptrQuery = "SELECT Ptr_number FROM doctors WHERE License_number = '$License_number' LIMIT 1";
+        $ptrResult = mysqli_query($conn, $ptrQuery);
+        if ($ptrResult && mysqli_num_rows($ptrResult) > 0) {
+            $ptrRow = mysqli_fetch_assoc($ptrResult);
+            $Ptr_number = $ptrRow['Ptr_number'] ?? '';
+        }
+    }
+
     // Check if Ptr_number column exists in prescription table (same check as UPDATE)
     $checkColumnQuery = "SHOW COLUMNS FROM prescription LIKE 'Ptr_number'";
     $columnResult = mysqli_query($conn, $checkColumnQuery);
@@ -75,7 +104,7 @@ case "Add Prescription":
 
     $Prescription_id = mysqli_insert_id($conn);
 
-    // Process medicines
+    // Process medicines (now we know there are no duplicates)
     if (isset($_POST['Medicine']) && is_array($_POST['Medicine'])) {
         foreach ($_POST['Medicine'] as $med) {
             $Quantity      = $med['Quantity'] ?? '';
@@ -114,6 +143,7 @@ case "Add Prescription":
             window.location.href = 'ptedit.php?c=$Patient_id';
           </script>";
     exit;
+
 /* ---------------------- UPDATE ---------------------- */
 case 'Update Prescription':
     $prescription_id = $_POST['Prescription_id'] ?? 0;
@@ -124,6 +154,32 @@ case 'Update Prescription':
     $age = $_POST['Age'] ?? 0;
     $medicines = $_POST['Medicine'] ?? [];
     
+    // FIRST: Validate for duplicate medicines BEFORE making any updates
+    $medicine_entries = [];
+    foreach ($medicines as $med) {
+        $medicine_name = $med['Medicine_name'] ?? '';
+        $dose = $med['Dose'] ?? '';
+        $form = $med['Form'] ?? '';
+        
+        if (empty($medicine_name)) continue;
+        
+        // Create a unique key for this medicine combination
+        $medicine_key = strtolower($medicine_name . '|' . $dose . '|' . $form);
+        
+        // Check for duplicate medicine within the same prescription
+        if (isset($medicine_entries[$medicine_key])) {
+            echo "<script>
+                    alert('Duplicate medicine entry detected: \"$medicine_name ($dose $form)\" is already in this prescription.\\n\\nPrescription was NOT updated.');
+                    window.history.back();
+                  </script>";
+            exit;
+        }
+        
+        // Mark this medicine combination as used
+        $medicine_entries[$medicine_key] = true;
+    }
+    
+    // Only proceed with update if no duplicates found
     // Get PTR number from doctors table
     $Ptr_number = '';
     if (!empty($license_number)) {
@@ -175,15 +231,19 @@ case 'Update Prescription':
     
     // Insert updated medicines
     foreach ($medicines as $med) {
+        $medicine_name = $med['Medicine_name'] ?? '';
+        $dose = $med['Dose'] ?? '';
+        $form = $med['Form'] ?? '';
+        $frequency = $med['Frequency'] ?? '';
+        $quantity = $med['Quantity'] ?? '';
+        
+        if (empty($medicine_name)) continue;
+        
         $sql = "SELECT Medicine_id FROM medicine 
                 WHERE Medicine_name = ? AND Dose = ? AND Form = ?
                 LIMIT 1";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'sss', 
-            $med['Medicine_name'], 
-            $med['Dose'], 
-            $med['Form']
-        );
+        mysqli_stmt_bind_param($stmt, 'sss', $medicine_name, $dose, $form);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         
@@ -196,14 +256,18 @@ case 'Update Prescription':
             mysqli_stmt_bind_param($stmt2, 'iiss', 
                 $prescription_id, 
                 $medicine_id, 
-                $med['Frequency'], 
-                $med['Quantity']
+                $frequency, 
+                $quantity
             );
             mysqli_stmt_execute($stmt2);
         }
     }
     
-    header("Location: Ptedit.php?c=$patient_id");
+    // Show confirmation message before redirecting
+    echo "<script>
+            alert('Prescription successfully updated!');
+            window.location.href = 'Ptedit.php?c=$patient_id';
+          </script>";
     exit();
 }
 ?>
