@@ -473,6 +473,21 @@ if ($ycExpiryDate) {
                     </datalist>
                 </td>
             </tr>
+             <tr>
+<td style="white-space:nowrap;">Prescription Retrieval Method: <span style="color:red;">*</span></td>
+<td style="white-space:nowrap;">
+    <label style="margin-right:6px;">
+        <input type="radio" name="Prescription_retrieval_method" value="PICK-UP" required 
+            <?php echo (isset($ch['Prescription_retrieval_method']) && $ch['Prescription_retrieval_method'] == 'PICK-UP') ? 'checked' : ''; ?>
+            <?php echo (!isset($ch['Prescription_retrieval_method'])) ? 'checked' : ''; ?>> PICK-UP
+    </label>
+    <label>
+        <input type="radio" name="Prescription_retrieval_method" value="DELIVERY" required 
+            <?php echo (isset($ch['Prescription_retrieval_method']) && $ch['Prescription_retrieval_method'] == 'DELIVERY') ? 'checked' : ''; ?>> DELIVERY
+    </label>
+</td>
+            </tr>
+
             <!-- Action Buttons -->
             <tr>
                 <td align="center">
@@ -1004,65 +1019,76 @@ if ($ycExpiryDate) {
     </script>
 
 
-    <!-- Scripts for change detection -->
-    <script>
-        const last = document.querySelector('input[name="Last_name"]');
-        const first = document.querySelector('input[name="First_name"]');
-        const middle = document.querySelector('input[name="Middle_name"]');
-        const Suffix = document.querySelector('select[name="Suffix"]');
-        const Birthday = document.querySelector('input[name="Birthday"]');
-        const Contact = document.querySelector('input[name="Contact_nos"]');
-        const Barangay = document.querySelector('input[name="Barangay"]');
-        const House = document.querySelector('input[name="House_nos_street_name"]');
-        const updateBtn = document.getElementById('updateBtn');
+ <!-- Scripts for change detection -->
+<script>
+    const last = document.querySelector('input[name="Last_name"]');
+    const first = document.querySelector('input[name="First_name"]');
+    const middle = document.querySelector('input[name="Middle_name"]');
+    const Suffix = document.querySelector('select[name="Suffix"]');
+    const Birthday = document.querySelector('input[name="Birthday"]');
+    const Contact = document.querySelector('input[name="Contact_nos"]');
+    const Barangay = document.querySelector('input[name="Barangay"]');
+    const House = document.querySelector('input[name="House_nos_street_name"]');
+    const updateBtn = document.getElementById('updateBtn');
+    const prescriptionRetrieval = document.querySelectorAll('input[name="Prescription_retrieval_method"]');
 
-        function getSex() {
-            const sexRadios = document.querySelectorAll('input[name="Sex"]');
-            for (const r of sexRadios) {
-                if (r.checked) return r.value;
-            }
-            return '';
+    function getSex() {
+        const sexRadios = document.querySelectorAll('input[name="Sex"]');
+        for (const r of sexRadios) {
+            if (r.checked) return r.value;
         }
+        return '';
+    }
 
-        const originalValues = {
-            last: last.value,
-            first: first.value,
-            middle: middle.value,
-            suffix: Suffix.value,
-            sex: getSex(),
-            birthday: Birthday.value,
-            contact: Contact.value,
-            barangay: Barangay.value,
-            house: House.value
-        };
-
-        updateBtn.disabled = true;
-        updateBtn.style.opacity = 0.5;
-
-        function checkChanges() {
-            if (
-                last.value !== originalValues.last ||
-                first.value !== originalValues.first ||
-                middle.value !== originalValues.middle ||
-                Suffix.value !== originalValues.suffix ||
-                getSex() !== originalValues.sex ||
-                Birthday.value !== originalValues.birthday ||
-                Contact.value !== originalValues.contact ||
-                Barangay.value !== originalValues.barangay ||
-                House.value !== originalValues.house
-            ) {
-                updateBtn.disabled = false;
-                updateBtn.style.opacity = 1;
-            } else {
-                updateBtn.disabled = true;
-                updateBtn.style.opacity = 0.5;
-            }
+    function getPrescriptionRetrieval() {
+        for (const r of prescriptionRetrieval) {
+            if (r.checked) return r.value;
         }
+        return '';
+    }
 
-        [last, first, middle, Birthday, Contact, House].forEach(el => el.addEventListener('input', checkChanges));
-        [Suffix, Barangay].forEach(el => el.addEventListener('change', checkChanges));
-        document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('change', checkChanges));
-    </script>
+    const originalValues = {
+        last: last.value,
+        first: first.value,
+        middle: middle.value,
+        suffix: Suffix.value,
+        sex: getSex(),
+        birthday: Birthday.value,
+        contact: Contact.value,
+        barangay: Barangay.value,
+        house: House.value,
+        prescriptionRetrieval: getPrescriptionRetrieval()
+    };
+
+    updateBtn.disabled = true;
+    updateBtn.style.opacity = 0.5;
+
+    function checkChanges() {
+        if (
+            last.value !== originalValues.last ||
+            first.value !== originalValues.first ||
+            middle.value !== originalValues.middle ||
+            Suffix.value !== originalValues.suffix ||
+            getSex() !== originalValues.sex ||
+            Birthday.value !== originalValues.birthday ||
+            Contact.value !== originalValues.contact ||
+            Barangay.value !== originalValues.barangay ||
+            House.value !== originalValues.house ||
+            getPrescriptionRetrieval() !== originalValues.prescriptionRetrieval
+        ) {
+            updateBtn.disabled = false;
+            updateBtn.style.opacity = 1;
+        } else {
+            updateBtn.disabled = true;
+            updateBtn.style.opacity = 0.5;
+        }
+    }
+
+    [last, first, middle, Birthday, Contact, House].forEach(el => el.addEventListener('input', checkChanges));
+    [Suffix, Barangay].forEach(el => el.addEventListener('change', checkChanges));
+    document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('change', checkChanges));
+    prescriptionRetrieval.forEach(r => r.addEventListener('change', checkChanges));
+</script>
     </form>
     <style>
         .logo {

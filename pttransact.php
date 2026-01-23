@@ -31,6 +31,7 @@ $Birthday         = $_POST['Birthday'] ?? '';
 $House_nos_street_name    = $_POST['House_nos_street_name'] ?? '';
 $Barangay         = $_POST['Barangay'] ?? '';
 $Contact_nos      = $_POST['Contact_nos'] ?? '';
+$Prescription_retrieval_method = $_POST['Prescription_retrieval_method'] ?? '';
 
 // Sanitize numeric values
 $Contact_nos      = preg_replace('/\D/', '', $Contact_nos);
@@ -52,6 +53,7 @@ switch ($action) {
     $House_nos_street_name = strtoupper($House_nos_street_name);
     $Barangay    = strtoupper($Barangay);
     $Contact_nos = trim($Contact_nos);
+    $Prescription_retrieval_method = strtoupper($Prescription_retrieval_method);
 
     // Duplicate check before insert
     $dup_sql = "SELECT Patient_id FROM patient_details 
@@ -71,8 +73,8 @@ switch ($action) {
 
     // Insert patient
     $sql = "INSERT INTO patient_details 
-            (Patient_id, First_name, Middle_name, Last_name, Suffix, Sex, Birthday, Contact_nos, House_nos_street_name, Barangay)
-            VALUES (NULL, '$First_name', '$Middle_name', '$Last_name', '$Suffix', '$Sex', '$Birthday', '$Contact_nos', '$House_nos_street_name', '$Barangay')";
+            (Patient_id, First_name, Middle_name, Last_name, Suffix, Sex, Birthday, Contact_nos, House_nos_street_name, Barangay, Prescription_retrieval_method)
+            VALUES (NULL, '$First_name', '$Middle_name', '$Last_name', '$Suffix', '$Sex', '$Birthday', '$Contact_nos', '$House_nos_street_name', '$Barangay', '$Prescription_retrieval_method')";
     mysqli_query($conn, $sql) or die(mysqli_error($conn));
 
     // Get newly created patient ID
@@ -114,6 +116,7 @@ switch ($action) {
     $House_nos_street_name = strtoupper($House_nos_street_name);
     $Barangay    = strtoupper($Barangay);
     $Contact_nos = trim($Contact_nos);
+    $Prescription_retrieval_method = strtoupper($Prescription_retrieval_method);
 
     // 🔒 START TRANSACTION
     mysqli_begin_transaction($conn);
@@ -134,6 +137,7 @@ switch ($action) {
         }
 
         /* ---------------- UPDATE PATIENT ---------------- */
+        // FIXED: Added Prescription_retrieval_method to the UPDATE query
         mysqli_query($conn, "
             UPDATE patient_details 
             SET Last_name = '$Last_name',
@@ -144,9 +148,10 @@ switch ($action) {
                 Birthday = '$Birthday',
                 Contact_nos = '$Contact_nos',
                 House_nos_street_name = '$House_nos_street_name',
-                Barangay = '$Barangay'
+                Barangay = '$Barangay',
+                Prescription_retrieval_method = '$Prescription_retrieval_method'
             WHERE Patient_id = $cid
-        ");
+        ") or die(mysqli_error($conn));
 
         // ✅ COMMIT IF ALL OK
         mysqli_commit($conn);
@@ -176,4 +181,3 @@ switch ($action) {
 // Redirect after action
 header("Location: $redirect");
 exit;
-?>
