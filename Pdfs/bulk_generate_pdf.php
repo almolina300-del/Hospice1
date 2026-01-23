@@ -133,29 +133,84 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetX($width - 25);
         $pdf->Cell(20, 5, 'Page ' . $page . ' / ' . $pages, 0, 0, 'R');
 
-        // Patient Information on EVERY PAGE - EXACTLY LIKE GENERATEPDF
-        $pdf->Ln(15);  // SAME AS GENERATEPDF
+        // Patient Information on EVERY PAGE 
+        $pdf->Ln(12);
         $pdf->SetX(10);
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(11, 10, 'Name:');
-        $pdf->SetFont('courier', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 12);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(100, 10, $prescription['Patient_name'] ?? '', 0, 0);
 
+        $patientName = $prescription['Patient_name'];
+        $maxNameWidth = 59; // Adjust based on available space
+
+        // Check if name fits
+        $nameWidth = $pdf->GetStringWidth($patientName);
+        $currentY = $pdf->GetY();
+
+        if ($nameWidth <= $maxNameWidth) {
+            // Fits in one line
+            $pdf->Cell($maxNameWidth, 10, $patientName, 0, 0, 'L');
+        } else {
+            // Doesn't fit - need to wrap
+            // Find where to break
+            $charPos = 0;
+            $testString = '';
+
+            for ($j = 0; $j < strlen($patientName); $j++) {
+                $testString .= $patientName[$j];
+                if ($pdf->GetStringWidth($testString) > $maxNameWidth) {
+                    $charPos = $j;
+                    break;
+                }
+            }
+
+            if ($charPos > 0) {
+                $firstLineName = substr($patientName, 0, $charPos);
+                $remainingName = substr($patientName, $charPos);
+            } else {
+                $firstLineName = $patientName;
+                $remainingName = '';
+            }
+
+            // First line of name
+            $pdf->Cell($maxNameWidth, 1, $firstLineName, 0, 0, 'L');
+        }
+
+        // Age and Sex stay inline with first line
+        $pdf->SetX($width - 12); // Move to right side
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(-21, 10, 'Age:', 0, 0, 'R');
-        $pdf->SetFont('courier', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(5, 10, $prescription['Age'] ?? '', 0, 0, 'R');
+        $pdf->Cell(5, 10, $prescription['Age'], 0, 0, 'R');
 
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(30, 10, 'Sex:');
-        $pdf->SetFont('courier', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(-11, 10, $prescription['Sex'] ?? '', 0, 1, 'R');
+        $pdf->Cell(-11, 10, $prescription['Sex'], 0, 1, 'R');
+
+        // Second line of name if needed - MOVE UP to same line as Age/Sex
+        if ($nameWidth > $maxNameWidth && !empty($remainingName)) {
+            // Get current Y position
+            $currentY = $pdf->GetY();
+
+            // Move UP to the same line as Age/Sex (go back to where we were)
+            $pdf->SetY($currentY - 7); // Move up 5mm (or whatever the line height is)
+            $pdf->SetX(22); // 10 (margin) + 11 (Name: label width) + 1 for adjustment
+            $pdf->SetFont('Arial', 'B', 10); // Slightly smaller for second line
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell($maxNameWidth, 5, $remainingName, 0, 1, 'L');
+
+            // Reset font for address section and move Y back down
+            $pdf->SetY($currentY); // Restore original Y position
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetTextColor(200, 200, 200);
+        }
 
         // Address section - working like frequency
         $pdf->SetX(10);
