@@ -9,6 +9,7 @@ if (!isset($_SESSION['Username'])) {
 
 require('Config/Config.php');
 
+
 // ---------- GET PATIENT ID ----------
 $char = isset($_GET['c']) && is_numeric($_GET['c']) ? intval($_GET['c']) : 0;
 
@@ -478,12 +479,17 @@ if ($ycExpiryDate) {
 <td style="white-space:nowrap;">
     <label style="margin-right:6px;">
         <input type="radio" name="Prescription_retrieval_method" value="PICK-UP" required 
-            <?php echo (isset($ch['Prescription_retrieval_method']) && $ch['Prescription_retrieval_method'] == 'PICK-UP') ? 'checked' : ''; ?>
-            <?php echo (!isset($ch['Prescription_retrieval_method'])) ? 'checked' : ''; ?>> PICK-UP
+            <?php 
+            $currentValue = $ch['Prescription_retrieval_method'] ?? '';
+            // Check if value is PICK-UP, empty, or not set
+            if ($currentValue == 'PICK-UP' || empty(trim($currentValue))) {
+                echo 'checked';
+            }
+            ?>> PICK-UP
     </label>
     <label>
         <input type="radio" name="Prescription_retrieval_method" value="DELIVERY" required 
-            <?php echo (isset($ch['Prescription_retrieval_method']) && $ch['Prescription_retrieval_method'] == 'DELIVERY') ? 'checked' : ''; ?>> DELIVERY
+            <?php echo ($currentValue == 'DELIVERY') ? 'checked' : ''; ?>> DELIVERY
     </label>
 </td>
             </tr>
