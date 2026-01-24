@@ -16,6 +16,7 @@ $doctor_name = isset($_POST['DoctorName']) ? $_POST['DoctorName'] : '';
 $doctor_ptr = isset($_POST['Ptr_number']) ? $_POST['Ptr_number'] : '';
 $selected_patients = isset($_POST['selected_patients']) ? explode(',', $_POST['selected_patients']) : [];
 $excluded_patients = isset($_POST['exclude_patients']) ? $_POST['exclude_patients'] : [];
+$retrieval_method_filter = isset($_POST['retrieval_method_filter']) ? $_POST['retrieval_method_filter'] : 'ALL'; 
 
 // Validate required fields
 if (empty($dosearch) || empty($prescription_date) || empty($doctor_license) || empty($doctor_name)) {
@@ -50,6 +51,7 @@ $patient_sql = "SELECT pd.Patient_id,
                        pd.Middle_name,
                        pd.Last_name,
                        pd.Birthday,
+                       pd.Prescription_retrieval_method,
                        TIMESTAMPDIFF(YEAR, pd.Birthday, CURDATE()) AS Age,
                        p.Prescription_id as latest_prescription_id,
                        p.Refill_day as patient_refill_day,
@@ -66,6 +68,11 @@ $patient_sql = "SELECT pd.Patient_id,
                 )
                 AND p.Refill_day = ?";
 
+// Add retrieval method filter if not "ALL"
+if ($retrieval_method_filter !== 'ALL') {
+    $patient_sql .= " AND pd.Prescription_retrieval_method = ?";
+}
+
 // IMPORTANT: Always filter by selected patients from the hidden input
 // This ensures only visible/selected patients are processed
 if (!empty($selected_patients) && $selected_patients[0] !== '') {
@@ -75,18 +82,33 @@ if (!empty($selected_patients) && $selected_patients[0] !== '') {
 
 $patient_sql .= " ORDER BY pd.Last_name, pd.First_name";
 
+// Prepare statement with correct connection and SQL variable
 $stmt = mysqli_prepare($conn, $patient_sql);
 if (!$stmt) {
-    die("SQL Error: " . mysqli_error($conn));
+    die("Prepare failed: " . mysqli_error($conn));
 }
 
 // Bind parameters
-if (!empty($selected_patients) && $selected_patients[0] !== '') {
-    $types = "i" . str_repeat("i", count($selected_patients));
-    $params = array_merge([$dosearch], $selected_patients);
-    mysqli_stmt_bind_param($stmt, $types, ...$params);
+if ($retrieval_method_filter !== 'ALL') {
+    if (!empty($selected_patients) && $selected_patients[0] !== '') {
+        // With retrieval method filter AND selected patients
+        $types = "s" . str_repeat("i", count($selected_patients) + 1);
+        $params = array_merge([$dosearch, $retrieval_method_filter], $selected_patients);
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+    } else {
+        // With only retrieval method filter
+        mysqli_stmt_bind_param($stmt, "ss", $dosearch, $retrieval_method_filter);
+    }
 } else {
-    mysqli_stmt_bind_param($stmt, "i", $dosearch);
+    if (!empty($selected_patients) && $selected_patients[0] !== '') {
+        // With only selected patients
+        $types = "i" . str_repeat("i", count($selected_patients));
+        $params = array_merge([$dosearch], $selected_patients);
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+    } else {
+        // No extra filters
+        mysqli_stmt_bind_param($stmt, "i", $dosearch);
+    }
 }
 
 mysqli_stmt_execute($stmt);
@@ -129,6 +151,7 @@ if ($total_patients === 0) {
         'all_prescription_ids' => [],
         'created_ids' => [],
         'selected_patients' => $selected_patients,
+        'retrieval_method_filter' => $retrieval_method_filter,
         'action' => 'create'
     ];
     
@@ -296,6 +319,7 @@ $_SESSION['doctor_name'] = $doctor_name;
 $_SESSION['doctor_license'] = $doctor_license;
 $_SESSION['doctor_ptr'] = $doctor_ptr;
 $_SESSION['refill_day'] = $dosearch;
+$_SESSION['retrieval_method_filter'] = $retrieval_method_filter;
 
 // Log success
 error_log("✅ Bulk print processing complete: $created_count new prescriptions, $existing_count existing prescriptions, $total_count total");
