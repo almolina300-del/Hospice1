@@ -477,20 +477,71 @@ if ($ycExpiryDate) {
              <tr>
 <td style="white-space:nowrap;">Prescription Retrieval Method: <span style="color:red;">*</span></td>
 <td style="white-space:nowrap;">
-    <label style="margin-right:6px;">
-        <input type="radio" name="Prescription_retrieval_method" value="PICK-UP" required 
-            <?php 
-            $currentValue = $ch['Prescription_retrieval_method'] ?? '';
-            // Check if value is PICK-UP, empty, or not set
-            if ($currentValue == 'PICK-UP' || empty(trim($currentValue))) {
-                echo 'checked';
-            }
-            ?>> PICK-UP
-    </label>
-    <label>
-        <input type="radio" name="Prescription_retrieval_method" value="DELIVERY" required 
-            <?php echo ($currentValue == 'DELIVERY') ? 'checked' : ''; ?>> DELIVERY
-    </label>
+    <?php
+    $currentValue = isset($ch['Prescription_retrieval_method']) ? trim($ch['Prescription_retrieval_method']) : '';
+    ?>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <!-- PICK-UP Button -->
+        <input type="radio" 
+               name="Prescription_retrieval_method" 
+               value="PICK-UP" 
+               id="pickupBtn"
+               required 
+               style="display: none;"
+               <?php echo ($currentValue == 'PICK-UP') ? 'checked' : ''; ?>>
+        <label for="pickupBtn" 
+               class="retrieval-btn" 
+               style="
+                   padding: 8px 20px;
+                   border: 2px solid <?php echo ($currentValue == 'PICK-UP') ? '#007bff' : '#ccc'; ?>;
+                   border-radius: 6px;
+                   background-color: <?php echo ($currentValue == 'PICK-UP') ? '#007bff' : 'white'; ?>;
+                   color: <?php echo ($currentValue == 'PICK-UP') ? 'white' : '#666'; ?>;
+                   font-weight: bold;
+                   cursor: pointer;
+                   transition: all 0.3s ease;
+                   text-align: center;
+                   min-width: 100px;
+                   <?php if ($currentValue != 'PICK-UP' && !empty($currentValue)): ?>
+                       text-decoration: line-through;
+                       opacity: 0.7;
+                   <?php endif; ?>
+               "
+               onclick="selectRetrievalMethod('PICK-UP')">
+            PICK-UP
+        </label>
+        
+        <!-- DELIVERY Button -->
+        <input type="radio" 
+               name="Prescription_retrieval_method" 
+               value="DELIVERY" 
+               id="deliveryBtn"
+               required 
+               style="display: none;"
+               <?php echo ($currentValue == 'DELIVERY') ? 'checked' : ''; ?>>
+        <label for="deliveryBtn" 
+               class="retrieval-btn" 
+               style="
+                   padding: 8px 20px;
+                   border: 2px solid <?php echo ($currentValue == 'DELIVERY') ? '#007bff' : '#ccc'; ?>;
+                   border-radius: 6px;
+                   background-color: <?php echo ($currentValue == 'DELIVERY') ? '#007bff' : 'white'; ?>;
+                   color: <?php echo ($currentValue == 'DELIVERY') ? 'white' : '#666'; ?>;
+                   font-weight: bold;
+                   cursor: pointer;
+                   transition: all 0.3s ease;
+                   text-align: center;
+                   min-width: 100px;
+                   <?php if ($currentValue != 'DELIVERY' && !empty($currentValue)): ?>
+                       text-decoration: line-through;
+                       opacity: 0.7;
+                   <?php endif; ?>
+               "
+               onclick="selectRetrievalMethod('DELIVERY')">
+            DELIVERY
+        </label>
+    </div>
 </td>
             </tr>
 
@@ -2169,6 +2220,109 @@ if ($ycExpiryDate) {
             });
         }
     </script>
+<script>
+// Store original value
+let originalRetrievalMethod = '<?php echo !empty($currentValue) ? $currentValue : ""; ?>';
+
+function selectRetrievalMethod(method) {
+    const pickupBtn = document.getElementById('pickupBtn');
+    const deliveryBtn = document.getElementById('deliveryBtn');
+    
+    // Uncheck all
+    pickupBtn.checked = false;
+    deliveryBtn.checked = false;
+    
+    // Check selected
+    if (method === 'PICK-UP') {
+        pickupBtn.checked = true;
+    } else if (method === 'DELIVERY') {
+        deliveryBtn.checked = true;
+    }
+    
+    // Update styles
+    updateRetrievalButtonStyles();
+    
+    // Check if value changed and update button
+    checkIfValueChanged();
+    
+    // Trigger existing change detection
+    if (typeof checkChanges === 'function') {
+        checkChanges();
+    }
+}
+
+function getCurrentRetrievalMethod() {
+    const pickupBtn = document.getElementById('pickupBtn');
+    const deliveryBtn = document.getElementById('deliveryBtn');
+    
+    if (pickupBtn.checked) return 'PICK-UP';
+    if (deliveryBtn.checked) return 'DELIVERY';
+    return '';
+}
+
+function updateRetrievalButtonStyles() {
+    const pickupBtn = document.getElementById('pickupBtn');
+    const deliveryBtn = document.getElementById('deliveryBtn');
+    const pickupLabel = document.querySelector('label[for="pickupBtn"]');
+    const deliveryLabel = document.querySelector('label[for="deliveryBtn"]');
+    
+    const isPickupSelected = pickupBtn.checked;
+    const isDeliverySelected = deliveryBtn.checked;
+    const anySelected = isPickupSelected || isDeliverySelected;
+    const currentMethod = getCurrentRetrievalMethod();
+    const isChanged = (currentMethod !== originalRetrievalMethod) && (originalRetrievalMethod !== "");
+    
+    // Update PICK-UP button
+    pickupLabel.style.backgroundColor = isPickupSelected ? '#007bff' : 'white';
+    pickupLabel.style.color = isPickupSelected ? 'white' : '#666';
+    pickupLabel.style.border = isPickupSelected ? '2px solid #007bff' : '2px solid #ccc';
+    pickupLabel.style.textDecoration = anySelected && !isPickupSelected ? 'line-through' : 'none';
+    pickupLabel.style.opacity = isPickupSelected ? '1' : '0.7';
+    
+    // Highlight if changed
+    if (isChanged && isPickupSelected) {
+        pickupLabel.style.boxShadow = '0 0 5px rgba(0, 123, 255, 0.8)';
+        pickupLabel.style.border = '2px solid #28a745';
+    }
+    
+    // Update DELIVERY button
+    deliveryLabel.style.backgroundColor = isDeliverySelected ? '#007bff' : 'white';
+    deliveryLabel.style.color = isDeliverySelected ? 'white' : '#666';
+    deliveryLabel.style.border = isDeliverySelected ? '2px solid #007bff' : '2px solid #ccc';
+    deliveryLabel.style.textDecoration = anySelected && !isDeliverySelected ? 'line-through' : 'none';
+    deliveryLabel.style.opacity = isDeliverySelected ? '1' : '0.7';
+    
+    // Highlight if changed
+    if (isChanged && isDeliverySelected) {
+        deliveryLabel.style.boxShadow = '0 0 5px rgba(0, 123, 255, 0.8)';
+        deliveryLabel.style.border = '2px solid #28a745';
+    }
+}
+
+function checkIfValueChanged() {
+    const currentMethod = getCurrentRetrievalMethod();
+    const isChanged = (currentMethod !== originalRetrievalMethod) && (originalRetrievalMethod !== "");
+    
+    // Optional: Update a hidden field or variable if needed
+    if (isChanged) {
+        console.log('Prescription retrieval method changed from', originalRetrievalMethod, 'to', currentMethod);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize button styles
+    updateRetrievalButtonStyles();
+    
+    // Update your existing getPrescriptionRetrieval function
+    window.getPrescriptionRetrieval = getCurrentRetrievalMethod;
+    
+    // Make sure originalValues includes the correct original value
+    if (typeof originalValues !== 'undefined') {
+        originalValues.prescriptionRetrieval = originalRetrievalMethod;
+    }
+});
+</script>
 </body>
 
 </html>
