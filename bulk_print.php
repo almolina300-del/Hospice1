@@ -30,11 +30,6 @@ $refill_day_for_pdf = '';
 
 if (isset($_GET['bulk_created']) && isset($_SESSION['bulk_print_result'])) {
     $bulk_result = $_SESSION['bulk_print_result'];
-      // Debug: Check what's in the session - ADD THIS RIGHT HERE
-    echo "<!-- DEBUG: Session data: ";
-    print_r($bulk_result);
-    echo " -->";
-    
 
     if ($bulk_result['success']) {
         // Check which IDs to use for PDF
@@ -56,14 +51,6 @@ if (isset($_GET['bulk_created']) && isset($_SESSION['bulk_print_result'])) {
         $message .= " for refill day " . ($bulk_result['refill_day'] ?? '');
         $message .= " (Date: " . ($bulk_result['prescription_date'] ?? '') . ")";
         $message .= " with doctor: " . ($bulk_result['doctor_name'] ?? '');
-        
-        // Add retrieval method - ALWAYS show it
-        if (isset($bulk_result['retrieval_method_filter'])) {
-            $retrieval_method = $bulk_result['retrieval_method_filter'];
-            $retrieval_text = ($retrieval_method === 'ALL') ? 'All Methods' : $retrieval_method;
-            $message .= "<br>✓ Retrieval Method: " . htmlspecialchars($retrieval_text);
-        }
-        
         $message_class = "success";
 
         // Add details about new vs existing if available
@@ -93,6 +80,7 @@ if (isset($_GET['bulk_created']) && isset($_SESSION['bulk_print_result'])) {
     // Clear the session after displaying
     unset($_SESSION['bulk_print_result']);
 }
+
 // Get all patients for the selected refill day with their last prescription date
 $patients = [];
 $total_patients = 0;
@@ -403,9 +391,19 @@ $today_date = date('Y-m-d');
             color: #1565c0;
         }
 
+        .select-all-container {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
 
-
-
+        .select-all-label {
+            font-weight: bold;
+            color: #263F73;
+            margin-right: 10px;
+        }
 
         .modal-buttons {
             display: flex;
@@ -847,7 +845,7 @@ $today_date = date('Y-m-d');
     <hr style="margin: 20px 250px; border: 1px solid #ccc; width: 80%;">
     <br>
 
- <div style="margin: -15px auto; width:100%; border:1px solid #f5f5f5;">
+<div style="margin: -15px auto; width:100%; border:1px solid #f5f5f5;">
     <?php
     echo "<table align='center' border='1' cellpadding='2' width='100%'>";
     echo "<tr style='background-color:#263F73; color:white;'>
@@ -856,7 +854,7 @@ $today_date = date('Y-m-d');
         <th>Retrieval Method</th>
     </tr>";
 
-    // Initialize $bg variable
+    // Initialize $bg variable BEFORE the loop
     $bg = 'F2F2FF';
 
     // Update the table rows
@@ -880,14 +878,13 @@ $today_date = date('Y-m-d');
         }
     } else {
         echo "<tr>
-                <td colspan='3' align='center' style='padding:10px;'>No patients found for the selected refill day.</td>
+                <td colspan='3' align='center' style='padding:10px;'>Please select refill day.</td>
             </tr>";
     }
 
     echo "</table>";
     ?>
 </div>
-
     <!-- Print Modal with Everything -->
     <div id="printModal">
         <div class="modal-content">
@@ -1011,7 +1008,19 @@ $today_date = date('Y-m-d');
     Showing: <span id="selectedMethodText">ALL PATIENTS</span> | 
     Count: <span id="methodPatientCount"><?php echo $total_patients; ?></span> patients
 </div>
-
+<!-- Patient List with Checkboxes -->
+<div class="select-all-container">
+    <label class="select-all-label">
+        <input type="checkbox" id="selectAll" class="patient-checkbox" checked>
+        Select/Deselect All Patients
+    </label>
+    <span style="margin-left: 20px; color: #666;">
+        <span class="status-indicator status-included"></span> Included: <span id="includedCount"><?php echo $total_patients; ?></span>
+        <span style="margin-left: 15px;">
+            <span class="status-indicator status-excluded"></span> Excluded: <span id="excludedCount">0</span>
+        </span>
+    </span>
+</div>
 
 <div class="patient-list-container" style="max-height: 400px; overflow-y: auto; position: relative;">
     <table class="patient-table">
@@ -1021,11 +1030,16 @@ $today_date = date('Y-m-d');
         <th>Patient Name</th>
         <th>Address</th>
         <th>Retrieval Method</th>  <!-- Add this column -->
-<th>
+       <th>
     <div style="display: flex; align-items: center; gap: 10px; position: relative;">
         <span class="sortable-header" onclick="toggleDateSort()" style="cursor: pointer; flex-grow: 1;">
             Last Prescription Date
         </span>
+        <button type="button" id="methodFilterBtn" class="method-filter-btn" onclick="toggleMethodFilter()" title="Filter by retrieval method">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M6 12h12M9 18h6"/>
+            </svg>
+        </button>
         <button type="button" id="dateFilterBtn" class="date-filter-btn" onclick="toggleDateFilter()" title="Filter by date">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 3H2v18h20V3zM7 1v4M17 1v4M2 9h20"/>
@@ -1111,9 +1125,104 @@ $today_date = date('Y-m-d');
         </button>
     </div>
 </div>
-
+<!-- Retrieval Method Filter Dropdown -->
+<div id="methodFilterDropdown" class="method-filter-dropdown" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; padding: 15px; width: 200px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4 style="margin: 0; font-size: 14px;">Filter by Method</h4>
+        <button type="button" onclick="clearMethodFilter()" style="background: none; border: none; color: #666; cursor: pointer; font-size: 12px;">Clear</button>
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+        <div id="methodCheckboxContainer" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; padding: 8px;">
+            <!-- Dynamic method checkboxes will be inserted here -->
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="applyMethodFilter()" style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            Apply
+        </button>
+        <button type="button" onclick="closeMethodFilter()" style="padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            Close
+        </button>
+    </div>
+</div>
 <style>
     /* Method Filter Styles */
+.method-filter-btn {
+    background: none;
+    border: 1px solid white;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.method-filter-btn:hover {
+    background-color: #f0f0f0;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.method-filter-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.method-filter-btn.active::after {
+    content: '✓';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #28a745;
+    color: white;
+    font-size: 10px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.method-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 13px;
+}
+
+.method-checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.method-checkbox-item:hover {
+    background-color: #f9f9f9;
+}
+
+.method-checkbox-item label {
+    cursor: pointer;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.method-count {
+    color: #666;
+    font-size: 11px;
+    background: #f0f0f0;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
 
 /* Add these styles for the retrieval method buttons in summary */
 .method-buttons-container {
@@ -1472,7 +1581,69 @@ function toggleAllDates(isChecked) {
         checkboxes.forEach(cb => cb.checked = true);
     }
     
-    updateCheckboxStates();
+    // Update UI
+    if (document.getElementById('selectAllDates')) {
+        document.getElementById('selectAllDates').checked = true;
+    }
+    
+    const button = document.getElementById('dateFilterBtn');
+    if (button) button.classList.remove('active');
+    
+    updateCheckboxStates(); // Add this line
+    updatePatientCounts();
+    updateSelectionSummary();
+    updateSelectedPatientsHiddenInput();
+}
+
+function applyFilterImmediately() {
+    const rows = document.querySelectorAll('#patientListBody tr');
+    const button = document.getElementById('dateFilterBtn');
+    
+    // If no dates selected or all dates selected, show all
+    if (selectedDates.size === 0) {
+        rows.forEach(row => {
+            row.classList.remove('hidden');
+            const checkbox = row.querySelector('.patient-select');
+            if (checkbox) checkbox.disabled = false;
+        });
+        if (button) button.classList.remove('active');
+        dateFilterActive = false;
+    } else {
+        // Check if all dates are selected
+        const allSelected = selectedDates.size === allDateValues.length;
+        
+        if (allSelected) {
+            // Show all rows
+            rows.forEach(row => {
+                row.classList.remove('hidden');
+                const checkbox = row.querySelector('.patient-select');
+                if (checkbox) checkbox.disabled = false;
+            });
+            if (button) button.classList.remove('active');
+            dateFilterActive = false;
+        } else {
+            // Show only rows with selected dates
+            rows.forEach(row => {
+                const dateValue = row.getAttribute('data-date-value');
+                if (selectedDates.has(dateValue)) {
+                    row.classList.remove('hidden');
+                    const checkbox = row.querySelector('.patient-select');
+                    if (checkbox) checkbox.disabled = false;
+                } else {
+                    row.classList.add('hidden');
+                    const checkbox = row.querySelector('.patient-select');
+                    if (checkbox) {
+                        checkbox.disabled = true;
+                        checkbox.checked = false; // Uncheck hidden rows
+                    }
+                }
+            });
+            if (button) button.classList.add('active');
+            dateFilterActive = true;
+        }
+    }
+    
+    updateCheckboxStates(); // Add this line
     updatePatientCounts();
     updateSelectionSummary();
     updateSelectedPatientsHiddenInput();
@@ -1498,41 +1669,23 @@ function clearDateFilter() {
     // Show all rows and enable all checkboxes
     const rows = document.querySelectorAll('#patientListBody tr');
     rows.forEach(row => {
-        const method = row.getAttribute('data-retrieval-method');
-        const methodPasses = currentRetrievalMethodFilter === 'ALL' || 
-                            method === currentRetrievalMethodFilter;
-        
-        if (methodPasses) {
-            row.classList.remove('hidden');
-            const checkbox = row.querySelector('.patient-select');
-            if (checkbox) {
-                checkbox.disabled = false;
-                // Restore original checked state
-                if (checkbox.hasAttribute('data-original-checked')) {
-                    checkbox.checked = checkbox.getAttribute('data-original-checked') === 'true';
-                }
-            }
-        } else {
-            row.classList.add('hidden');
-            const checkbox = row.querySelector('.patient-select');
-            if (checkbox) {
-                checkbox.disabled = true;
-                checkbox.checked = false;
-            }
+        row.classList.remove('hidden');
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox) {
+            checkbox.disabled = false;
+            // Reset to original checked state (all should be checked initially)
+            checkbox.checked = true;
         }
     });
 }
 // Initialize when modal opens
-function initializeFiltersOnModalOpen() {
-    // Initialize date filter
+function initializeDateFilterOnModalOpen() {
+    // Clear any previous filter state
     selectedDates = new Set();
     allDateValues = [];
     dateFilterActive = false;
     
-    // Initialize method filter
-    currentRetrievalMethodFilter = 'ALL';
-    methodFilterActive = false;
-    
+    // Initialize with all dates selected
     const rows = document.querySelectorAll('#patientListBody tr');
     rows.forEach(row => {
         const dateValue = row.getAttribute('data-date-value');
@@ -1540,19 +1693,23 @@ function initializeFiltersOnModalOpen() {
             selectedDates.add(dateValue);
             allDateValues.push(dateValue);
         }
+        // Make sure all checkboxes are enabled
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox) {
+            checkbox.disabled = false;
+            checkbox.checked = true; // Ensure all are checked
+        }
     });
     
-    // Save original checkbox states
-    saveOriginalCheckboxStates();
+      // Reset filter button state
+    const button = document.getElementById('dateFilterBtn');
+    if (button) button.classList.remove('active');
     
-    // Reset filter button states
-    const dateButton = document.getElementById('dateFilterBtn');
-    const methodButton = document.getElementById('methodFilterBtn');
-    if (dateButton) dateButton.classList.remove('active');
-    if (methodButton) methodButton.classList.remove('active');
-    
-    // Update UI
-    updateFilteredRows();
+    // Update counts
+    updateCheckboxStates(); // Add this line
+    updatePatientCounts();
+    updateSelectionSummary();
+    updateSelectedPatientsHiddenInput();
 }
 
 // Initialize on page load
@@ -1723,21 +1880,19 @@ function initializeDateFiltering() {
             }
         }
 
-      function updatePatientStatus(checkbox) {
-    const row = checkbox.closest('tr');
-    if (checkbox.checked) {
-        row.classList.remove('excluded');
-        // Save as checked in original state
-        checkbox.setAttribute('data-original-checked', 'true');
-    } else {
-        row.classList.add('excluded');
-        // Save as unchecked in original state
-        checkbox.setAttribute('data-original-checked', 'false');
-    }
-    
-    updatePatientCounts();
-    updateSelectionSummary();
-}
+        function updatePatientStatus(checkbox) {
+            const row = checkbox.closest('tr');
+            if (checkbox.checked) {
+                row.classList.remove('excluded');
+            } else {
+                row.classList.add('excluded');
+            }
+            
+            updatePatientCounts();
+            updateSelectAllState();
+            updateSelectionSummary();
+        }
+
         function updateSelectAllState() {
             const selectAllCheckbox = document.getElementById('selectAll');
             const patientCheckboxes = document.querySelectorAll('.patient-select');
@@ -1760,55 +1915,55 @@ function initializeDateFiltering() {
             if (excludedElement) excludedElement.textContent = visibleRows.length - checkedBoxes.length;
         }
 
-function updateSelectionSummary() {
-    const patientCheckboxes = document.querySelectorAll('.patient-select:not(:disabled)');
-    const visiblePatientCheckboxes = document.querySelectorAll('#patientListBody tr:not(.hidden) .patient-select');
-    const totalCount = visiblePatientCheckboxes.length;
-    const includedCount = Array.from(visiblePatientCheckboxes).filter(cb => cb.checked).length;
-    const excludedCount = totalCount - includedCount;
-    
-    // Update counters
-    const includedElement = document.getElementById('includedCount');
-    const excludedElement = document.getElementById('excludedCount');
-    
-    if (includedElement) includedElement.textContent = includedCount;
-    if (excludedElement) excludedElement.textContent = excludedCount;
-    
-    // Update summary text
-    const summaryDiv = document.getElementById('selectionSummary');
-    if (summaryDiv) {
-        if (excludedCount === 0) {
-            summaryDiv.textContent = `Create prescriptions for ${includedCount} patients`;
-            summaryDiv.style.backgroundColor = '#d4edda';
-            summaryDiv.style.color = '#155724';
-            summaryDiv.style.borderColor = '#c3e6cb';
-        } else if (includedCount === 0) {
-            summaryDiv.textContent = 'No patients selected. Please select at least one patient.';
-            summaryDiv.style.backgroundColor = '#f8d7da';
-            summaryDiv.style.color = '#721c24';
-            summaryDiv.style.borderColor = '#f5c6cb';
-        } else {
-            summaryDiv.textContent = `Ready to create prescriptions for ${includedCount} patients (${excludedCount} excluded)`;
-            summaryDiv.style.backgroundColor = '#fff3cd';
-            summaryDiv.style.color = '#856404';
-            summaryDiv.style.borderColor = '#ffeaa7';
+        function updateSelectionSummary() {
+            const patientCheckboxes = document.querySelectorAll('.patient-select:not(:disabled)');
+            const visiblePatientCheckboxes = document.querySelectorAll('#patientListBody tr:not(.hidden) .patient-select');
+            const totalCount = visiblePatientCheckboxes.length;
+            const includedCount = Array.from(visiblePatientCheckboxes).filter(cb => cb.checked).length;
+            const excludedCount = totalCount - includedCount;
+            
+            // Update counters
+            const includedElement = document.getElementById('includedCount');
+            const excludedElement = document.getElementById('excludedCount');
+            
+            if (includedElement) includedElement.textContent = includedCount;
+            if (excludedElement) excludedElement.textContent = excludedCount;
+            
+            // Update summary text
+            const summaryDiv = document.getElementById('selectionSummary');
+            if (summaryDiv) {
+                if (excludedCount === 0) {
+                    summaryDiv.textContent = `Create prescriptions for ${includedCount} patients`;
+                    summaryDiv.style.backgroundColor = '#d4edda';
+                    summaryDiv.style.color = '#155724';
+                    summaryDiv.style.borderColor = '#c3e6cb';
+                } else if (includedCount === 0) {
+                    summaryDiv.textContent = 'No patients selected. Please select at least one patient.';
+                    summaryDiv.style.backgroundColor = '#f8d7da';
+                    summaryDiv.style.color = '#721c24';
+                    summaryDiv.style.borderColor = '#f5c6cb';
+                } else {
+                    summaryDiv.textContent = `Ready to create prescriptions for ${includedCount} patients (${excludedCount} excluded)`;
+                    summaryDiv.style.backgroundColor = '#fff3cd';
+                    summaryDiv.style.color = '#856404';
+                    summaryDiv.style.borderColor = '#ffeaa7';
+                }
+            }
+            
+            // Update processing count
+            const processingCountElement = document.getElementById('processingCount');
+            if (processingCountElement) {
+                processingCountElement.textContent = includedCount;
+            }
+            
+            // Update submit button state
+            const submitBtn = document.getElementById('createBtn');
+            if (submitBtn) {
+                submitBtn.disabled = includedCount === 0;
+            }
+            
+            return includedCount;
         }
-    }
-    
-    // Update processing count
-    const processingCountElement = document.getElementById('processingCount');
-    if (processingCountElement) {
-        processingCountElement.textContent = includedCount;
-    }
-    
-    // Update submit button state
-    const submitBtn = document.getElementById('createBtn');
-    if (submitBtn) {
-        submitBtn.disabled = includedCount === 0;
-    }
-    
-    return includedCount;
-}
 
        function openPrintModal() {
     <?php if ($total_patients == 0): ?>
@@ -1851,6 +2006,12 @@ function updateSelectionSummary() {
             if (overlay) overlay.style.display = 'none';
             if (progressBar) progressBar.style.width = '0%';
         }
+
+        // Doctor autocomplete functionality
+        const doctorInputModal = document.getElementById('doctorNameModal');
+        const licenseInputModal = document.getElementById('doctorLicenseModal');
+        const ptrInputModal = document.getElementById('doctorPtrModal');
+        const doctorOptionsModal = document.querySelectorAll('#doctorsList option');
 
         if (doctorInputModal) {
             doctorInputModal.addEventListener('input', function() {
@@ -2126,22 +2287,37 @@ function updateSelectionSummary() {
             }
         }
 
-       function initializeCheckboxes() {
-    const patientCheckboxes = document.querySelectorAll('.patient-select');
-    
-    if (patientCheckboxes.length > 0) {
-        // Set initial state
-        updateSelectionSummary();
-        
-        // Add event listeners to individual checkboxes
-        patientCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                updatePatientStatus(this);
+        function initializeCheckboxes() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const patientCheckboxes = document.querySelectorAll('.patient-select');
+            
+            if (selectAllCheckbox && patientCheckboxes.length > 0) {
+                // Set initial state
                 updateSelectionSummary();
-            });
-        });
-    }
-}
+                
+                // Add event listener to Select All
+                selectAllCheckbox.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    patientCheckboxes.forEach(cb => {
+                        cb.checked = isChecked;
+                        updatePatientStatus(cb);
+                    });
+                    updateSelectionSummary();
+                });
+                
+                // Add event listeners to individual checkboxes
+                patientCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        updatePatientStatus(this);
+                        updateSelectAllState();
+                        updateSelectionSummary();
+                    });
+                });
+                
+                // Update select all state on load
+                updateSelectAllState();
+            }
+        }
 
         function updatePatientStatus(checkbox) {
             const row = checkbox.closest('tr');
@@ -2458,12 +2634,50 @@ function updateSelectionSummary() {
         });
         
     </script>
-    <script>
-    // Retrieval Method Filter Variables
+<script>
+// Retrieval Method Filter Variables
 let currentRetrievalMethodFilter = 'ALL';
 let methodFilterActive = false;
 
+// Store checkbox states for each filter
+const checkboxStates = {
+    'ALL': {},
+    'PICK-UP': {},
+    'DELIVERY': {}
+};
+
+function initializeCheckboxStates() {
+    const rows = document.querySelectorAll('#patientListBody tr');
+    rows.forEach(row => {
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox) {
+            const patientId = checkbox.value;
+            const isChecked = checkbox.checked;
+            
+            // Initialize all filter states
+            checkboxStates['ALL'][patientId] = isChecked;
+            checkboxStates['PICK-UP'][patientId] = isChecked;
+            checkboxStates['DELIVERY'][patientId] = isChecked;
+        }
+    });
+}
+
+function saveCurrentCheckboxStates() {
+    const rows = document.querySelectorAll('#patientListBody tr');
+    rows.forEach(row => {
+        const checkbox = row.querySelector('.patient-select');
+        if (checkbox && !checkbox.disabled) {
+            const patientId = checkbox.value;
+            checkboxStates[currentRetrievalMethodFilter][patientId] = checkbox.checked;
+        }
+    });
+}
+
 function selectRetrievalMethodFilter(method) {
+    // Save current checkbox states before switching
+    saveCurrentCheckboxStates();
+    
+    // Switch to new filter
     currentRetrievalMethodFilter = method;
     
     // Update button styles
@@ -2487,7 +2701,7 @@ function selectRetrievalMethodFilter(method) {
         method === 'ALL' ? 'ALL PATIENTS' : 
         method === 'PICK-UP' ? 'PICK-UP ONLY' : 'DELIVERY ONLY';
     
-    // Apply the filter
+    // Apply the filter and restore checkbox states
     applyRetrievalMethodFilter();
 }
 
@@ -2503,26 +2717,27 @@ function applyRetrievalMethodFilter() {
             // Only show if not hidden by date filter
             if (!isDateHidden) {
                 row.classList.remove('method-hidden');
+                row.style.display = '';
                 visibleCount++;
                 
-                // Enable checkbox if row is visible
+                // Enable checkbox
                 const checkbox = row.querySelector('.patient-select');
                 if (checkbox) {
                     checkbox.disabled = false;
-                    // Check if it should be checked based on original state
-                    if (checkbox.hasAttribute('data-original-checked') && 
-                        checkbox.getAttribute('data-original-checked') === 'true') {
+                    // Restore saved state
+                    const patientId = checkbox.value;
+                    if (checkboxStates['ALL'].hasOwnProperty(patientId)) {
+                        checkbox.checked = checkboxStates['ALL'][patientId];
+                    } else {
                         checkbox.checked = true;
+                        checkboxStates['ALL'][patientId] = true;
                     }
                 }
             } else {
                 row.classList.add('method-hidden');
-                // Keep disabled if hidden by date filter
+                row.style.display = 'none';
                 const checkbox = row.querySelector('.patient-select');
-                if (checkbox) {
-                    checkbox.disabled = true;
-                    checkbox.checked = false;
-                }
+                if (checkbox) checkbox.disabled = true;
             }
         } else {
             // Check if method matches filter AND row is not hidden by date filter
@@ -2530,31 +2745,33 @@ function applyRetrievalMethodFilter() {
             
             if (methodMatches && !isDateHidden) {
                 row.classList.remove('method-hidden');
+                row.style.display = '';
                 visibleCount++;
                 
                 // Enable checkbox
                 const checkbox = row.querySelector('.patient-select');
                 if (checkbox) {
                     checkbox.disabled = false;
-                    // Check if it should be checked based on original state
-                    if (checkbox.hasAttribute('data-original-checked') && 
-                        checkbox.getAttribute('data-original-checked') === 'true') {
-                        checkbox.checked = true;
+                    // Restore saved state for this filter
+                    const patientId = checkbox.value;
+                    if (checkboxStates[currentRetrievalMethodFilter].hasOwnProperty(patientId)) {
+                        checkbox.checked = checkboxStates[currentRetrievalMethodFilter][patientId];
+                    } else {
+                        // If no saved state, check if there's a state in ALL filter
+                        if (checkboxStates['ALL'].hasOwnProperty(patientId)) {
+                            checkbox.checked = checkboxStates['ALL'][patientId];
+                            checkboxStates[currentRetrievalMethodFilter][patientId] = checkboxStates['ALL'][patientId];
+                        } else {
+                            checkbox.checked = true;
+                            checkboxStates[currentRetrievalMethodFilter][patientId] = true;
+                        }
                     }
                 }
             } else {
                 row.classList.add('method-hidden');
-                
-                // Disable and uncheck checkbox
+                row.style.display = 'none';
                 const checkbox = row.querySelector('.patient-select');
-                if (checkbox) {
-                    checkbox.disabled = true;
-                    checkbox.checked = false;
-                    // Save original checked state if not already saved
-                    if (!checkbox.hasAttribute('data-original-checked')) {
-                        checkbox.setAttribute('data-original-checked', checkbox.checked ? 'true' : 'false');
-                    }
-                }
+                if (checkbox) checkbox.disabled = true;
             }
         }
     });
@@ -2566,8 +2783,162 @@ function applyRetrievalMethodFilter() {
     updatePatientCounts();
     updateSelectionSummary();
     updateSelectedPatientsHiddenInput();
+    updateSelectAllState();
 }
 
+function updatePatientStatus(checkbox) {
+    const row = checkbox.closest('tr');
+    const patientId = checkbox.value;
+    
+    // Save state for current filter
+    checkboxStates[currentRetrievalMethodFilter][patientId] = checkbox.checked;
+    
+    if (checkbox.checked) {
+        row.classList.remove('excluded');
+    } else {
+        row.classList.add('excluded');
+    }
+    
+    updatePatientCounts();
+    updateSelectAllState();
+    updateSelectionSummary();
+    updateSelectedPatientsHiddenInput();
+}
+
+function updatePatientCounts() {
+    const visibleCheckboxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled)');
+    const checkedBoxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled):checked');
+    
+    const includedElement = document.getElementById('includedCount');
+    const excludedElement = document.getElementById('excludedCount');
+    
+    if (includedElement) includedElement.textContent = checkedBoxes.length;
+    if (excludedElement) excludedElement.textContent = visibleCheckboxes.length - checkedBoxes.length;
+}
+
+function updateSelectionSummary() {
+    const visibleCheckboxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled)');
+    const totalCount = visibleCheckboxes.length;
+    const includedCount = Array.from(visibleCheckboxes).filter(cb => cb.checked).length;
+    const excludedCount = totalCount - includedCount;
+    
+    // Update counters
+    const includedElement = document.getElementById('includedCount');
+    const excludedElement = document.getElementById('excludedCount');
+    
+    if (includedElement) includedElement.textContent = includedCount;
+    if (excludedElement) excludedElement.textContent = excludedCount;
+    
+    // Update summary text
+    const summaryDiv = document.getElementById('selectionSummary');
+    if (summaryDiv) {
+        if (excludedCount === 0) {
+            summaryDiv.textContent = `Create prescriptions for ${includedCount} patients`;
+            summaryDiv.style.backgroundColor = '#d4edda';
+            summaryDiv.style.color = '#155724';
+            summaryDiv.style.borderColor = '#c3e6cb';
+        } else if (includedCount === 0) {
+            summaryDiv.textContent = 'No patients selected. Please select at least one patient.';
+            summaryDiv.style.backgroundColor = '#f8d7da';
+            summaryDiv.style.color = '#721c24';
+            summaryDiv.style.borderColor = '#f5c6cb';
+        } else {
+            summaryDiv.textContent = `Ready to create prescriptions for ${includedCount} patients (${excludedCount} excluded)`;
+            summaryDiv.style.backgroundColor = '#fff3cd';
+            summaryDiv.style.color = '#856404';
+            summaryDiv.style.borderColor = '#ffeaa7';
+        }
+    }
+    
+    // Update processing count
+    const processingCountElement = document.getElementById('processingCount');
+    if (processingCountElement) {
+        processingCountElement.textContent = includedCount;
+    }
+    
+    // Update submit button state
+    const submitBtn = document.getElementById('createBtn');
+    if (submitBtn) {
+        submitBtn.disabled = includedCount === 0;
+    }
+    
+    return includedCount;
+}
+
+function updateSelectAllState() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (!selectAllCheckbox) return;
+    
+    const visibleCheckboxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled)');
+    
+    if (visibleCheckboxes.length > 0) {
+        const checkedCount = Array.from(visibleCheckboxes).filter(cb => cb.checked).length;
+        selectAllCheckbox.checked = checkedCount === visibleCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < visibleCheckboxes.length;
+    }
+}
+
+function updateSelectedPatientsHiddenInput() {
+    const visibleCheckboxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled):checked');
+    const selectedPatients = Array.from(visibleCheckboxes).map(cb => cb.value);
+    document.getElementById('selectedPatientsInput').value = selectedPatients.join(',');
+}
+
+// Initialize filters when modal opens
+function initializeFiltersOnModalOpen() {
+    // Initialize date filter
+    selectedDates = new Set();
+    allDateValues = [];
+    dateFilterActive = false;
+    
+    // Initialize method filter
+    currentRetrievalMethodFilter = 'ALL';
+    methodFilterActive = false;
+    
+    const rows = document.querySelectorAll('#patientListBody tr');
+    rows.forEach(row => {
+        const dateValue = row.getAttribute('data-date-value');
+        if (dateValue) {
+            selectedDates.add(dateValue);
+            allDateValues.push(dateValue);
+        }
+    });
+    
+    // Initialize checkbox states
+    initializeCheckboxStates();
+    
+    // Reset filter button states
+    const dateButton = document.getElementById('dateFilterBtn');
+    const methodButton = document.getElementById('methodFilterBtn');
+    if (dateButton) dateButton.classList.remove('active');
+    if (methodButton) methodButton.classList.remove('active');
+    
+    // Apply initial filter
+    applyRetrievalMethodFilter();
+}
+
+// Update the Select All functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Select All event listener
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const visibleCheckboxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled)');
+            
+            visibleCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+                // Save state for current filter
+                const patientId = cb.value;
+                checkboxStates[currentRetrievalMethodFilter][patientId] = isChecked;
+            });
+            
+            updateSelectionSummary();
+        });
+    }
+});
+
+// Method filter dropdown functions (optional - if you still want dropdown)
 function toggleMethodFilter() {
     const dropdown = document.getElementById('methodFilterDropdown');
     const button = document.getElementById('methodFilterBtn');
@@ -2579,11 +2950,8 @@ function toggleMethodFilter() {
         dropdown.style.transform = 'translateX(-50%)';
         dropdown.style.marginTop = '5px';
         dropdown.style.zIndex = '1000';
-        
         dropdown.style.display = 'block';
-        populateMethodCheckboxes();
         
-        // Close dropdown when clicking outside
         setTimeout(() => {
             document.addEventListener('click', closeMethodDropdownOnClickOutside);
         }, 100);
@@ -2607,171 +2975,7 @@ function closeMethodDropdownOnClickOutside(event) {
     }
 }
 
-function populateMethodCheckboxes() {
-    const container = document.getElementById('methodCheckboxContainer');
-    const rows = document.querySelectorAll('#patientListBody tr');
-    
-    // Collect unique methods
-    const methodMap = new Map();
-    methodMap.set('PICK-UP', 0);
-    methodMap.set('DELIVERY', 0);
-    methodMap.set('NOT SET', 0);
-    
-    rows.forEach(row => {
-        const method = row.getAttribute('data-retrieval-method') || 'NOT SET';
-        if (methodMap.has(method)) {
-            methodMap.set(method, methodMap.get(method) + 1);
-        }
-    });
-    
-    // Generate checkboxes
-    container.innerHTML = '';
-    
-    methodMap.forEach((count, method) => {
-        if (count > 0) {
-            const div = document.createElement('div');
-            div.className = 'method-checkbox-item';
-            
-            const checkboxId = `method-${method.replace(/\s+/g, '-').toLowerCase()}`;
-            const isChecked = currentRetrievalMethodFilter === method;
-            
-            div.innerHTML = `
-                <label for="${checkboxId}">
-                    <input type="checkbox" 
-                           id="${checkboxId}" 
-                           value="${method}" 
-                           ${isChecked ? 'checked' : ''}
-                           onchange="handleMethodSelection('${method}', this.checked)">
-                    ${method}
-                    <span class="method-count">${count}</span>
-                </label>
-            `;
-            container.appendChild(div);
-        }
-    });
-}
-
-function handleMethodSelection(method, isChecked) {
-    if (isChecked) {
-        selectRetrievalMethodFilter(method);
-    } else {
-        // If unchecking current selection, switch to ALL
-        if (currentRetrievalMethodFilter === method) {
-            selectRetrievalMethodFilter('ALL');
-        }
-    }
-}
-
-function clearMethodFilter() {
-    selectRetrievalMethodFilter('ALL');
-    closeMethodFilter();
-}
-
-function applyMethodFilter() {
-    // The filter is applied automatically when selection changes
-    closeMethodFilter();
-}
-
-// Update the applyFilterImmediately function to also consider method filter
-function updateFilteredRows() {
-    const rows = document.querySelectorAll('#patientListBody tr');
-    
-    rows.forEach(row => {
-        const method = row.getAttribute('data-retrieval-method');
-        const dateValue = row.getAttribute('data-date-value');
-        
-        // Check date filter
-        const datePasses = selectedDates.size === 0 || 
-                          selectedDates.size === allDateValues.length || 
-                          selectedDates.has(dateValue);
-        
-        // Check method filter
-        const methodPasses = currentRetrievalMethodFilter === 'ALL' || 
-                            method === currentRetrievalMethodFilter;
-        
-        // Show row if both filters pass
-        if (datePasses && methodPasses) {
-            row.classList.remove('hidden');
-            row.classList.remove('method-hidden');
-            
-            const checkbox = row.querySelector('.patient-select');
-            if (checkbox) {
-                checkbox.disabled = false;
-                // Restore original checked state
-                if (checkbox.hasAttribute('data-original-checked')) {
-                    checkbox.checked = checkbox.getAttribute('data-original-checked') === 'true';
-                } else {
-                    checkbox.checked = true; // Default to checked
-                }
-            }
-        } else {
-            // Hide row
-            if (!datePasses) {
-                row.classList.add('hidden');
-            }
-            if (!methodPasses) {
-                row.classList.add('method-hidden');
-            }
-            
-            // Disable and uncheck checkbox
-            const checkbox = row.querySelector('.patient-select');
-            if (checkbox) {
-                checkbox.disabled = true;
-                checkbox.checked = false;
-                // Save original state before unchecking
-                if (!checkbox.hasAttribute('data-original-checked')) {
-                    checkbox.setAttribute('data-original-checked', 'true');
-                }
-            }
-        }
-    });
-    
-    // Update all counts
-    updatePatientCounts();
-    updateSelectionSummary();
-    updateSelectedPatientsHiddenInput();
-}
-
-// Update the initializeDateFilterOnModalOpen function to include method filter
-function initializeFiltersOnModalOpen() {
-    // Initialize date filter
-    selectedDates = new Set();
-    allDateValues = [];
-    dateFilterActive = false;
-    
-    // Initialize method filter
-    currentRetrievalMethodFilter = 'ALL';
-    methodFilterActive = false;
-    
-    const rows = document.querySelectorAll('#patientListBody tr');
-    rows.forEach(row => {
-        const dateValue = row.getAttribute('data-date-value');
-        if (dateValue) {
-            selectedDates.add(dateValue);
-            allDateValues.push(dateValue);
-        }
-        
-        // Enable all checkboxes initially and save original state
-        const checkbox = row.querySelector('.patient-select');
-        if (checkbox) {
-            checkbox.disabled = false;
-            checkbox.checked = true;
-            // Save original checked state
-            checkbox.setAttribute('data-original-checked', 'true');
-        }
-    });
-    
-    // Reset filter button states
-    const dateButton = document.getElementById('dateFilterBtn');
-    const methodButton = document.getElementById('methodFilterBtn');
-    if (dateButton) dateButton.classList.remove('active');
-    if (methodButton) methodButton.classList.remove('active');
-    
-    // Update UI
-    updateFilteredRows();
-}
-
-// Update the startBulkProcessing function to include retrieval method in the form
+// Updated startBulkProcessing function
 function startBulkProcessing() {
     const doctorName = doctorInputModal ? doctorInputModal.value.trim() : '';
     const licenseNo = licenseInputModal ? licenseInputModal.value.trim() : '';
@@ -2791,15 +2995,9 @@ function startBulkProcessing() {
         return false;
     }
 
-    // Get selected patients - ONLY enabled checkboxes
-    const patientCheckboxes = document.querySelectorAll('.patient-select:not(:disabled)');
-    const selectedPatients = [];
-    
-    patientCheckboxes.forEach(cb => {
-        if (cb.checked) {
-            selectedPatients.push(cb.value);
-        }
-    });
+    // Get selected patients - ONLY visible and enabled checkboxes
+    const patientCheckboxes = document.querySelectorAll('#patientListBody tr:not(.method-hidden):not(.hidden) .patient-select:not(:disabled):checked');
+    const selectedPatients = Array.from(patientCheckboxes).map(cb => cb.value);
     
     if (selectedPatients.length === 0) {
         alert('Please select at least one patient to process.');
@@ -2854,6 +3052,26 @@ function startBulkProcessing() {
     }, 1000);
 
     return true;
+}
+
+// Also update the openPrintModal function
+function openPrintModal() {
+    <?php if ($total_patients == 0): ?>
+        alert('No patients found for the selected refill day.');
+        return;
+    <?php endif; ?>
+
+    document.getElementById('printModal').style.display = 'flex';
+    resetModalState();
+    
+    // Set date defaults when modal opens
+    setDateDefaults();
+    
+    // Initialize filters
+    initializeFiltersOnModalOpen();
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
 }
 </script>
 </body>
