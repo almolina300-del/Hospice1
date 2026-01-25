@@ -47,13 +47,18 @@ if ($char > 0) {
     }
 }
 // ========== ADD THIS SECTION RIGHT HERE ==========
-// Get the actual birthday and sex values from $ch array
-$birthday = isset($ch['Birthday']) ? $ch['Birthday'] : '';
 $sex = isset($ch['Sex']) ? $ch['Sex'] : '';
+$prescriptionRetrievalMethod = isset($ch['Prescription_retrieval_method']) ? $ch['Prescription_retrieval_method'] : '';
 
-// Now check for the specific invalid values
-$hasValidBirthday = !empty($birthday) && $birthday != '1900-01-01' && $birthday != '0000-00-00';
+// Check for valid sex
 $hasValidSex = !empty($sex) && strtoupper($sex) !== 'ENTER' && in_array(strtoupper($sex), ['MALE', 'FEMALE']);
+
+// Check for valid prescription retrieval method
+$hasValidPrescriptionMethod = !empty($prescriptionRetrievalMethod) && 
+                              in_array(strtoupper($prescriptionRetrievalMethod), ['PICK-UP', 'DELIVERY']);
+
+// Keep birthday variable for other uses if needed
+$birthday = isset($ch['Birthday']) ? $ch['Birthday'] : '';
 
 
 // ---------- FETCH PATIENT SUMMARY ----------
@@ -62,9 +67,8 @@ $patientAddress = '';
 $patientSex = '';
 $patientAge = '';
 
-
-$hasBirthday = $hasValidBirthday; // Update this to use the new variable
-$hasSex = $hasValidSex; // Update this to use the new variable
+$hasSex = $hasValidSex; // Keep this for sex validation
+$hasPrescriptionMethod = $hasValidPrescriptionMethod; // Add this for prescription method validation
 
 if ($char > 0) {
     $sql = "
@@ -422,11 +426,12 @@ if ($ycExpiryDate) {
                         <input type="radio" name="Sex" value="FEMALE" required <?php echo (isset($ch['Sex']) && $ch['Sex'] == 'FEMALE') ? 'checked' : ''; ?>> FEMALE
                     </label>
                 </td>
-                <td>Birthday: <span style="color:red;">*</span></td>
-                <td colspan="2">
-                    <input type="date" name="Birthday" max="<?php echo date('Y-m-d', strtotime('-1 day')); ?>"
-                        value="<?php echo isset($ch['Birthday']) ? date('Y-m-d', strtotime($ch['Birthday'])) : ''; ?>" required>
-                </td>
+<td>Birthday: <span style="color:red;">*</span></td>
+<td colspan="2">
+    <input type="date" name="Birthday" max="<?php echo date('Y-m-d', strtotime('-1 day')); ?>"
+        value="<?php echo isset($ch['Birthday']) ? date('Y-m-d', strtotime($ch['Birthday'])) : ''; ?>" 
+        <?php echo (!isset($ch) || empty($ch['Birthday'])) ? 'required' : ''; ?>>
+</td>
             </tr>
             <!-- Contact Nos., House Nos., and Barangay on same row -->
             <tr>
@@ -1184,27 +1189,27 @@ if ($ycExpiryDate) {
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-                        <?php if ($hasValidBirthday && $hasValidSex): ?>
-                            <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
-                                Add Prescription</a>
-                        <?php else: ?>
-                            <?php
-                            $errorMessage = '';
-                            if ((!$hasValidBirthday && !$hasValidSex) || ($birthday == '1900-01-01' && strtoupper($sex) == 'ENTER')) {
-                                $errorMessage = "Patient birthday and sex/gender are missing or invalid";
-                            } elseif (!$hasValidBirthday || $birthday == '1900-01-01') {
-                                $errorMessage = "Patient birthday is missing or invalid (1900-01-01)";
-                            } elseif (!$hasValidSex || strtoupper($sex) == 'ENTER') {
-                                $errorMessage = "Patient sex/gender is missing or invalid (enter)";
-                            }
-                            ?>
-                            <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-                                title='Cannot add prescription: <?php echo $errorMessage; ?>'>
-                                Add Prescription</button>
-                            <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-                                ⚠ <?php echo $errorMessage; ?>
-                            </span>
-                        <?php endif; ?>
+                       <?php if ($hasValidSex && $hasValidPrescriptionMethod): ?>
+    <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
+        Add Prescription</a>
+<?php else: ?>
+    <?php
+    $errorMessage = '';
+    if (!$hasValidSex && !$hasValidPrescriptionMethod) {
+        $errorMessage = "Patient sex/gender and prescription retrieval method are missing or invalid";
+    } elseif (!$hasValidSex) {
+        $errorMessage = "Patient sex/gender is missing or invalid";
+    } elseif (!$hasValidPrescriptionMethod) {
+        $errorMessage = "Prescription retrieval method is missing or invalid (must be PICK-UP or DELIVERY)";
+    }
+    ?>
+    <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
+        title='Cannot add prescription: <?php echo $errorMessage; ?>'>
+        Add Prescription</button>
+    <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
+        ⚠ <?php echo $errorMessage; ?>
+    </span>
+<?php endif; ?>
                     </th>
                 </tr>
 
