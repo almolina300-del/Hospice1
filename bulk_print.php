@@ -655,6 +655,7 @@ $today_date = date('Y-m-d');
             background-color: #f0f0f0;
             color: #333;
         }
+        
     </style>
 </head>
 
@@ -1007,6 +1008,22 @@ $today_date = date('Y-m-d');
 <div id="methodSummary" class="method-summary">
     Showing: <span id="selectedMethodText">ALL PATIENTS</span> | 
     Count: <span id="methodPatientCount"><?php echo $total_patients; ?></span> patients
+</div>
+<!-- Search Bar for Last Name -->
+<div class="search-container" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef;">
+    <label class="search-label" style="font-weight: bold; color: #263F73; margin-right: 10px;">
+        Search by Last Name:
+    </label>
+    <input type="text" 
+           id="lastNameSearch" 
+           placeholder="Type last name to find patients..."
+           style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 300px;"
+           onkeyup="searchLastName()">
+    <button type="button" 
+            onclick="clearSearch()"
+            style="margin-left: 10px; padding: 8px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Clear
+    </button>
 </div>
 <!-- Patient List with Checkboxes -->
 <div class="select-all-container">
@@ -3073,6 +3090,86 @@ function openPrintModal() {
     // Prevent body scrolling
     document.body.style.overflow = 'hidden';
 }
+// Search functionality for last name
+function searchLastName() {
+    const searchInput = document.getElementById('lastNameSearch');
+    const searchTerm = searchInput.value.trim().toUpperCase();
+    const rows = document.querySelectorAll('#patientListBody tr');
+    
+    if (searchTerm === '') {
+        // Show all rows if search is empty
+        rows.forEach(row => {
+            row.style.backgroundColor = '';
+            row.style.display = '';
+        });
+        return;
+    }
+    
+    let foundCount = 0;
+    
+    rows.forEach(row => {
+        const patientNameCell = row.cells[1]; // Second column contains patient name
+        const patientName = patientNameCell.textContent.toUpperCase();
+        
+        if (patientName.includes(searchTerm)) {
+            row.style.backgroundColor = '#D0FFBC'; // Highlight color
+            row.style.display = '';
+            foundCount++;
+            
+            // Scroll to the first found row
+            if (foundCount === 1) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        } else {
+            row.style.backgroundColor = '';
+            row.style.display = 'none'; // Hide non-matching rows
+        }
+    });
+    
+    // Show search results count
+    const searchContainer = searchInput.closest('.search-container');
+    let resultCountElement = searchContainer.querySelector('.search-result-count');
+    
+    if (!resultCountElement) {
+        resultCountElement = document.createElement('div');
+        resultCountElement.className = 'search-result-count';
+        resultCountElement.style.marginTop = '8px';
+        resultCountElement.style.fontSize = '12px';
+        resultCountElement.style.color = '#666';
+        searchContainer.appendChild(resultCountElement);
+    }
+    
+    if (searchTerm !== '') {
+        resultCountElement.innerHTML = `Found <strong>${foundCount}</strong> patient(s) with last name containing "<strong>${searchTerm}</strong>"`;
+    } else {
+        resultCountElement.innerHTML = '';
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('lastNameSearch');
+    searchInput.value = '';
+    searchLastName(); // This will clear the search
+    
+    // Remove search result count
+    const searchContainer = searchInput.closest('.search-container');
+    const resultCountElement = searchContainer.querySelector('.search-result-count');
+    if (resultCountElement) {
+        resultCountElement.innerHTML = '';
+    }
+}
+
+// Add keyboard shortcut for clearing search (Escape key)
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const searchInput = document.getElementById('lastNameSearch');
+        if (searchInput && searchInput.value !== '') {
+            clearSearch();
+            searchInput.focus();
+        }
+    }
+});
 </script>
+
 </body>
 </html>
