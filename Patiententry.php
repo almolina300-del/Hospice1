@@ -1,1064 +1,1225 @@
-<!DOCTYPE html>
-<?php
-
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Check for success message from login
-if (isset($_SESSION['success_message'])) {
-    $success_message = $_SESSION['success_message'];
-    unset($_SESSION['success_message']); // Clear it after getting
-}
-
-if (!isset($_SESSION['Username'])) {
-    // Redirect to login page
-    header("Location: index.php");
-    exit();
-}
-
-require('Config/Config.php');
-
-// THE $BG VARIABLE HAS THE COLOR VALUE OF ALL THE ODD ROWS. YOU CAN CHANGE THIS TO ANOTHER COLOR
-$bg = 'F2F2FF';
-
-// THESE CODES GETS THE VALUE OF 'O', WHICH IS USED TO FIND OUT HOW THE RECORDS WILL BE ORDERED
-$ord = '';
-if (isset($_GET['o'])) {
-    $ord = $_GET['o'];
-};
-
-// IF THE VALUE OF $ORD IS A NUMBER, IT IS ROUNDED OF TO AN INTEGER. IF IT ISN'T, $ORD IS ASSIGNED A VALUE OF 1
-if (is_numeric($ord)) {
-    $ord = round(min(max($ord, 1), 3));
-} else {
-    $ord = 1;
-}
-// $ORDER IS ASSIGNED A STRING VALUE BASED ON THE VALUE OF $ORD.
-$order = array(
-    1 => 'Last_name ASC',
-    2 => 'First_name ASC',
-    3 => 'Middle_name ASC',
-    4 => 'LastRefillDay ASC',
-);
-
-// A $CONN VARIABLE IS ASSIGNED THE DATA OBTAINED FROM CONNECTING TO THE MYSQL SERVER. SQL_HOST, SQL_USER, SQL_PASS ALL HOLD VALUES STORED IN CONFIG.PHP
-$conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS)
-    or die('Could not connect to MySQL database. ' . mysqli_connect_error());
-
-// THE DATABASE IS SELECTED USING THE DATA STORED IN $CONN
-mysqli_select_db($conn, SQL_DB);
-
-// Check if barangay filter is active
-$barangay_filter = isset($_GET['barangay_filter']) ? mysqli_real_escape_string($conn, $_GET['barangay_filter']) : '';
-$barangayFilterActive = !empty($barangay_filter) && $barangay_filter != 'all';
-
-// Get count for selected barangay
-$barangay_count = 0;
-if ($barangayFilterActive) {
-    $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Barangay = '$barangay_filter'";
-    $result = mysqli_query($conn, $count_query);
-    if ($result) {
-        $row = mysqli_fetch_assoc($result);
-        $barangay_count = $row['count'];
-    }
-}
-// Check if refill day filter is active
-$refill_filter = isset($_GET['refill_filter']) ? mysqli_real_escape_string($conn, $_GET['refill_filter']) : '';
-$refillFilterActive = !empty($refill_filter) && $refill_filter != 'all';
-
-// Get count for selected refill day
-$refill_count = 0;
-if ($refillFilterActive) {
-    $count_query = "SELECT COUNT(DISTINCT pd.Patient_id) as count 
-                    FROM patient_details pd 
-                    LEFT JOIN (
-                        SELECT Patient_id, MAX(Date) as max_date 
-                        FROM prescription 
-                        GROUP BY Patient_id
-                    ) latest_p ON pd.Patient_id = latest_p.Patient_id
-                    LEFT JOIN prescription p ON latest_p.Patient_id = p.Patient_id AND latest_p.max_date = p.Date
-                    WHERE pd.is_active = 1 
-                    AND (p.Refill_day = '$refill_filter' 
-                         OR (p.Refill_day IS NULL AND '$refill_filter' = 'No Rx'))";
-    $result = mysqli_query($conn, $count_query);
-    if ($result) {
-        $row = mysqli_fetch_assoc($result);
-        $refill_count = $row['count'];
-    }
-}
-?>
-
-<html>
-
-<head>
-    <title>Hospice</title>
-    <link rel="stylesheet" type="text/css" href="CSS/style.css">
-    <script src="js/notifications.js"></script>
-</head>
-
-<body>
-
-    <div class="sidebar">
-        <!-- Welcome message with first_name above logout -->
-        <?php if (isset($_SESSION['First_name'])): ?>
-            <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
-                <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
-                    Prescription
-                </div> <br>
-                <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
-                Welcome,<br>
-                <?php if (isset($_SESSION['Role'])): ?>
-                    <div style="margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.8);">
-                        <?php echo htmlspecialchars($_SESSION['Role']); ?>
-                    </div>
-                <?php endif; ?>
-                <div style="display: flex; align-items: center; justify-content: center">
-                    <strong style="font-size: 15px;"><?php echo htmlspecialchars($_SESSION['First_name']); ?></strong>
-                </div>
-
-            </div>
-        <?php endif; ?>
-
-        <a href="patiententry.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
-            Patient Records
-        </a>
-        <a href="inactive_patient.php">
-            Inactive Patients
-        </a>
-        <a href="bulk_print.php">
-            Bulk Print
-        </a>
-
-        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
-            <a href="Doctors.php">
-                Doctors
-            </a> <?php endif; ?>
-        <a href="Medicines.php">Medicines</a>
-
-        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
-            <a href="user_management.php">
-                User Management
-            </a><?php endif; ?>
-
-
-
-
-        <div class="spacer"></div>
-        <div class="logout-container">
-            <script>
-                function confirmLogout() {
-                    return confirm("Are you sure you want to log out?");
-                }
-            </script>
-            <div style="font-size: 20px; color: white; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">
-            </div>
-            <a href="logout.php" class="logout-btn" onclick="return confirmLogout();"
-                style="display: flex; align-items: center; justify-content: left; gap: 8px; 
-              text-decoration: none; color: white; padding: 10px; 
-              background: rgba(255,255,255,0.1); border-radius: 5px; 
-              transition: background 0.3s;">
-                <img src="img/logout_icon.png" alt="Logout" class="logo" style="width: 24px; height: 24px;">
-                <span>Logout</span>
-            </a>
-        </div>
-    </div>
-
-    <h1 align='center'> <img src="img/patient_record_icon.png" alt="patient_record_icon" class="logo">Patient Records</h1>
-
-    <div class="datetime-header" id="liveDateTime">
-        <?php
-        date_default_timezone_set('Asia/Manila');
-        echo date('F j, Y') . ' | ' . date('h:i:s A');
-        ?>
-    </div>
-
+    <!DOCTYPE html>
     <?php
-    // Count total records
-    $count_query = mysqli_query($conn, "SELECT COUNT(*) AS total FROM patient_details WHERE is_active = 1");
-    $count_result = mysqli_fetch_assoc($count_query);
 
-    if ($count_result) {
-        echo "<div style='display:flex; align-items:center; gap:20px; margin-bottom:20px;'>";
-        echo "<div class='blink-text' style='background-color:white; 
-                         padding:10px 20px; margin-left:300px; border-radius:8px; font-weight:bold; 
-                         color:#263F73; width:200px; text-align:center;
-                         box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
-        echo "Active Patient<br><span style='font-size:30px;'>" . $count_result['total'] . "</span>";
-        echo "</div>";
-
-        // Show barangay count if filter is active
-        if ($barangayFilterActive && $barangay_count > 0) {
-            echo "<div style='background-color:#4CAF50; color:white; padding:10px 20px; border-radius:8px; font-weight:bold;
-                         box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
-            echo htmlspecialchars($barangay_filter) . "<br><span style='font-size:30px;'>" . $barangay_count . "</span>";
-            echo "</div>";
-        }
-
-        echo "</div>";
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
     }
-    ?>
-    <hr style="margin: 20px 250px; border: 1px solid #ccc; width: 80%;">
 
-    <!-- Search container -->
-    <div style="background-color: white; padding: 15px 15px; margin: 0 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; margin-bottom: 20px;">
-        <form method="post" action="Patiententry.php" name="theform" style="display: flex; align-items: center; gap: 10px;">
-            <input type="text" name="dosearch" placeholder="Enter Lastname, Firstname, or Full Name"
-                value="<?php echo htmlspecialchars($_GET['dosearch'] ?? ''); ?>"
-                style="flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">
-            <input type="submit" name="action" value="Search"
-                style="padding: 8px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            <a href="ptedit.php"
-                style="padding: 7px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                Add New Patient
-            </a>
-        </form>
+    // Check for success message from login
+    if (isset($_SESSION['success_message'])) {
+        $success_message = $_SESSION['success_message'];
+        unset($_SESSION['success_message']); // Clear it after getting
+    }
 
+    if (!isset($_SESSION['Username'])) {
+        // Redirect to login page
+        header("Location: index.php");
+        exit();
+    }
 
+    require('Config/Config.php');
 
-    </div>
+    // THE $BG VARIABLE HAS THE COLOR VALUE OF ALL THE ODD ROWS. YOU CAN CHANGE THIS TO ANOTHER COLOR
+    $bg = 'F2F2FF';
 
-    <?php
-    // Number of rows per page
-    $limit = 50;
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    if ($page < 1) $page = 1;
-    $start = ($page - 1) * $limit;
-    $runsearch = mysqli_real_escape_string($conn, $_GET['dosearch'] ?? '');
+    // THESE CODES GETS THE VALUE OF 'O', WHICH IS USED TO FIND OUT HOW THE RECORDS WILL BE ORDERED
+    $ord = '';
+    if (isset($_GET['o'])) {
+        $ord = $_GET['o'];
+    };
 
-    // SEARCH
-    if (isset($_POST['dosearch'])) {
-        $runsearch = $_POST['dosearch'];
-
-        // Split the search term by spaces
-        $searchTerms = explode(' ', trim($runsearch));
-
-        // Build the WHERE clause dynamically
-        $whereClauses = [];
-
-        if (!empty($searchTerms)) {
-            // If single term, search in both first and last name
-            if (count($searchTerms) == 1) {
-                $term = mysqli_real_escape_string($conn, $searchTerms[0]);
-                $whereClauses[] = "(pd.Last_name LIKE '%$term%' OR pd.First_name LIKE '%$term%')";
-            }
-            // If two terms, assume first is firstname and second is lastname
-            elseif (count($searchTerms) == 2) {
-                $term1 = mysqli_real_escape_string($conn, $searchTerms[0]); // First name
-                $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
-
-                // Search for exact combination: firstname + lastname
-                $whereClauses[] = "(pd.First_name LIKE '%$term1%' AND pd.Last_name LIKE '%$term2%')";
-                // Also search for reversed combination: lastname + firstname
-                $whereClauses[] = "(pd.Last_name LIKE '%$term1%' AND pd.First_name LIKE '%$term2%')";
-            }
-            // If more than two terms, search for each term in either field
-            else {
-                foreach ($searchTerms as $term) {
-                    $safeTerm = mysqli_real_escape_string($conn, $term);
-                    if (!empty($safeTerm)) {
-                        $whereClauses[] = "(pd.Last_name LIKE '%$safeTerm%' OR pd.First_name LIKE '%$safeTerm%' OR pd.Middle_name LIKE '%$safeTerm%')";
-                    }
-                }
-            }
-        }
-
-        // Build the final SQL query
-        if (!empty($whereClauses)) {
-            $whereCondition = "(" . implode(" OR ", $whereClauses) . ") AND pd.is_active = 1";
-        } else {
-            $whereCondition = "pd.is_active = 1";
-        }
-
-        // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
-     $sql = "SELECT pd.*, 
-       (SELECT p.Refill_day 
-        FROM prescription p 
-        WHERE p.Patient_id = pd.Patient_id 
-        ORDER BY p.Date DESC 
-        LIMIT 1) as LastRefillDay,
-       pd.Prescription_retrieval_method AS RetrievalMethod
-FROM patient_details pd 
-WHERE $whereCondition";
-
-        if (!empty($barangay_filter)) {
-            $sql .= " AND pd.Barangay = '$barangay_filter'";
-        }
-
-        $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
-
-        // Count query remains the same (but needs pd. prefix)
-        $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
-             WHERE $whereCondition";
-
-        if (!empty($barangay_filter)) {
-            $countSql .= " AND pd.Barangay = '$barangay_filter'";
-        }
-        // Refill Day filter
-        if (!empty($refill_filter)) {
-            if ($refill_filter == 'No Rx') {
-                // Patients with no prescription
-                $sql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
-            } else {
-                // Patients with specific refill day
-                $sql .= " AND pd.Patient_id IN (
-                SELECT DISTINCT p.Patient_id 
-                FROM prescription p 
-                INNER JOIN (
-                    SELECT Patient_id, MAX(Date) as max_date 
-                    FROM prescription 
-                    GROUP BY Patient_id
-                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
-                WHERE p.Refill_day = '$refill_filter'
-            )";
-            }
-        }
+    // IF THE VALUE OF $ORD IS A NUMBER, IT IS ROUNDED OF TO AN INTEGER. IF IT ISN'T, $ORD IS ASSIGNED A VALUE OF 1
+    if (is_numeric($ord)) {
+        $ord = round(min(max($ord, 1), 3));
     } else {
-        // NO SEARCH - SHOW ALL RECORDS
-        // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
-        $sql = "SELECT pd.*, 
-               (SELECT p.Refill_day 
-                FROM prescription p 
-                WHERE p.Patient_id = pd.Patient_id 
-                ORDER BY p.Date DESC 
-                LIMIT 1) as LastRefillDay
-        FROM patient_details pd 
-        WHERE pd.is_active = 1";
+        $ord = 1;
+    }
+    // $ORDER IS ASSIGNED A STRING VALUE BASED ON THE VALUE OF $ORD.
+    $order = array(
+        1 => 'Last_name ASC',
+        2 => 'First_name ASC',
+        3 => 'Middle_name ASC',
+        4 => 'LastRefillDay ASC',
+    );
 
-        if (!empty($barangay_filter)) {
-            $sql .= " AND pd.Barangay = '$barangay_filter'";
-        }
+    // A $CONN VARIABLE IS ASSIGNED THE DATA OBTAINED FROM CONNECTING TO THE MYSQL SERVER. SQL_HOST, SQL_USER, SQL_PASS ALL HOLD VALUES STORED IN CONFIG.PHP
+    $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS)
+        or die('Could not connect to MySQL database. ' . mysqli_connect_error());
 
-        // Refill Day filter for MAIN QUERY
-        if (!empty($refill_filter)) {
-            if ($refill_filter == 'No Rx') {
-                // Patients with no prescription
-                $sql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
-            } else {
-                // Patients with specific refill day
-                $sql .= " AND pd.Patient_id IN (
-                SELECT DISTINCT p.Patient_id 
-                FROM prescription p 
-                INNER JOIN (
-                    SELECT Patient_id, MAX(Date) as max_date 
-                    FROM prescription 
-                    GROUP BY Patient_id
-                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
-                WHERE p.Refill_day = '$refill_filter'
-            )";
-            }
-        }
+    // THE DATABASE IS SELECTED USING THE DATA STORED IN $CONN
+    mysqli_select_db($conn, SQL_DB);
 
-        $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
+    // Check if barangay filter is active
+    $barangay_filter = isset($_GET['barangay_filter']) ? mysqli_real_escape_string($conn, $_GET['barangay_filter']) : '';
+    $barangayFilterActive = !empty($barangay_filter) && $barangay_filter != 'all';
 
-        // COUNT QUERY
-        $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
-         WHERE pd.is_active = 1";
-
-        if (!empty($barangay_filter)) {
-            $countSql .= " AND pd.Barangay = '$barangay_filter'";
-        }
-
-        // Refill Day filter for COUNT QUERY
-        if (!empty($refill_filter)) {
-            if ($refill_filter == 'No Rx') {
-                // Patients with no prescription
-                $countSql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
-            } else {
-                // Patients with specific refill day
-                $countSql .= " AND pd.Patient_id IN (
-                SELECT DISTINCT p.Patient_id 
-                FROM prescription p 
-                INNER JOIN (
-                    SELECT Patient_id, MAX(Date) as max_date 
-                    FROM prescription 
-                    GROUP BY Patient_id
-                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
-                WHERE p.Refill_day = '$refill_filter'
-            )";
-            }
+    // Get count for selected barangay
+    $barangay_count = 0;
+    if ($barangayFilterActive) {
+        $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Barangay = '$barangay_filter'";
+        $result = mysqli_query($conn, $count_query);
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            $barangay_count = $row['count'];
         }
     }
-
-    // EXECUTE QUERIES
-    $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
-    $countResult = mysqli_query($conn, $countSql) or die(mysqli_error($conn));
-    $totalRows = mysqli_fetch_assoc($countResult)['total'];
-    $totalPages = ceil($totalRows / $limit);
-    // TABLE
-    if (mysqli_num_rows($result) > 0) {
-        echo "<div style='max-height:500px; overflow-y:auto;'>";
-
-        echo "<table align='center' border='5' cellpadding='2' width='100%'>";
-        echo "<tr style='background-color:#263F73; color:white;'>";
-        // Refill Day header with filter button
-        echo "<th style='width: 120px;'>";
-        echo "<div class='barangay-header-container'>";
-
-        // Refill Day link
-        echo "<span style='color:white;'>Refill Day</span>";
-
-        // Show filter indicator if active
-        if ($refillFilterActive) {
-            echo "<span class='filter-indicator'>🔍</span>";
-
-            // Show count badge in the header
-            echo "<span class='barangay-count-badge' title='$refill_count patients with $refill_filter refill'>$refill_count</span>";
-        }
-
-        // Filter button with dynamic icon
-        $filterIcon = $refillFilterActive ? "🔽" : "▼";
-        echo "<button class='filter-btn' onclick=\"showRefillDayFilter()\" title='Filter by Refill Day'>$filterIcon</button>";
-
-        // Clear filter button (only show when filter is active)
-        if ($refillFilterActive) {
-            // Build clear URL
-            $queryParams = $_GET;
-            unset($queryParams['refill_filter']);
-            unset($queryParams['page']); // Reset to page 1
-            $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
-
-            echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Refill Day Filter'>❌</a>";
-        }
-
-        echo "</div>";
-        echo "</th>";
-        echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=1' style='color:white; text-decoration:none;'>Last name</a></th>";
-        echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=2' style='color:white; text-decoration:none;'>First name</a></th>";
-        echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=3' style='color:white; text-decoration:none;'>Middle name</a></th>";
-        // Barangay header with filter button
-        echo "<th>";
-        echo "<div class='barangay-header-container'>";
-
-        // Barangay link
-        echo "<span style='color:white;'>Barangay</span>";
-
-        // Show filter indicator if active
-        if ($barangayFilterActive) {
-            echo "<span class='filter-indicator'>🔍</span>";
-
-            // Show count badge in the header
-            echo "<span class='barangay-count-badge' title='$barangay_count patients in $barangay_filter'>$barangay_count</span>";
-        }
-
-        // Filter button with dynamic icon
-        $filterIcon = $barangayFilterActive ? "🔽" : "▼";
-        echo "<button class='filter-btn' onclick=\"showBarangayFilter()\" title='Filter by Barangay'>$filterIcon</button>";
-
-        // Clear filter button (only show when filter is active)
-        if ($barangayFilterActive) {
-            // Build clear URL
-            $queryParams = $_GET;
-            unset($queryParams['barangay_filter']);
-            unset($queryParams['page']); // Reset to page 1
-            $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
-
-            echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Barangay Filter'>❌</a>";
-        }
-
-        echo "</div>";
-        echo "</th>";
-
-        echo "<th>Birthday</th>";
-        echo '<th class="narrow-column">Prescription Retrieval Method</th>';
-        echo "<th>Status</th>";
-        echo "</tr>"; // Moved the closing tr tag here
-
-
-        while ($row = mysqli_fetch_assoc($result)) {
-            $refillDay = !empty($row['LastRefillDay']) ? $row['LastRefillDay'] : 'No Rx';
-
-            // Alternate row background
-            static $rowNum = 0;
-            $rowBg = ($rowNum % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
-            $rowNum++;
-
-            // Refill Day color
-            $refillColor = ($refillDay !== 'No Rx') ? 'color:#2c5282; font-weight:bold;' : 'color:#666; font-style:italic;';
-
-            // Start row with hover effect on the entire row
-            echo "<tr style='background-color:" . $rowBg . "; cursor: pointer;' 
-          onmouseover=\"this.style.backgroundColor='#e6f3ff'\" 
-          onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\" 
-          onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">";
-
-            // Refill Day Column (without individual hover)
-            echo "<td align='center' style='" . $refillColor . "'>" . $refillDay . "</td>";
-
-            // Other columns (without individual hover)
-            $otherColumns = ['Last_name', 'First_name', 'Middle_name', 'Barangay', 'Birthday'];
-            foreach ($otherColumns as $col) {
-                echo "<td align='center'>" . strtoupper($row[$col]) . "</td>";
-            }
-// Prescription Retrieval Method Column (make sure this column exists in your database)
-$retrievalMethod = !empty($row['RetrievalMethod']) ? $row['RetrievalMethod'] : 'NOT SPECIFIED';
-echo "<td align='center' style='font-size:12px; width: 120px;'>" . htmlspecialchars($retrievalMethod) . "</td>";
-
-
-            // Status Column (needs special handling since it has a button)
-            echo "<td align='center' onclick=\"event.stopPropagation();\">
-        <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
-        style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; border:none; font-size:10px; cursor:pointer;'
-        onmouseover=\"this.style.backgroundColor='#2E8B57'\"
-        onmouseout=\"this.style.backgroundColor='#3CB371'\">
-        Active
-    </button>
-    </td>";
-
-            echo "</tr>";
-        }
-        echo "</table>";
-        echo "</div>";
-    } else {
-        echo "<div style='text-align:center; margin-top:20px;'>
-            <div style='color:#b30000; background-color:#ffe6e6;
-                        font-weight:bold; padding:10px; border-radius:6px;
-                        width:300px; margin:0 auto;'>
-                No Record Found!
-            </div>
-          </div>";
-    }
-
-    // PAGINATION DISPLAY
-    echo "<div style='text-align:center; margin-top:10px; font-weight:bold;'>";
-    echo "Page $page / $totalPages";
-    echo "</div>";
-
-    // PAGINATION LINKS
-    echo "<div style='text-align:center; margin-top:10px;'>";
-
-    if ($page > 1) {
-        $prev_link = "?page=" . ($page - 1) . "&o=" . $ord;
-        if (!empty($runsearch)) $prev_link .= "&dosearch=" . urlencode($runsearch);
-        if (!empty($barangay_filter)) $prev_link .= "&barangay_filter=" . urlencode($barangay_filter);
-        if (!empty($refill_filter)) $prev_link .= "&refill_filter=" . urlencode($refill_filter);
-
-        echo "<a href='" . $prev_link . "' 
-        style='padding:8px 15px; margin-right:10px; 
-               background:#DAA520; color:white; 
-               text-decoration:none; border-radius:5px;'>
-        Previous
-      </a>";
-    }
-
-    if ($page < $totalPages) {
-        $next_link = "?page=" . ($page + 1) . "&o=" . $ord;
-        if (!empty($runsearch)) $next_link .= "&dosearch=" . urlencode($runsearch);
-        if (!empty($barangay_filter)) $next_link .= "&barangay_filter=" . urlencode($barangay_filter);
-        if (!empty($refill_filter)) $next_link .= "&refill_filter=" . urlencode($refill_filter);
-        echo "<a href='" . $next_link . "' 
-        style='padding:8px 15px; 
-               background:#28A745; color:white; 
-               text-decoration:none; border-radius:5px;'>
-        Next
-      </a>";
-    }
-
-
-    echo "</div>";
-    ?>
-
-    <!-- Barangay Filter Modal -->
-    <div id="barangayFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
-            <h3 style="margin-top:0; color:#263F73;">Filter by Barangay</h3>
-            <form method="get" action="Patiententry.php" id="barangayFilterForm">
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Barangay:</label>
-                    <select name="barangay_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                        <option value="">All Barangays</option>
-                        <?php
-                        $barangay_query = mysqli_query($conn, "SELECT DISTINCT Barangay FROM patient_details WHERE is_active = 1 AND Barangay != '' ORDER BY Barangay ASC");
-                        $current_filter = $_GET['barangay_filter'] ?? '';
-                        while ($barangay_row = mysqli_fetch_assoc($barangay_query)) {
-                            $barangay_name = strtoupper($barangay_row['Barangay']);
-
-                            // Get count for this barangay
-                            $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Barangay = '$barangay_name'";
-                            $count_result = mysqli_query($conn, $count_query);
-                            $count = 0;
-                            if ($count_result) {
-                                $count_row = mysqli_fetch_assoc($count_result);
-                                $count = $count_row['count'];
-                            }
-
-                            $selected = ($current_filter == $barangay_name) ? 'selected' : '';
-                            echo "<option value='" . htmlspecialchars($barangay_name) . "' $selected>" . $barangay_name . " ($count patients)</option>";
-                        }
-                        ?>
-                    </select>
-                </div>
-
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="o" value="<?php echo $ord; ?>">
-                <?php if (!empty($runsearch)): ?>
-                    <input type="hidden" name="dosearch" value="<?php echo htmlspecialchars($runsearch); ?>">
-                <?php endif; ?>
-
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
-                    <button type="button" onclick="hideBarangayFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
-                    <?php if (!empty($current_filter)): ?>
-                        <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?>"
-                            style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">
-                            Clear Filter
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Deactivate Patient Modal -->
-    <div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
-        <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
-            <h3 style="margin-top:0; color:#dc3545; border-bottom:1px solid #eee; padding-bottom:10px;">
-                Deactivate Patient
-            </h3>
-
-            <div id="patientInfo" style="margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:5px;">
-                <strong>Patient:</strong> <span id="patientName"></span>
-            </div>
-
-            <form id="deactivateForm" method="post" action="transact/deactivate_patient.php">
-                <input type="hidden" id="patientId" name="patient_id">
-
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Date of Deactivation:</label>
-                    <input type="date" id="deactivationDate" name="deactivation_date"
-                        value="<?php echo date('Y-m-d'); ?>"
-                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
-                    <select id="deactivationReason" name="reason"
-                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; 
-                   font-size:14px;"
-                        required>
-                        <option value="">SELECT REASON FOR DEACTIVATION</option>
-                        <option value="DECEASED">DECEASED</option>
-                        <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
-                        <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
-                        <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
-                        <option value="HOLD BY MAC">HOLD BY MAC</option>
-                    </select>
-                </div>
-
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const select = document.getElementById('deactivationReason');
-
-                        // Store original options with colors
-                        const optionsWithColors = [{
-                                value: "",
-                                text: "--SELECT REASON FOR DEACTIVATION--",
-                                color: "#000",
-                                style: "font-style: italic;"
-                            },
-                            {
-                                value: "DECEASED",
-                                text: "DECEASED",
-                                color: "#dc3545"
-                            },
-                            {
-                                value: "PATIENT UNLOCATED",
-                                text: "PATIENT UNLOCATED",
-                                color: "#fd7e14"
-                            },
-                            {
-                                value: "EXPIRED MHP CARD",
-                                text: "EXPIRED MHP CARD",
-                                color: "#ffc107"
-                            },
-                            {
-                                value: "REFUSED DELIVERY",
-                                text: "REFUSED DELIVERY",
-                                color: "#6c757d"
-                            },
-                            {
-                                value: "HOLD BY MAC",
-                                text: "HOLD BY MAC",
-                                color: "#008b8b"
-                            },
-                        ];
-
-                        // Clear and rebuild with colored text
-                        select.innerHTML = '';
-                        optionsWithColors.forEach(option => {
-                            const opt = document.createElement('option');
-                            opt.value = option.value;
-                            opt.textContent = option.value ? `● ${option.text}` : option.text;
-                            opt.style.color = option.color;
-                            select.appendChild(opt);
-                        });
-                    });
-                </script>
-
-                <div style="margin-bottom:20px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
-                    <textarea id="deactivationRemarks" name="remarks"
-                        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
-                     text-transform: uppercase; font-size:14px;"
-                        placeholder="ENTER DETAILS FOR DEACTIVATION..."
-                        oninput="this.value = this.value.toUpperCase()" S></textarea>
-                </div>
-                <div style="margin-bottom:20px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <label style="font-weight:bold;">SET BY:</label>
-                        <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
-                            <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
-                        </div>
-                    </div>
-                    <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
-                </div>
-
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button type="submit"
-                        style="flex:1; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
-                        Confirm Deactivation
-                    </button>
-                    <button type="button" onclick="hideDeactivateModal()"
-                        style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <!-- JavaScript for Barangay Filter -->
-    <script>
-        function showBarangayFilter() {
-            document.getElementById('barangayFilterModal').style.display = 'flex';
-        }
-
-        function hideBarangayFilter() {
-            document.getElementById('barangayFilterModal').style.display = 'none';
-        }
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideBarangayFilter();
-            }
-        });
-    </script>
-
-    <!-- Rest of your existing scripts remain the same -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchForm = document.querySelector('form[name="theform"]');
-            const loader = document.getElementById('loader');
-
-            if (searchForm) {
-                searchForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    loader.style.display = 'block';
-
-                    const minLoaderTime = 500;
-                    const fakeProcessing = new Promise((resolve) => {
-                        setTimeout(resolve, 100);
-                    });
-
-                    const loaderTimeout = new Promise((resolve) => {
-                        setTimeout(resolve, minLoaderTime);
-                    });
-
-                    Promise.all([fakeProcessing, loaderTimeout]).then(() => {
-                        loader.style.display = 'none';
-                        searchForm.submit();
-                    });
-                });
-            }
-
-            <?php if (isset($success_message) && !empty($success_message)): ?>
-                if (window.CustomNotification) {
-                    window.CustomNotification.show(
-                        "<?php echo $success_message; ?>",
-                        'success',
-                        5000
-                    );
-                } else {
-                    alert("<?php echo $success_message; ?>");
-                }
-            <?php endif; ?>
-        });
-    </script>
-
-    <!-- LOADER -->
-    <div id="loader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:9999; text-align:center; padding-top:200px;">
-        <div class="spinner" style="
-                border: 8px solid #f3f3f3;
-                border-top: 8px solid #263F73;
-                border-radius: 50%;
-                width: 60px;
-                height: 60px;
-                margin: 0 auto;
-                animation: spin 1s linear infinite;">
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchForm = document.querySelector('form[name="theform"]');
-            const loader = document.getElementById('loader');
-
-            if (searchForm) {
-                searchForm.addEventListener('submit', function() {
-                    loader.style.display = 'block';
-                });
-            }
-        });
-    </script>
-
-    <script>
-        function updateDateTime() {
-            const now = new Date();
-            const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                'July', 'August', 'September', 'October', 'November', 'December'
-            ];
-            const month = months[now.getMonth()];
-            const day = now.getDate();
-            const year = now.getFullYear();
-
-            let hours = now.getHours();
-            let minutes = now.getMinutes();
-            let seconds = now.getSeconds();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            seconds = seconds < 10 ? '0' + seconds : seconds;
-
-            const dateStr = month + ' ' + day + ', ' + year;
-            const timeStr = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-
-            document.getElementById('liveDateTime').innerHTML = dateStr + ' | ' + timeStr;
-        }
-
-        updateDateTime();
-        setInterval(updateDateTime, 1000);
-    </script>
-
-    <script>
-        // Deactivate Modal Functions
-        function showDeactivateModal(patientId, lastName, firstName) {
-            // Set patient information
-            document.getElementById('patientId').value = patientId;
-            document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
-
-            // Reset form
-            document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('deactivationReason').value = '';
-            document.getElementById('deactivationRemarks').value = '';
-
-            // Show modal
-            document.getElementById('deactivateModal').style.display = 'flex';
-        }
-
-        function hideDeactivateModal() {
-            document.getElementById('deactivateModal').style.display = 'none';
-        }
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideDeactivateModal();
-                hideBarangayFilter(); // Close barangay filter if open
-            }
-        });
-
-        // Prevent modal close when clicking inside modal
-        document.getElementById('deactivateModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideDeactivateModal();
-            }
-        });
-
-        // AJAX form submission
-        document.getElementById('deactivateForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-
-            // Show loading
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Processing...';
-            submitBtn.disabled = true;
-
-            // Use the correct path - try this:
-            fetch('transact/deactivate_transact.php', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'Accept': 'application/json',
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        // If we get a 404, the path is wrong
-                        if (response.status === 404) {
-                            throw new Error(`File not found (404). Check if deactivate_transact.php exists in the transact folder.`);
-                        }
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Show success message
-                        alert(data.message || 'Patient deactivated successfully!');
-
-                        // Reload the page to reflect changes
-                        window.location.reload();
-                    } else {
-                        alert('Error: ' + (data.message || 'Failed to deactivate patient'));
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    alert('Error: ' + error.message);
-                    console.error('Error details:', error);
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                });
-        });
-        // Color the select options dynamically
-        document.addEventListener('DOMContentLoaded', function() {
-            const select = document.getElementById('deactivationReason');
-
-            const optionsWithColors = [{
-                    value: "",
-                    text: "SELECT REASON FOR DEACTIVATION",
-                    color: "#000"
-                },
-                {
-                    value: "DECEASED",
-                    text: "DECEASED",
-                    color: "#dc3545"
-                },
-                {
-                    value: "PATIENT UNLOCATED",
-                    text: "PATIENT UNLOCATED",
-                    color: "#fd7e14"
-                },
-                {
-                    value: "EXPIRED MHP CARD",
-                    text: "EXPIRED MHP CARD",
-                    color: "#ffc107"
-                },
-                {
-                    value: "REFUSED DELIVERY",
-                    text: "REFUSED DELIVERY",
-                    color: "#6c757d"
-                },
-                {
-                    value: "HOLD BY MAC",
-                    text: "HOLD BY MAC",
-                    color: "#008b8b"
-                },
-            ];
-
-            // Clear and rebuild with colored text
-            select.innerHTML = '';
-            optionsWithColors.forEach(option => {
-                const opt = document.createElement('option');
-                opt.value = option.value;
-                opt.textContent = option.value ? option.text : option.text;
-                opt.style.color = option.color;
-                opt.style.fontWeight = option.value ? 'normal' : 'italic';
-                select.appendChild(opt);
-            });
-        });
-    </script>
-    <!-- Refill Day Filter Modal -->
-    <div id="refillDayFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
-            <h3 style="margin-top:0; color:#263F73;">Filter by Refill Day</h3>
-            <form method="get" action="Patiententry.php" id="refillDayFilterForm">
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Refill Day:</label>
-                    <select name="refill_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                        <option value="">All Refill Days</option>
-                        <option value="No Rx" <?php echo ($refill_filter == 'No Rx') ? 'selected' : ''; ?>>No Rx</option>
-                        <?php
-                        // Get distinct refill days from latest prescriptions
-                        $refill_query = mysqli_query($conn, "
-                        SELECT DISTINCT p.Refill_day, COUNT(DISTINCT pd.Patient_id) as count
-                        FROM prescription p
-                        INNER JOIN (
+    // Check if refill day filter is active
+    $refill_filter = isset($_GET['refill_filter']) ? mysqli_real_escape_string($conn, $_GET['refill_filter']) : '';
+    $refillFilterActive = !empty($refill_filter) && $refill_filter != 'all';
+
+    // Get count for selected refill day
+    $refill_count = 0;
+    if ($refillFilterActive) {
+        $count_query = "SELECT COUNT(DISTINCT pd.Patient_id) as count 
+                        FROM patient_details pd 
+                        LEFT JOIN (
                             SELECT Patient_id, MAX(Date) as max_date 
                             FROM prescription 
                             GROUP BY Patient_id
-                        ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
-                        INNER JOIN patient_details pd ON p.Patient_id = pd.Patient_id
-                        WHERE pd.is_active = 1 AND p.Refill_day IS NOT NULL
-                        GROUP BY p.Refill_day
-                        ORDER BY CASE 
-                            WHEN p.Refill_day = 'Monday' THEN 1
-                            WHEN p.Refill_day = 'Tuesday' THEN 2
-                            WHEN p.Refill_day = 'Wednesday' THEN 3
-                            WHEN p.Refill_day = 'Thursday' THEN 4
-                            WHEN p.Refill_day = 'Friday' THEN 5
-                            WHEN p.Refill_day = 'Saturday' THEN 6
-                            WHEN p.Refill_day = 'Sunday' THEN 7
-                            ELSE 8
-                        END
-                    ");
+                        ) latest_p ON pd.Patient_id = latest_p.Patient_id
+                        LEFT JOIN prescription p ON latest_p.Patient_id = p.Patient_id AND latest_p.max_date = p.Date
+                        WHERE pd.is_active = 1 
+                        AND (p.Refill_day = '$refill_filter' 
+                            OR (p.Refill_day IS NULL AND '$refill_filter' = 'No Rx'))";
+        $result = mysqli_query($conn, $count_query);
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            $refill_count = $row['count'];
+        }
+    }
+    $retrieval_filter = isset($_GET['retrieval_filter']) ? mysqli_real_escape_string($conn, $_GET['retrieval_filter']) : '';
+    $retrievalFilterActive = !empty($retrieval_filter) && $retrieval_filter != 'all';
 
-                        $current_filter = $_GET['refill_filter'] ?? '';
-                        while ($refill_row = mysqli_fetch_assoc($refill_query)) {
-                            $refill_day = $refill_row['Refill_day'];
-                            $count = $refill_row['count'];
-                            $selected = ($current_filter == $refill_day) ? 'selected' : '';
-                            echo "<option value='" . htmlspecialchars($refill_day) . "' $selected>" . $refill_day . " ($count patients)</option>";
-                        }
-                        ?>
-                    </select>
-                </div>
+    // Get count for selected retrieval method
+    $retrieval_count = 0;
+    if ($retrievalFilterActive) {
+        $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Prescription_retrieval_method = '$retrieval_filter'";
+        $result = mysqli_query($conn, $count_query);
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            $retrieval_count = $row['count'];
+        }
+    }
+    ?>
 
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="o" value="<?php echo $ord; ?>">
-                <?php if (!empty($barangay_filter)): ?>
-                    <input type="hidden" name="barangay_filter" value="<?php echo htmlspecialchars($barangay_filter); ?>">
-                <?php endif; ?>
-                <?php if (!empty($runsearch)): ?>
-                    <input type="hidden" name="dosearch" value="<?php echo htmlspecialchars($runsearch); ?>">
-                <?php endif; ?>
+    <html>
 
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
-                    <button type="button" onclick="hideRefillDayFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
-                    <?php if (!empty($current_filter)): ?>
-                        <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?><?php echo !empty($barangay_filter) ? '&barangay_filter=' . urlencode($barangay_filter) : ''; ?>"
-                            style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">
-                            Clear Filter
-                        </a>
+    <head>
+        <title>Hospice</title>
+        <link rel="stylesheet" type="text/css" href="CSS/style.css">
+        <script src="js/notifications.js"></script>
+    </head>
+
+    <body>
+
+        <div class="sidebar">
+            <!-- Welcome message with first_name above logout -->
+            <?php if (isset($_SESSION['First_name'])): ?>
+                <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                    <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
+                        Prescription
+                    </div> <br>
+                    <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
+                    Welcome,<br>
+                    <?php if (isset($_SESSION['Role'])): ?>
+                        <div style="margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.8);">
+                            <?php echo htmlspecialchars($_SESSION['Role']); ?>
+                        </div>
                     <?php endif; ?>
+                    <div style="display: flex; align-items: center; justify-content: center">
+                        <strong style="font-size: 15px;"><?php echo htmlspecialchars($_SESSION['First_name']); ?></strong>
+                    </div>
+
                 </div>
-            </form>
+            <?php endif; ?>
+
+            <a href="patiententry.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
+                Patient Records
+            </a>
+            <a href="inactive_patient.php">
+                Inactive Patients
+            </a>
+            <a href="bulk_print.php">
+                Bulk Print
+            </a>
+
+            <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
+                <a href="Doctors.php">
+                    Doctors
+                </a> <?php endif; ?>
+            <a href="Medicines.php">Medicines</a>
+
+            <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
+                <a href="user_management.php">
+                    User Management
+                </a><?php endif; ?>
+
+
+
+
+            <div class="spacer"></div>
+            <div class="logout-container">
+                <script>
+                    function confirmLogout() {
+                        return confirm("Are you sure you want to log out?");
+                    }
+                </script>
+                <div style="font-size: 20px; color: white; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">
+                </div>
+                <a href="logout.php" class="logout-btn" onclick="return confirmLogout();"
+                    style="display: flex; align-items: center; justify-content: left; gap: 8px; 
+                text-decoration: none; color: white; padding: 10px; 
+                background: rgba(255,255,255,0.1); border-radius: 5px; 
+                transition: background 0.3s;">
+                    <img src="img/logout_icon.png" alt="Logout" class="logo" style="width: 24px; height: 24px;">
+                    <span>Logout</span>
+                </a>
+            </div>
         </div>
-    </div>
-    <script>
-        function showRefillDayFilter() {
-            document.getElementById('refillDayFilterModal').style.display = 'flex';
-        }
 
-        function hideRefillDayFilter() {
-            document.getElementById('refillDayFilterModal').style.display = 'none';
-        }
+        <h1 align='center'> <img src="img/patient_record_icon.png" alt="patient_record_icon" class="logo">Patient Records</h1>
 
-        // Update the existing Escape key handler to include refill filter
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideBarangayFilter();
-                hideRefillDayFilter();
-                hideDeactivateModal();
+        <div class="datetime-header" id="liveDateTime">
+            <?php
+            date_default_timezone_set('Asia/Manila');
+            echo date('F j, Y') . ' | ' . date('h:i:s A');
+            ?>
+        </div>
+
+        <?php
+        // Count total records
+        $count_query = mysqli_query($conn, "SELECT COUNT(*) AS total FROM patient_details WHERE is_active = 1");
+        $count_result = mysqli_fetch_assoc($count_query);
+
+        if ($count_result) {
+            echo "<div style='display:flex; align-items:center; gap:20px; margin-bottom:20px;'>";
+            echo "<div class='blink-text' style='background-color:white; 
+                            padding:10px 20px; margin-left:300px; border-radius:8px; font-weight:bold; 
+                            color:#263F73; width:200px; text-align:center;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
+            echo "Active Patient<br><span style='font-size:30px;'>" . $count_result['total'] . "</span>";
+            echo "</div>";
+
+            // Show barangay count if filter is active
+            if ($barangayFilterActive && $barangay_count > 0) {
+                echo "<div style='background-color:#4CAF50; color:white; padding:10px 20px; border-radius:8px; font-weight:bold;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);'>";
+                echo htmlspecialchars($barangay_filter) . "<br><span style='font-size:30px;'>" . $barangay_count . "</span>";
+                echo "</div>";
             }
-        });
-    </script>
-</body>
 
-</html>
+            echo "</div>";
+        }
+        ?>
+        <hr style="margin: 20px 250px; border: 1px solid #ccc; width: 80%;">
+
+        <!-- Search container -->
+        <div style="background-color: white; padding: 15px 15px; margin: 0 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; margin-bottom: 20px;">
+            <form method="get" action="Patiententry.php" name="theform" style="display: flex; align-items: center; gap: 10px;">
+                <input type="text" name="dosearch" placeholder="Enter Lastname, Firstname, or Full Name"
+                    value="<?php echo htmlspecialchars($_GET['dosearch'] ?? ''); ?>"
+                    style="flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="submit" name="action" value="Search"
+                    style="padding: 8px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <a href="ptedit.php"
+                    style="padding: 7px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                    Add New Patient
+                </a>
+            </form>
+
+
+
+        </div>
+
+        <?php
+        // Number of rows per page
+        $limit = 50;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        if ($page < 1) $page = 1;
+        $start = ($page - 1) * $limit;
+        $runsearch = mysqli_real_escape_string($conn, $_GET['dosearch'] ?? '');
+
+        // SEARCH
+        if (isset($_GET['dosearch']) && !empty($_GET['dosearch'])) {
+            $runsearch = $_GET['dosearch'];
+
+            // Split the search term by spaces
+            $searchTerms = explode(' ', trim($runsearch));
+
+            // Build the WHERE clause dynamically
+            $whereClauses = [];
+
+            if (!empty($searchTerms)) {
+                // If single term, search in both first and last name
+                if (count($searchTerms) == 1) {
+                    $term = mysqli_real_escape_string($conn, $searchTerms[0]);
+                    $whereClauses[] = "(pd.Last_name LIKE '%$term%' OR pd.First_name LIKE '%$term%')";
+                }
+                // If two terms, assume first is firstname and second is lastname
+                elseif (count($searchTerms) == 2) {
+                    $term1 = mysqli_real_escape_string($conn, $searchTerms[0]); // First name
+                    $term2 = mysqli_real_escape_string($conn, $searchTerms[1]); // Last name
+
+                    // Search for exact combination: firstname + lastname
+                    $whereClauses[] = "(pd.First_name LIKE '%$term1%' AND pd.Last_name LIKE '%$term2%')";
+                    // Also search for reversed combination: lastname + firstname
+                    $whereClauses[] = "(pd.Last_name LIKE '%$term1%' AND pd.First_name LIKE '%$term2%')";
+                }
+                // If more than two terms, search for each term in either field
+                else {
+                    foreach ($searchTerms as $term) {
+                        $safeTerm = mysqli_real_escape_string($conn, $term);
+                        if (!empty($safeTerm)) {
+                            $whereClauses[] = "(pd.Last_name LIKE '%$safeTerm%' OR pd.First_name LIKE '%$safeTerm%' OR pd.Middle_name LIKE '%$safeTerm%')";
+                        }
+                    }
+                }
+            }
+
+            // Build the final SQL query
+            if (!empty($whereClauses)) {
+                $whereCondition = "(" . implode(" OR ", $whereClauses) . ") AND pd.is_active = 1";
+            } else {
+                $whereCondition = "pd.is_active = 1";
+            }
+
+            // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
+            $sql = "SELECT pd.*, 
+        (SELECT p.Refill_day 
+            FROM prescription p 
+            WHERE p.Patient_id = pd.Patient_id 
+            ORDER BY p.Date DESC 
+            LIMIT 1) as LastRefillDay,
+        pd.Prescription_retrieval_method AS RetrievalMethod
+    FROM patient_details pd 
+    WHERE $whereCondition";
+
+            // Prescription Retrieval Method filter - BEFORE $countSql is defined
+            if (!empty($retrieval_filter)) {
+                $sql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
+            }
+
+            if (!empty($barangay_filter)) {
+                $sql .= " AND pd.Barangay = '$barangay_filter'";
+            }
+
+            // Refill Day filter - MUST BE BEFORE ORDER BY
+            if (!empty($refill_filter)) {
+                if ($refill_filter == 'No Rx') {
+                    // Patients with no prescription
+                    $sql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+                } else {
+                    // Patients with specific refill day
+                    $sql .= " AND pd.Patient_id IN (
+                SELECT DISTINCT p.Patient_id 
+                FROM prescription p 
+                INNER JOIN (
+                    SELECT Patient_id, MAX(Date) as max_date 
+                    FROM prescription 
+                    GROUP BY Patient_id
+                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                WHERE p.Refill_day = '$refill_filter'
+            )";
+                }
+            }
+
+            $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
+
+            // Count query
+            $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
+            WHERE $whereCondition";
+
+            // Add filters to count query
+            if (!empty($retrieval_filter)) {
+                $countSql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
+            }
+
+            if (!empty($barangay_filter)) {
+                $countSql .= " AND pd.Barangay = '$barangay_filter'";
+            }
+
+            // Refill Day filter for COUNT QUERY
+            if (!empty($refill_filter)) {
+                if ($refill_filter == 'No Rx') {
+                    $countSql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+                } else {
+                    $countSql .= " AND pd.Patient_id IN (
+                SELECT DISTINCT p.Patient_id 
+                FROM prescription p 
+                INNER JOIN (
+                    SELECT Patient_id, MAX(Date) as max_date 
+                    FROM prescription 
+                    GROUP BY Patient_id
+                ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                WHERE p.Refill_day = '$refill_filter'
+            )";
+                }
+            }
+        } else {
+            // NO SEARCH - SHOW ALL RECORDS
+            // ... rest of your non-search code remains the same
+            // NO SEARCH - SHOW ALL RECORDS
+            // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
+            $sql = "SELECT pd.*, 
+        (SELECT p.Refill_day 
+            FROM prescription p 
+            WHERE p.Patient_id = pd.Patient_id 
+            ORDER BY p.Date DESC 
+            LIMIT 1) as LastRefillDay,
+        pd.Prescription_retrieval_method AS RetrievalMethod
+    FROM patient_details pd 
+    WHERE pd.is_active = 1";
+
+            if (!empty($barangay_filter)) {
+                $sql .= " AND pd.Barangay = '$barangay_filter'";
+            }
+
+            // ADD THIS - Prescription Retrieval Method filter for MAIN QUERY
+            if (!empty($retrieval_filter)) {
+                $sql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
+            }
+            // Refill Day filter for MAIN QUERY
+            if (!empty($refill_filter)) {
+                if ($refill_filter == 'No Rx') {
+                    // Patients with no prescription
+                    $sql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+                } else {
+                    // Patients with specific refill day
+                    $sql .= " AND pd.Patient_id IN (
+                    SELECT DISTINCT p.Patient_id 
+                    FROM prescription p 
+                    INNER JOIN (
+                        SELECT Patient_id, MAX(Date) as max_date 
+                        FROM prescription 
+                        GROUP BY Patient_id
+                    ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                    WHERE p.Refill_day = '$refill_filter'
+                )";
+                }
+            }
+
+            $sql .= " ORDER BY pd." . str_replace(' ASC', '', $order[$ord]) . " ASC LIMIT $start, $limit";
+
+            // COUNT QUERY
+
+            $countSql = "SELECT COUNT(*) AS total FROM patient_details pd 
+            WHERE pd.is_active = 1";
+
+            if (!empty($barangay_filter)) {
+                $countSql .= " AND pd.Barangay = '$barangay_filter'";
+            }
+            // ADD THIS - Prescription Retrieval Method filter for COUNT QUERY
+            if (!empty($retrieval_filter)) {
+                $countSql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
+            }
+            // Refill Day filter for COUNT QUERY
+            if (!empty($refill_filter)) {
+                if ($refill_filter == 'No Rx') {
+                    // Patients with no prescription
+                    $countSql .= " AND pd.Patient_id NOT IN (SELECT DISTINCT Patient_id FROM prescription WHERE Refill_day IS NOT NULL)";
+                } else {
+                    // Patients with specific refill day
+                    $countSql .= " AND pd.Patient_id IN (
+                    SELECT DISTINCT p.Patient_id 
+                    FROM prescription p 
+                    INNER JOIN (
+                        SELECT Patient_id, MAX(Date) as max_date 
+                        FROM prescription 
+                        GROUP BY Patient_id
+                    ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                    WHERE p.Refill_day = '$refill_filter'
+                )";
+                }
+            }
+        }
+
+        // EXECUTE QUERIES
+        $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
+        $countResult = mysqli_query($conn, $countSql) or die(mysqli_error($conn));
+        $totalRows = mysqli_fetch_assoc($countResult)['total'];
+        $totalPages = ceil($totalRows / $limit);
+        // TABLE
+        if (mysqli_num_rows($result) > 0) {
+            echo "<div style='max-height:500px; overflow-y:auto;'>";
+
+            echo "<table align='center' border='5' cellpadding='2' width='100%'>";
+            echo "<tr style='background-color:#263F73; color:white;'>";
+            // Refill Day header with filter button
+            echo "<th style='width: 120px;'>";
+            echo "<div class='barangay-header-container'>";
+
+            // Refill Day link
+            echo "<span style='color:white;'>Refill Day</span>";
+
+            // Show filter indicator if active
+            if ($refillFilterActive) {
+                echo "<span class='filter-indicator'>🔍</span>";
+
+                // Show count badge in the header
+                echo "<span class='barangay-count-badge' title='$refill_count patients with $refill_filter refill'>$refill_count</span>";
+            }
+
+            // Filter button with dynamic icon
+            $filterIcon = $refillFilterActive ? "🔽" : "▼";
+            echo "<button class='filter-btn' onclick=\"showRefillDayFilter()\" title='Filter by Refill Day'>$filterIcon</button>";
+
+            // Clear filter button (only show when filter is active)
+            if ($refillFilterActive) {
+                // Build clear URL
+                $queryParams = $_GET;
+                unset($queryParams['refill_filter']);
+                unset($queryParams['page']); // Reset to page 1
+                $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
+
+                echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Refill Day Filter'>❌</a>";
+            }
+
+            echo "</div>";
+            echo "</th>";
+            echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=1' style='color:white; text-decoration:none;'>Last name</a></th>";
+            echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=2' style='color:white; text-decoration:none;'>First name</a></th>";
+            echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=3' style='color:white; text-decoration:none;'>Middle name</a></th>";
+            // Barangay header with filter button
+            echo "<th>";
+            echo "<div class='barangay-header-container'>";
+
+            // Barangay link
+            echo "<span style='color:white;'>Barangay</span>";
+
+            // Show filter indicator if active
+            if ($barangayFilterActive) {
+                echo "<span class='filter-indicator'>🔍</span>";
+
+                // Show count badge in the header
+                echo "<span class='barangay-count-badge' title='$barangay_count patients in $barangay_filter'>$barangay_count</span>";
+            }
+
+            // Filter button with dynamic icon
+            $filterIcon = $barangayFilterActive ? "🔽" : "▼";
+            echo "<button class='filter-btn' onclick=\"showBarangayFilter()\" title='Filter by Barangay'>$filterIcon</button>";
+
+            // Clear filter button (only show when filter is active)
+            if ($barangayFilterActive) {
+                // Build clear URL
+                $queryParams = $_GET;
+                unset($queryParams['barangay_filter']);
+                unset($queryParams['page']); // Reset to page 1
+                $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
+
+                echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Barangay Filter'>❌</a>";
+            }
+
+            echo "</div>";
+            echo "</th>";
+
+            echo "<th>Birthday</th>";
+
+            // Prescription Retrieval Method header with filter button
+            echo "<th class='narrow-column'>";
+            echo "<div class='prescription-header-container'>";
+
+            // Column title
+            echo "<span style='color:white;'>Prescription Retrieval Method</span>";
+
+            // Show filter indicator if active
+            if ($retrievalFilterActive) {
+                echo "<span class='filter-indicator'>🔍</span>";
+
+                // Show count badge in the header
+                echo "<span class='barangay-count-badge' title='$retrieval_count patients with $retrieval_filter retrieval method'>$retrieval_count</span>";
+            }
+
+            // Filter button with dynamic icon
+            $filterIcon = $retrievalFilterActive ? "🔽" : "▼";
+            echo "<button class='filter-btn' onclick=\"showRetrievalFilter()\" title='Filter by Prescription Retrieval Method'>$filterIcon</button>";
+
+            // Clear filter button (only show when filter is active)
+            if ($retrievalFilterActive) {
+                // Build clear URL
+                $queryParams = $_GET;
+                unset($queryParams['retrieval_filter']);
+                unset($queryParams['page']); // Reset to page 1
+                $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
+
+                echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Prescription Retrieval Method Filter'>❌</a>";
+            }
+
+            echo "</div>";
+            echo "</th>";
+            echo "<th>Status</th>";
+            echo "</tr>"; // Moved the closing tr tag here
+
+
+            while ($row = mysqli_fetch_assoc($result)) {
+                $refillDay = !empty($row['LastRefillDay']) ? $row['LastRefillDay'] : 'No Rx';
+
+                // Alternate row background
+                static $rowNum = 0;
+                $rowBg = ($rowNum % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
+                $rowNum++;
+
+                // Refill Day color
+                $refillColor = ($refillDay !== 'No Rx') ? 'color:#2c5282; font-weight:bold;' : 'color:#666; font-style:italic;';
+
+                // Start row with hover effect on the entire row
+                echo "<tr style='background-color:" . $rowBg . "; cursor: pointer;' 
+            onmouseover=\"this.style.backgroundColor='#e6f3ff'\" 
+            onmouseout=\"this.style.backgroundColor='" . $rowBg . "'\" 
+            onclick=\"window.location='ptedit.php?c=" . $row['Patient_id'] . "'\">";
+
+                // Refill Day Column (without individual hover)
+                echo "<td align='center' style='" . $refillColor . "'>" . $refillDay . "</td>";
+
+                // Other columns (without individual hover)
+                $otherColumns = ['Last_name', 'First_name', 'Middle_name', 'Barangay', 'Birthday'];
+                foreach ($otherColumns as $col) {
+                    echo "<td align='center'>" . strtoupper($row[$col]) . "</td>";
+                }
+                // Prescription Retrieval Method Column (make sure this column exists in your database)
+                $retrievalMethod = !empty($row['RetrievalMethod']) ? $row['RetrievalMethod'] : 'NOT SPECIFIED';
+                echo "<td align='center' style='font-size:12px; width: 120px;'>" . htmlspecialchars($retrievalMethod) . "</td>";
+
+
+                // Status Column (needs special handling since it has a button)
+                echo "<td align='center' onclick=\"event.stopPropagation();\">
+            <button onclick=\"showDeactivateModal(" . $row['Patient_id'] . ", '" . htmlspecialchars(addslashes($row['Last_name'])) . "', '" . htmlspecialchars(addslashes($row['First_name'])) . "')\"
+            style='background-color:#3CB371; color:white; padding:4px 5px; border-radius:3px; border:none; font-size:10px; cursor:pointer;'
+            onmouseover=\"this.style.backgroundColor='#2E8B57'\"
+            onmouseout=\"this.style.backgroundColor='#3CB371'\">
+            Active
+        </button>
+        </td>";
+
+                echo "</tr>";
+            }
+            echo "</table>";
+            echo "</div>";
+        } else {
+            echo "<div style='text-align:center; margin-top:20px;'>
+                <div style='color:#b30000; background-color:#ffe6e6;
+                            font-weight:bold; padding:10px; border-radius:6px;
+                            width:300px; margin:0 auto;'>
+                    No Record Found!
+                </div>
+            </div>";
+        }
+
+        // PAGINATION DISPLAY
+        echo "<div style='text-align:center; margin-top:10px; font-weight:bold;'>";
+        echo "Page $page / $totalPages";
+        echo "</div>";
+
+        // PAGINATION LINKS
+        echo "<div style='text-align:center; margin-top:10px;'>";
+
+        if ($page > 1) {
+            $prev_link = "?page=" . ($page - 1) . "&o=" . $ord;
+            if (!empty($runsearch)) $prev_link .= "&dosearch=" . urlencode($runsearch);
+            if (!empty($barangay_filter)) $prev_link .= "&barangay_filter=" . urlencode($barangay_filter);
+            if (!empty($refill_filter)) $prev_link .= "&refill_filter=" . urlencode($refill_filter);
+            if (!empty($retrieval_filter)) $prev_link .= "&retrieval_filter=" . urlencode($retrieval_filter);
+
+            echo "<a href='" . $prev_link . "' 
+        style='padding:8px 15px; margin-right:10px; 
+            background:#DAA520; color:white; 
+            text-decoration:none; border-radius:5px;'>
+        Previous
+    </a>";
+        }
+
+        if ($page < $totalPages) {
+            $next_link = "?page=" . ($page + 1) . "&o=" . $ord;
+            if (!empty($runsearch)) $next_link .= "&dosearch=" . urlencode($runsearch);
+            if (!empty($barangay_filter)) $next_link .= "&barangay_filter=" . urlencode($barangay_filter);
+            if (!empty($refill_filter)) $next_link .= "&refill_filter=" . urlencode($refill_filter);
+            if (!empty($retrieval_filter)) $next_link .= "&retrieval_filter=" . urlencode($retrieval_filter);
+            echo "<a href='" . $next_link . "' 
+        style='padding:8px 15px; 
+            background:#28A745; color:white; 
+            text-decoration:none; border-radius:5px;'>
+        Next
+    </a>";
+        }
+
+
+        echo "</div>";
+        ?>
+
+        <!-- Barangay Filter Modal -->
+        <div id="barangayFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
+                <h3 style="margin-top:0; color:#263F73;">Filter by Barangay</h3>
+                <form method="get" action="Patiententry.php" id="barangayFilterForm">
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Barangay:</label>
+                        <select name="barangay_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                            <option value="">All Barangays</option>
+                            <?php
+                            $barangay_query = mysqli_query($conn, "SELECT DISTINCT Barangay FROM patient_details WHERE is_active = 1 AND Barangay != '' ORDER BY Barangay ASC");
+                            $current_filter = $_GET['barangay_filter'] ?? '';
+                            while ($barangay_row = mysqli_fetch_assoc($barangay_query)) {
+                                $barangay_name = strtoupper($barangay_row['Barangay']);
+
+                                // Get count for this barangay
+                                $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Barangay = '$barangay_name'";
+                                $count_result = mysqli_query($conn, $count_query);
+                                $count = 0;
+                                if ($count_result) {
+                                    $count_row = mysqli_fetch_assoc($count_result);
+                                    $count = $count_row['count'];
+                                }
+
+                                $selected = ($current_filter == $barangay_name) ? 'selected' : '';
+                                echo "<option value='" . htmlspecialchars($barangay_name) . "' $selected>" . $barangay_name . " ($count patients)</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="o" value="<?php echo $ord; ?>">
+                    <?php if (!empty($runsearch)): ?>
+                        <input type="hidden" name="dosearch" value="<?php echo htmlspecialchars($runsearch); ?>">
+                    <?php endif; ?>
+
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
+                        <button type="button" onclick="hideBarangayFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                        <?php if (!empty($current_filter)): ?>
+                            <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?>"
+                                style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">
+                                Clear Filter
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Deactivate Patient Modal -->
+        <div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+            <div style="background:white; padding:25px; border-radius:8px; width:500px; max-height:80vh; overflow-y:auto;">
+                <h3 style="margin-top:0; color:#dc3545; border-bottom:1px solid #eee; padding-bottom:10px;">
+                    Deactivate Patient
+                </h3>
+
+                <div id="patientInfo" style="margin-bottom:15px; padding:10px; background:#f8f9fa; border-radius:5px;">
+                    <strong>Patient:</strong> <span id="patientName"></span>
+                </div>
+
+                <form id="deactivateForm" method="post" action="transact/deactivate_patient.php">
+                    <input type="hidden" id="patientId" name="patient_id">
+
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Date of Deactivation:</label>
+                        <input type="date" id="deactivationDate" name="deactivation_date"
+                            value="<?php echo date('Y-m-d'); ?>"
+                            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" required>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">REASON:</label>
+                        <select id="deactivationReason" name="reason"
+                            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; 
+                    font-size:14px;"
+                            required>
+                            <option value="">SELECT REASON FOR DEACTIVATION</option>
+                            <option value="DECEASED">DECEASED</option>
+                            <option value="PATIENT UNLOCATED">PATIENT UNLOCATED</option>
+                            <option value="EXPIRED MHP CARD">EXPIRED MHP CARD</option>
+                            <option value="REFUSED DELIVERY">REFUSED DELIVERY</option>
+                            <option value="HOLD BY MAC">HOLD BY MAC</option>
+                        </select>
+                    </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const select = document.getElementById('deactivationReason');
+
+                            // Store original options with colors
+                            const optionsWithColors = [{
+                                    value: "",
+                                    text: "--SELECT REASON FOR DEACTIVATION--",
+                                    color: "#000",
+                                    style: "font-style: italic;"
+                                },
+                                {
+                                    value: "DECEASED",
+                                    text: "DECEASED",
+                                    color: "#dc3545"
+                                },
+                                {
+                                    value: "PATIENT UNLOCATED",
+                                    text: "PATIENT UNLOCATED",
+                                    color: "#fd7e14"
+                                },
+                                {
+                                    value: "EXPIRED MHP CARD",
+                                    text: "EXPIRED MHP CARD",
+                                    color: "#ffc107"
+                                },
+                                {
+                                    value: "REFUSED DELIVERY",
+                                    text: "REFUSED DELIVERY",
+                                    color: "#6c757d"
+                                },
+                                {
+                                    value: "HOLD BY MAC",
+                                    text: "HOLD BY MAC",
+                                    color: "#008b8b"
+                                },
+                            ];
+
+                            // Clear and rebuild with colored text
+                            select.innerHTML = '';
+                            optionsWithColors.forEach(option => {
+                                const opt = document.createElement('option');
+                                opt.value = option.value;
+                                opt.textContent = option.value ? `● ${option.text}` : option.text;
+                                opt.style.color = option.color;
+                                select.appendChild(opt);
+                            });
+                        });
+                    </script>
+
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">DETAILS:</label>
+                        <textarea id="deactivationRemarks" name="remarks"
+                            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
+                        text-transform: uppercase; font-size:14px;"
+                            placeholder="ENTER DETAILS FOR DEACTIVATION..."
+                            oninput="this.value = this.value.toUpperCase()" S></textarea>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <label style="font-weight:bold;">SET BY:</label>
+                            <div style="padding:6px 12px; background-color:#e9ecef; border-radius:4px; font-weight:bold; color:#263F73;">
+                                <?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>
+                            </div>
+                        </div>
+                        <input type="hidden" name="is_set_by" value="<?php echo isset($_SESSION['First_name']) ? htmlspecialchars($_SESSION['First_name']) : 'Unknown'; ?>">
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="submit"
+                            style="flex:1; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+                            Confirm Deactivation
+                        </button>
+                        <button type="button" onclick="hideDeactivateModal()"
+                            style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- JavaScript for Barangay Filter -->
+        <script>
+            function showBarangayFilter() {
+                document.getElementById('barangayFilterModal').style.display = 'flex';
+            }
+
+            function hideBarangayFilter() {
+                document.getElementById('barangayFilterModal').style.display = 'none';
+            }
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideBarangayFilter();
+                }
+            });
+        </script>
+
+        <!-- Rest of your existing scripts remain the same -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchForm = document.querySelector('form[name="theform"]');
+                const loader = document.getElementById('loader');
+
+                if (searchForm) {
+                    searchForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        loader.style.display = 'block';
+
+                        const minLoaderTime = 500;
+                        const fakeProcessing = new Promise((resolve) => {
+                            setTimeout(resolve, 100);
+                        });
+
+                        const loaderTimeout = new Promise((resolve) => {
+                            setTimeout(resolve, minLoaderTime);
+                        });
+
+                        Promise.all([fakeProcessing, loaderTimeout]).then(() => {
+                            loader.style.display = 'none';
+                            searchForm.submit();
+                        });
+                    });
+                }
+
+                <?php if (isset($success_message) && !empty($success_message)): ?>
+                    if (window.CustomNotification) {
+                        window.CustomNotification.show(
+                            "<?php echo $success_message; ?>",
+                            'success',
+                            5000
+                        );
+                    } else {
+                        alert("<?php echo $success_message; ?>");
+                    }
+                <?php endif; ?>
+            });
+        </script>
+
+        <!-- LOADER -->
+        <div id="loader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:9999; text-align:center; padding-top:200px;">
+            <div class="spinner" style="
+                    border: 8px solid #f3f3f3;
+                    border-top: 8px solid #263F73;
+                    border-radius: 50%;
+                    width: 60px;
+                    height: 60px;
+                    margin: 0 auto;
+                    animation: spin 1s linear infinite;">
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchForm = document.querySelector('form[name="theform"]');
+                const loader = document.getElementById('loader');
+
+                if (searchForm) {
+                    searchForm.addEventListener('submit', function() {
+                        loader.style.display = 'block';
+                    });
+                }
+            });
+        </script>
+
+        <script>
+            function updateDateTime() {
+                const now = new Date();
+                const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                const month = months[now.getMonth()];
+                const day = now.getDate();
+                const year = now.getFullYear();
+
+                let hours = now.getHours();
+                let minutes = now.getMinutes();
+                let seconds = now.getSeconds();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+
+                const dateStr = month + ' ' + day + ', ' + year;
+                const timeStr = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+
+                document.getElementById('liveDateTime').innerHTML = dateStr + ' | ' + timeStr;
+            }
+
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        </script>
+
+        <script>
+            // Deactivate Modal Functions
+            function showDeactivateModal(patientId, lastName, firstName) {
+                // Set patient information
+                document.getElementById('patientId').value = patientId;
+                document.getElementById('patientName').textContent = lastName.toUpperCase() + ', ' + firstName.toUpperCase();
+
+                // Reset form
+                document.getElementById('deactivationDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('deactivationReason').value = '';
+                document.getElementById('deactivationRemarks').value = '';
+
+                // Show modal
+                document.getElementById('deactivateModal').style.display = 'flex';
+            }
+
+            function hideDeactivateModal() {
+                document.getElementById('deactivateModal').style.display = 'none';
+            }
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideDeactivateModal();
+                    hideBarangayFilter(); // Close barangay filter if open
+                }
+            });
+
+            // Prevent modal close when clicking inside modal
+            document.getElementById('deactivateModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideDeactivateModal();
+                }
+            });
+
+            // AJAX form submission
+            document.getElementById('deactivateForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+
+                // Show loading
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Processing...';
+                submitBtn.disabled = true;
+
+                // Use the correct path - try this:
+                fetch('transact/deactivate_transact.php', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            // If we get a 404, the path is wrong
+                            if (response.status === 404) {
+                                throw new Error(`File not found (404). Check if deactivate_transact.php exists in the transact folder.`);
+                            }
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            alert(data.message || 'Patient deactivated successfully!');
+
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to deactivate patient'));
+                            submitBtn.textContent = originalText;
+                            submitBtn.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error: ' + error.message);
+                        console.error('Error details:', error);
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    });
+            });
+            // Color the select options dynamically
+            document.addEventListener('DOMContentLoaded', function() {
+                const select = document.getElementById('deactivationReason');
+
+                const optionsWithColors = [{
+                        value: "",
+                        text: "SELECT REASON FOR DEACTIVATION",
+                        color: "#000"
+                    },
+                    {
+                        value: "DECEASED",
+                        text: "DECEASED",
+                        color: "#dc3545"
+                    },
+                    {
+                        value: "PATIENT UNLOCATED",
+                        text: "PATIENT UNLOCATED",
+                        color: "#fd7e14"
+                    },
+                    {
+                        value: "EXPIRED MHP CARD",
+                        text: "EXPIRED MHP CARD",
+                        color: "#ffc107"
+                    },
+                    {
+                        value: "REFUSED DELIVERY",
+                        text: "REFUSED DELIVERY",
+                        color: "#6c757d"
+                    },
+                    {
+                        value: "HOLD BY MAC",
+                        text: "HOLD BY MAC",
+                        color: "#008b8b"
+                    },
+                ];
+
+                // Clear and rebuild with colored text
+                select.innerHTML = '';
+                optionsWithColors.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.value;
+                    opt.textContent = option.value ? option.text : option.text;
+                    opt.style.color = option.color;
+                    opt.style.fontWeight = option.value ? 'normal' : 'italic';
+                    select.appendChild(opt);
+                });
+            });
+            // Add these functions to your existing JavaScript section
+            function showRetrievalFilter() {
+                document.getElementById('retrievalFilterModal').style.display = 'flex';
+            }
+
+            function hideRetrievalFilter() {
+                document.getElementById('retrievalFilterModal').style.display = 'none';
+            }
+
+            // Update the existing Escape key handler to include retrieval filter
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideBarangayFilter();
+                    hideRefillDayFilter();
+                    hideRetrievalFilter();
+                    hideDeactivateModal();
+                }
+            });
+        </script>
+        <!-- Refill Day Filter Modal -->
+        <div id="refillDayFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
+                <h3 style="margin-top:0; color:#263F73;">Filter by Refill Day</h3>
+                <form method="get" action="Patiententry.php" id="refillDayFilterForm">
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Refill Day:</label>
+                        <select name="refill_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                            <option value="">All Refill Days</option>
+                            <option value="No Rx" <?php echo ($refill_filter == 'No Rx') ? 'selected' : ''; ?>>No Rx</option>
+                            <?php
+                            // Get distinct refill days from latest prescriptions
+                            $refill_query = mysqli_query($conn, "
+                            SELECT DISTINCT p.Refill_day, COUNT(DISTINCT pd.Patient_id) as count
+                            FROM prescription p
+                            INNER JOIN (
+                                SELECT Patient_id, MAX(Date) as max_date 
+                                FROM prescription 
+                                GROUP BY Patient_id
+                            ) latest ON p.Patient_id = latest.Patient_id AND p.Date = latest.max_date
+                            INNER JOIN patient_details pd ON p.Patient_id = pd.Patient_id
+                            WHERE pd.is_active = 1 AND p.Refill_day IS NOT NULL
+                            GROUP BY p.Refill_day
+                            ORDER BY CASE 
+                                WHEN p.Refill_day = 'Monday' THEN 1
+                                WHEN p.Refill_day = 'Tuesday' THEN 2
+                                WHEN p.Refill_day = 'Wednesday' THEN 3
+                                WHEN p.Refill_day = 'Thursday' THEN 4
+                                WHEN p.Refill_day = 'Friday' THEN 5
+                                WHEN p.Refill_day = 'Saturday' THEN 6
+                                WHEN p.Refill_day = 'Sunday' THEN 7
+                                ELSE 8
+                            END
+                        ");
+
+                            $current_filter = $_GET['refill_filter'] ?? '';
+                            while ($refill_row = mysqli_fetch_assoc($refill_query)) {
+                                $refill_day = $refill_row['Refill_day'];
+                                $count = $refill_row['count'];
+                                $selected = ($current_filter == $refill_day) ? 'selected' : '';
+                                echo "<option value='" . htmlspecialchars($refill_day) . "' $selected>" . $refill_day . " ($count patients)</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="o" value="<?php echo $ord; ?>">
+                    <?php if (!empty($barangay_filter)): ?>
+                        <input type="hidden" name="barangay_filter" value="<?php echo htmlspecialchars($barangay_filter); ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($runsearch)): ?>
+                        <input type="hidden" name="dosearch" value="<?php echo htmlspecialchars($runsearch); ?>">
+                    <?php endif; ?>
+
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
+                        <button type="button" onclick="hideRefillDayFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                        <?php if (!empty($current_filter)): ?>
+                            <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?><?php echo !empty($barangay_filter) ? '&barangay_filter=' . urlencode($barangay_filter) : ''; ?>"
+                                style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">
+                                Clear Filter
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+            function showRefillDayFilter() {
+                document.getElementById('refillDayFilterModal').style.display = 'flex';
+            }
+
+            function hideRefillDayFilter() {
+                document.getElementById('refillDayFilterModal').style.display = 'none';
+            }
+
+            // Update the existing Escape key handler to include refill filter
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideBarangayFilter();
+                    hideRefillDayFilter();
+                    hideDeactivateModal();
+                }
+            });
+        </script>
+        <!-- Prescription Retrieval Method Filter Modal -->
+        <div id="retrievalFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10002; justify-content:center; align-items:center;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
+                <h3 style="margin-top:0; color:#263F73;">Filter by Prescription Retrieval Method</h3>
+                <form method="get" action="Patiententry.php" id="retrievalFilterForm">
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Retrieval Method:</label>
+                        <select name="retrieval_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                            <option value="">All Methods</option>
+                            <?php
+                            $retrieval_query = mysqli_query($conn, "SELECT DISTINCT Prescription_retrieval_method FROM patient_details WHERE is_active = 1 AND Prescription_retrieval_method != '' AND Prescription_retrieval_method IS NOT NULL ORDER BY Prescription_retrieval_method ASC");
+                            $current_filter = $_GET['retrieval_filter'] ?? '';
+                            while ($retrieval_row = mysqli_fetch_assoc($retrieval_query)) {
+                                $method_name = strtoupper($retrieval_row['Prescription_retrieval_method']);
+
+                                // Get count for this method
+                                $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Prescription_retrieval_method = '$method_name'";
+                                $count_result = mysqli_query($conn, $count_query);
+                                $count = 0;
+                                if ($count_result) {
+                                    $count_row = mysqli_fetch_assoc($count_result);
+                                    $count = $count_row['count'];
+                                }
+
+                                $selected = ($current_filter == $method_name) ? 'selected' : '';
+                                echo "<option value='" . htmlspecialchars($method_name) . "' $selected>" . $method_name . " ($count patients)</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="o" value="<?php echo $ord; ?>">
+                    <?php if (!empty($runsearch)): ?>
+                        <input type="hidden" name="dosearch" value="<?php echo htmlspecialchars($runsearch); ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($barangay_filter)): ?>
+                        <input type="hidden" name="barangay_filter" value="<?php echo htmlspecialchars($barangay_filter); ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($refill_filter)): ?>
+                        <input type="hidden" name="refill_filter" value="<?php echo htmlspecialchars($refill_filter); ?>">
+                    <?php endif; ?>
+
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
+                        <button type="button" onclick="hideRetrievalFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                        <?php if (!empty($current_filter)): ?>
+                            <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?><?php echo !empty($barangay_filter) ? '&barangay_filter=' . urlencode($barangay_filter) : ''; ?><?php echo !empty($refill_filter) ? '&refill_filter=' . urlencode($refill_filter) : ''; ?>"
+                                style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">
+                                Clear Filter
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </body>
+
+    </html>

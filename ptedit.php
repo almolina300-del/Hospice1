@@ -509,8 +509,7 @@ if ($ycExpiryDate) {
                    text-align: center;
                    min-width: 100px;
                    <?php if ($currentValue != 'PICK-UP' && !empty($currentValue)): ?>
-                        text-decoration: none;
-                       opacity: 0.7;
+                        text-decoration: none; opacity: 0.7;
                    <?php endif; ?>
                "
                onclick="selectRetrievalMethod('PICK-UP')">
