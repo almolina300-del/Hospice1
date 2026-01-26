@@ -1263,7 +1263,6 @@ $today_date = date('Y-m-d');
     cursor: pointer;
     text-align: center;
     transition: all 0.3s ease;
-    text-decoration: line-through;
     opacity: 0.7;
 }
 

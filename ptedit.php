@@ -509,7 +509,7 @@ if ($ycExpiryDate) {
                    text-align: center;
                    min-width: 100px;
                    <?php if ($currentValue != 'PICK-UP' && !empty($currentValue)): ?>
-                       text-decoration: line-through;
+                        text-decoration: none;
                        opacity: 0.7;
                    <?php endif; ?>
                "
@@ -539,7 +539,7 @@ if ($ycExpiryDate) {
                    text-align: center;
                    min-width: 100px;
                    <?php if ($currentValue != 'DELIVERY' && !empty($currentValue)): ?>
-                       text-decoration: line-through;
+                       text-decoration: none;
                        opacity: 0.7;
                    <?php endif; ?>
                "

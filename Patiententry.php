@@ -271,14 +271,15 @@ if ($refillFilterActive) {
         }
 
         // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
-        $sql = "SELECT pd.*, 
-                   (SELECT p.Refill_day 
-                    FROM prescription p 
-                    WHERE p.Patient_id = pd.Patient_id 
-                    ORDER BY p.Date DESC 
-                    LIMIT 1) as LastRefillDay
-            FROM patient_details pd 
-            WHERE $whereCondition";
+     $sql = "SELECT pd.*, 
+       (SELECT p.Refill_day 
+        FROM prescription p 
+        WHERE p.Patient_id = pd.Patient_id 
+        ORDER BY p.Date DESC 
+        LIMIT 1) as LastRefillDay,
+       pd.Prescription_retrieval_method AS RetrievalMethod
+FROM patient_details pd 
+WHERE $whereCondition";
 
         if (!empty($barangay_filter)) {
             $sql .= " AND pd.Barangay = '$barangay_filter'";
@@ -459,7 +460,10 @@ if ($refillFilterActive) {
         echo "</th>";
 
         echo "<th>Birthday</th>";
-        echo "<th>Status</th></tr>";
+        echo '<th class="narrow-column">Prescription Retrieval Method</th>';
+        echo "<th>Status</th>";
+        echo "</tr>"; // Moved the closing tr tag here
+
 
         while ($row = mysqli_fetch_assoc($result)) {
             $refillDay = !empty($row['LastRefillDay']) ? $row['LastRefillDay'] : 'No Rx';
@@ -486,6 +490,10 @@ if ($refillFilterActive) {
             foreach ($otherColumns as $col) {
                 echo "<td align='center'>" . strtoupper($row[$col]) . "</td>";
             }
+// Prescription Retrieval Method Column (make sure this column exists in your database)
+$retrievalMethod = !empty($row['RetrievalMethod']) ? $row['RetrievalMethod'] : 'NOT SPECIFIED';
+echo "<td align='center' style='font-size:12px; width: 120px;'>" . htmlspecialchars($retrievalMethod) . "</td>";
+
 
             // Status Column (needs special handling since it has a button)
             echo "<td align='center' onclick=\"event.stopPropagation();\">
@@ -692,7 +700,7 @@ if ($refillFilterActive) {
                         style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
                      text-transform: uppercase; font-size:14px;"
                         placeholder="ENTER DETAILS FOR DEACTIVATION..."
-                        oninput="this.value = this.value.toUpperCase()"S></textarea>
+                        oninput="this.value = this.value.toUpperCase()" S></textarea>
                 </div>
                 <div style="margin-bottom:20px;">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -946,7 +954,7 @@ if ($refillFilterActive) {
                     text: "REFUSED DELIVERY",
                     color: "#6c757d"
                 },
-                 {
+                {
                     value: "HOLD BY MAC",
                     text: "HOLD BY MAC",
                     color: "#008b8b"
