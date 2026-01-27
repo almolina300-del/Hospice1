@@ -1316,115 +1316,169 @@ if ($ycExpiryDate) {
         </div>
     <?php endif; ?>
 
-    <!-- Add Prescription Modal -->
-    <div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
-            <h3 style="margin-top:0;">Add Prescription</h3>
-            <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
-                <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
+  <!-- Add Prescription Modal -->
+<div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
+        <h3 style="margin-top:0;">Add Prescription</h3>
+        <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
+            <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-                <input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-                <br>
-                <input type="display" name="PatientAddress" value="<?php echo $patientAddress; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-                <br>
+            <input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+            <br>
+            <input type="display" name="PatientAddress" value="<?php echo $patientAddress; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+            <br>
 
-                <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
-                    <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
-                        Date: <span style="color:red;">*</span>
-                    </label>
-                    <input type="date" id="Date" name="Date"
-                        value="<?php echo date('Y-m-d'); ?>"
-                        min="<?php echo date('Y-m-d'); ?>"
-                        required
-                        style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
+            <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
+                <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
+                    Date: <span style="color:red;">*</span>
+                </label>
+                <input type="date" id="Date" name="Date"
+                    value="<?php echo date('Y-m-d'); ?>"
+                    min="<?php echo date('Y-m-d'); ?>"
+                    required
+                    style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
 
-                    <!-- You can remove this hidden input since the visible field will now submit the date -->
+                <label for="refill_day" style="width:100px; margin-left:220px; font-size:13px;">
+                    Refill Day: <span style="color:red;">*</span>
+                </label>
 
-                    <label for="refill_day" style="width:100px; margin-left:220px; font-size:13px;">
-                        Refill Day: <span style="color:red;">*</span>
-                    </label>
+                <select id="refill_day" name="refill_day" required
+                    style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
+                    <option value="">Select day</option>
+                    <?php
+                    for ($i = 1; $i <= 31; $i++) {
+                        $selected = ($latestRefillDay == $i) ? 'selected' : '';
+                        echo "<option value='$i' $selected>$i</option>";
+                    }
+                    ?>
+                </select>
+                <?php if ($latestRefillDay): ?>
+                    <span style="margin-left:10px; font-size:12px; color:#3CB371; font-style:italic;">
+                        (Auto-filled from latest prescription)
+                    </span>
+                <?php endif; ?>
+            </div>
 
-                    <select id="refill_day" name="refill_day" required
-                        style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
-                        <option value="">Select day</option>
-                        <?php
-                        for ($i = 1; $i <= 31; $i++) {
-                            $selected = ($latestRefillDay == $i) ? 'selected' : '';
-                            echo "<option value='$i' $selected>$i</option>";
+            <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
+                <label style="width:50px; margin-right:8px; font-size:13px;">
+                    Doctor: <span style="color:red;">*</span>
+                </label>
+
+                <input list="doctorsList"
+                    id="doctorName"
+                    name="DoctorName"
+                    required
+                    style="flex:2; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px;"
+                    placeholder="Type doctor name"
+                    oninput="this.value = this.value.toUpperCase()">
+
+                <label style="width:80px; margin-left:12px; font-size:13px;">License No:</label>
+                <input type="text"
+                    id="doctorLicense"
+                    name="License_number"
+                    placeholder="Auto-filled"
+                    readonly
+                    style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
+
+                <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
+                <input type="text"
+                    id="doctorPtr"
+                    name="Ptr_number"
+                    placeholder="Auto-filled"
+                    readonly
+                    style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
+
+                <datalist id="doctorsList">
+                    <?php
+                    $docQuery = "SELECT License_number, Ptr_number, Last_name, First_name, Middle_name
+            FROM doctors
+            WHERE is_active = 1
+            ORDER BY Last_name ASC";
+                    $docResult = mysqli_query($conn, $docQuery);
+
+                    while ($doc = mysqli_fetch_assoc($docResult)) {
+                        $DoctorName = trim($doc['Last_name'] . ', ' . $doc['First_name'] . ' ' . $doc['Middle_name']);
+                        $LicenseNo  = htmlspecialchars($doc['License_number']);
+                        $PtrNo      = htmlspecialchars($doc['Ptr_number'] ?? '');
+                        echo "<option value=\"{$DoctorName}\" data-license=\"{$LicenseNo}\" data-ptr=\"{$PtrNo}\"></option>";
+                    }
+                    ?>
+                </datalist>
+            </div>
+            <div id="doctorError" style="color:red; font-size:12px; margin-top:2px; display:none;">Doctor not found</div>
+
+            <!-- Medicines Section with Simple Yellow Card Warning -->
+            <div style="margin-top: 20px; margin-bottom: 10px;">
+                <h3 style="margin: 0; text-align: center; position: relative;">
+                    Medicines
+                    <?php
+                    // Simple yellow card check
+                    $yellowCardQuery = "SELECT * FROM yellow_card WHERE patient_id = '$char'";
+                    $yellowCardResult = mysqli_query($conn, $yellowCardQuery);
+                    
+                    if (mysqli_num_rows($yellowCardResult) > 0) {
+                        $yellowCardData = mysqli_fetch_assoc($yellowCardResult);
+                        $expiryDate = $yellowCardData['Yc_expiry_date'] ?? null;
+                        
+                        if (!empty($expiryDate)) {
+                            $today = new DateTime();
+                            $expiry = new DateTime($expiryDate);
+                            
+                            if ($expiry < $today) {
+                                // Yellow card is EXPIRED - show centered warning
+                                ?>
+                                <div style="
+                                    background-color: #f8d7da;
+                                    border: 1px solid #f5c6cb;
+                                    border-radius: 4px;
+                                    padding: 8px;
+                                    margin-top: 10px;
+                                    color: #721c24;
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    text-align: center;
+                                ">
+                                     PATIENT YELLOW CARD IS EXPIRED
+                                </div>
+                                <?php
+                            }
                         }
+                    } else {
+                        // NO yellow card - show centered warning
                         ?>
-                    </select>
-                    <?php if ($latestRefillDay): ?>
-                        <span style="margin-left:10px; font-size:12px; color:#3CB371; font-style:italic;">
-                            (Auto-filled from latest prescription)
-                        </span>
-                    <?php endif; ?>
-                </div>
-
-                <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
-                    <label style="width:50px; margin-right:8px; font-size:13px;">
-                        Doctor: <span style="color:red;">*</span>
-                    </label>
-
-                    <input list="doctorsList"
-                        id="doctorName"
-                        name="DoctorName"
-                        required
-                        style="flex:2; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px;"
-                        placeholder="Type doctor name"
-                        oninput="this.value = this.value.toUpperCase()">
-
-                    <label style="width:80px; margin-left:12px; font-size:13px;">License No:</label>
-                    <input type="text"
-                        id="doctorLicense"
-                        name="License_number"
-                        placeholder="Auto-filled"
-                        readonly
-                        style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
-
-                    <!-- ADD THIS PTR NUMBER FIELD -->
-                    <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
-                    <input type="text"
-                        id="doctorPtr"
-                        name="Ptr_number"
-                        placeholder="Auto-filled"
-                        readonly
-                        style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
-
-                    <datalist id="doctorsList">
+                        <div style="
+                            background-color: #f8d7da;
+                            border: 1px solid #f5c6cb;
+                            border-radius: 4px;
+                            padding: 8px;
+                            margin-top: 10px;
+                            color: #721c24;
+                            font-size: 14px;
+                            font-weight: bold;
+                            text-align: center;
+                        ">
+                             PATIENT HAS NO YELLOW CARD
+                        </div>
                         <?php
-                        $docQuery = "SELECT License_number, Ptr_number, Last_name, First_name, Middle_name
-                FROM doctors
-                WHERE is_active = 1
-                ORDER BY Last_name ASC";
-                        $docResult = mysqli_query($conn, $docQuery);
+                    }
+                    ?>
+                </h3>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px;">
+                <button type="button" onclick="addMedicine()" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">+ Add Medicine</button>
+            </div>
+            <div id="medicineContainerWrapper" style="max-height:320px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fafafa; margin-bottom:12px;">
+                <div id="medicineContainer"></div>
+            </div>
 
-                        while ($doc = mysqli_fetch_assoc($docResult)) {
-                            $DoctorName = trim($doc['Last_name'] . ', ' . $doc['First_name'] . ' ' . $doc['Middle_name']);
-                            $LicenseNo  = htmlspecialchars($doc['License_number']);
-                            $PtrNo      = htmlspecialchars($doc['Ptr_number'] ?? '');
-                            echo "<option value=\"{$DoctorName}\" data-license=\"{$LicenseNo}\" data-ptr=\"{$PtrNo}\"></option>";
-                        }
-                        ?>
-                    </datalist>
-                </div>
-                <div id="doctorError" style="color:red; font-size:12px; margin-top:2px; display:none;">Doctor not found</div>
+            <input type="hidden" name="Age" value="<?php echo $patientAge; ?>">
 
-                <h3>Medicines</h3>
-                <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px;">
-                    <button type="button" onclick="addMedicine()" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">+ Add Medicine</button>
-                </div>
-                <div id="medicineContainerWrapper" style="max-height:320px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fafafa; margin-bottom:12px;">
-                    <div id="medicineContainer"></div>
-                </div>
-
-                <input type="hidden" name="Age" value="<?php echo $patientAge; ?>">
-
-                <button type="button" onclick="closePrescriptionModal()" style="background:#ccc; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Cancel</button>
-                <button type="submit" name="action" value="Add Prescription" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Save</button>
-            </form>
-        </div>
+            <button type="button" onclick="closePrescriptionModal()" style="background:#ccc; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Cancel</button>
+            <button type="submit" name="action" value="Add Prescription" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Save</button>
+        </form>
     </div>
+</div>
 
     <!-- Edit Prescription Modal -->
     <div id="editPrescriptionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
@@ -1485,7 +1539,7 @@ if ($ycExpiryDate) {
                         readonly
                         style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
 
-                    <!-- ADD THIS PTR NUMBER FIELD -->
+                    <!-- PTR NUMBER FIELD -->
                     <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
                     <input type="text"
                         id="editDoctorPtr"
