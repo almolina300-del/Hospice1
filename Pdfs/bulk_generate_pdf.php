@@ -103,10 +103,10 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         continue; // Skip if no prescription found
     }
 
-    $sql3 = "SELECT m.Medicine_name, m.Dose, m.Form, r.Quantity, r.Frequency
-             FROM rx r
-             JOIN medicine m ON r.Medicine_id = m.Medicine_id
-             WHERE r.Prescription_id = $pid";
+    $sql3 = "SELECT m.Medicine_name, m.Dose, m.Form, r.Quantity, r.Frequency, r.Days
+         FROM rx r
+         JOIN medicine m ON r.Medicine_id = m.Medicine_id
+         WHERE r.Prescription_id = $pid";
 
     $meds_result = mysqli_query($conn, $sql3);
     if (!$meds_result) {
@@ -119,6 +119,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $m['Dose']          = $m['Dose']          ?: '__';
         $m['Frequency']     = $m['Frequency']     ?: '__________________';
         $m['Quantity']      = $m['Quantity']      ?: '__';
+        $m['Days']          = $m['Days']          ?: '___';
         $medicines[] = $m;
     }
 
@@ -465,7 +466,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(18, 4, 'Per day For', 0, 0);
                 $pdf->Cell(12, 4, '', 0, 0);
-                $pdf->Cell(8, 4, 'Days', 0, 1);
+                $pdf->Cell(8, 4, $med['Days'] . ' days', 0, 1);
             } else {
                 // Doesn't fit - need to wrap
                 $currentXFreq = $pdf->GetX();
@@ -516,21 +517,6 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 }
             }
 
-            // "Per day For" and "Days" labels
-            $pdf->SetFont('Arial', '', 9);
-            $pdf->SetTextColor(200, 200, 200);
-
-            // Position the labels properly
-            if (empty($frequency) || $freqWidth <= $maxFrequencyWidth) {
-                // If frequency fits in one line, continue on same line
-                $pdf->Cell(18, 4, 'Per day For', 0, 0);
-                $pdf->Cell(12, 4, '', 0, 0);
-                $pdf->Cell(8, 4, 'Days', 0, 1);
-            } else {
-                // If frequency wrapped, move to next line for labels
-                $pdf->Ln(3); // Small line break for wrapped frequency
-                $pdf->SetX(17); // Align with Signa label
-            }
 
             // Notes line
             $pdf->SetX(2);

@@ -56,9 +56,11 @@ $patient_sql = "SELECT pd.Patient_id,
                        p.Prescription_id as latest_prescription_id,
                        p.Refill_day as patient_refill_day,
                        p.Date as last_prescription_date,
-                       CONCAT(pd.Last_name, ', ', pd.First_name, ' ', COALESCE(pd.Middle_name, '')) AS Patient_name
+                       CONCAT(pd.Last_name, ', ', pd.First_name, ' ', COALESCE(pd.Middle_name, '')) AS Patient_name,
+                       COALESCE(r.Days, 1) AS Days  -- Use COALESCE to default to 1 if NULL
                 FROM patient_details pd
                 INNER JOIN prescription p ON pd.Patient_id = p.Patient_id
+                LEFT JOIN rx r ON p.Prescription_id = r.Prescription_id
                 WHERE pd.is_active = 1 
                 AND p.Prescription_id IN (
                     SELECT MAX(p2.Prescription_id) 
@@ -231,10 +233,10 @@ foreach ($patients as $patient) {
         
         // 2. Copy medicines from latest prescription to new prescription
         if ($latest_prescription_id) {
-            $copy_meds_sql = "INSERT INTO rx (Prescription_id, Medicine_id, Quantity, Frequency)
-                              SELECT ?, Medicine_id, Quantity, Frequency
-                              FROM rx 
-                              WHERE Prescription_id = ?";
+                     $copy_meds_sql = "INSERT INTO rx (Prescription_id, Medicine_id, Quantity, Frequency, Days)
+                      SELECT ?, Medicine_id, Quantity, Frequency, Days
+                      FROM rx 
+                      WHERE Prescription_id = ?";
             
             $copy_stmt = mysqli_prepare($conn, $copy_meds_sql);
             if (!$copy_stmt) {

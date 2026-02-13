@@ -86,27 +86,31 @@ $patients = [];
 $total_patients = 0;
 
 if ($Refill_day != '') {
-    // In the patient query (around line 113), update it to include Prescription_retrieval_method:
-$patient_sql = "SELECT 
-    p.Prescription_id,
-    p.Patient_id,
-    p.Date as last_prescription_date,
-    CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
-    pat.Barangay,
-    pat.House_nos_street_name,
-    pat.Prescription_retrieval_method,  -- Add this line
-    p.Refill_day
-FROM prescription p
-LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
-WHERE p.Prescription_id IN (
-    SELECT MAX(p2.Prescription_id) 
-    FROM prescription p2 
-    WHERE p2.Patient_id = p.Patient_id 
-    GROUP BY p2.Patient_id
-)
-AND p.Refill_day = ?
-AND pat.is_active = 1
-ORDER BY pat.Last_name, pat.First_name";
+    // In the patient query, update it to include Prescription_retrieval_method and Days:
+    $patient_sql = "SELECT 
+        p.Prescription_id,
+        p.Patient_id,
+        p.Date as last_prescription_date,
+        CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
+        pat.Barangay,
+        pat.House_nos_street_name,
+        pat.Prescription_retrieval_method,
+        p.Refill_day,
+        r.Days,
+        r.Quantity,
+        r.Frequency
+    FROM prescription p
+    LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
+    LEFT JOIN rx r ON p.Prescription_id = r.Prescription_id
+    WHERE p.Prescription_id IN (
+        SELECT MAX(p2.Prescription_id) 
+        FROM prescription p2 
+        WHERE p2.Patient_id = p.Patient_id 
+        GROUP BY p2.Patient_id
+    )
+    AND p.Refill_day = ?
+    AND pat.is_active = 1
+    ORDER BY pat.Last_name, pat.First_name";
     
     $stmt = mysqli_prepare($conn, $patient_sql);
     if ($stmt) {
@@ -1078,40 +1082,43 @@ $today_date = date('Y-m-d');
             'NOT SET';
     ?>
     <tr data-patient-id="<?php echo $patient['Patient_id']; ?>" 
-        data-date-timestamp="<?php echo $date_timestamp; ?>"
-        data-date-value="<?php echo $date_for_filter; ?>"
-        data-retrieval-method="<?php echo $retrievalMethod; ?>"
-        class="patient-row">
-        <td class="checkbox-cell">
-            <input type="checkbox" 
-                   class="patient-checkbox patient-select" 
-                   name="exclude_patients[]" 
-                   value="<?php echo $patient['Patient_id']; ?>"
-                   checked
-                   onchange="updatePatientStatus(this)">
-        </td>
-        <td><?php echo strtoupper($patient['Patient_name']); ?></td>
-        <td>
-            <?php 
-            // Concatenate House_nos_street_name and Barangay
-            $addressParts = [];
-            if (!empty(trim($patient['House_nos_street_name'] ?? ''))) {
-                $addressParts[] = trim($patient['House_nos_street_name']);
-            }
-            if (!empty(trim($patient['Barangay'] ?? ''))) {
-                $addressParts[] = trim($patient['Barangay']);
-            }
-            
-            echo strtoupper(implode(', ', $addressParts));
-            ?>
-        </td>
-        <td class="retrieval-method" style="text-align: center;">
-            <?php echo $retrievalMethod; ?>
-        </td>
-        <td class="last-prescription-date" data-sort-value="<?php echo $date_timestamp; ?>">
-            <?php echo $formatted_date; ?>
-        </td>
-    </tr>
+    data-date-timestamp="<?php echo $date_timestamp; ?>"
+    data-date-value="<?php echo $date_for_filter; ?>"
+    data-retrieval-method="<?php echo $retrievalMethod; ?>"
+    data-days="<?php echo isset($patient['Days']) && $patient['Days'] ? $patient['Days'] : 1; ?>"
+    data-quantity="<?php echo isset($patient['Quantity']) ? $patient['Quantity'] : ''; ?>"
+    data-frequency="<?php echo isset($patient['Frequency']) ? $patient['Frequency'] : ''; ?>"
+    class="patient-row">
+    <td class="checkbox-cell">
+        <input type="checkbox" 
+               class="patient-checkbox patient-select" 
+               name="exclude_patients[]" 
+               value="<?php echo $patient['Patient_id']; ?>"
+               checked
+               onchange="updatePatientStatus(this)">
+    </td>
+    <td><?php echo strtoupper($patient['Patient_name']); ?></td>
+    <td>
+        <?php 
+        // Concatenate House_nos_street_name and Barangay
+        $addressParts = [];
+        if (!empty(trim($patient['House_nos_street_name'] ?? ''))) {
+            $addressParts[] = trim($patient['House_nos_street_name']);
+        }
+        if (!empty(trim($patient['Barangay'] ?? ''))) {
+            $addressParts[] = trim($patient['Barangay']);
+        }
+        
+        echo strtoupper(implode(', ', $addressParts));
+        ?>
+    </td>
+    <td class="retrieval-method" style="text-align: center;">
+        <?php echo $retrievalMethod; ?>
+    </td>
+    <td class="last-prescription-date" data-sort-value="<?php echo $date_timestamp; ?>">
+        <?php echo $formatted_date; ?>
+    </td>
+</tr>
     <?php endforeach; ?>
 </tbody>
     </table>
@@ -2086,6 +2093,8 @@ function initializeDateFiltering() {
                 alert('Please select at least one patient to process.');
                 return false;
             }
+            // Collect medicine data including Days
+            const medicineData = collectMedicineData();
             
             // Store selected patients in hidden field
             document.getElementById('selectedPatientsInput').value = selectedPatients.join(',');
@@ -2917,6 +2926,11 @@ function initializeFiltersOnModalOpen() {
         if (dateValue) {
             selectedDates.add(dateValue);
             allDateValues.push(dateValue);
+        }
+        
+        // Set default Days value if not present
+        if (!row.hasAttribute('data-days') || !row.getAttribute('data-days') || row.getAttribute('data-days') === '') {
+            row.setAttribute('data-days', '1');
         }
     });
     
