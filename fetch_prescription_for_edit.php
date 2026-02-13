@@ -42,7 +42,7 @@ if (!$result || mysqli_num_rows($result) == 0) {
 $prescription = mysqli_fetch_assoc($result);
 
 // Fetch medicines for this prescription
-$sql = "SELECT m.Medicine_id, m.Medicine_name, m.Dose, m.Form, r.Frequency, r.Quantity
+$sql = "SELECT m.Medicine_id, m.Medicine_name, m.Dose, m.Form, r.Frequency, r.Quantity,  r.Days
         FROM rx r
         INNER JOIN medicine m ON r.Medicine_id = m.Medicine_id
         WHERE r.Prescription_id = $prescription_id";

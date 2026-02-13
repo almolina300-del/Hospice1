@@ -1606,7 +1606,8 @@ if ($ycExpiryDate) {
                 Dose: '',
                 Form: '',
                 Frequency: '',
-                Quantity: ''
+                Quantity: '',
+                Days: ''
             }];
             renderMedicines();
         }
@@ -1663,6 +1664,10 @@ if ($ycExpiryDate) {
                 <label>Qty</label>
                 <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;" required>
             </div>
+       <div style="display:inline-block; width:10%; margin-left:20px;">
+    <label>Per Day for</label>
+    <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
+</div>
         </div>`;
             });
         }
@@ -1713,7 +1718,8 @@ if ($ycExpiryDate) {
                     Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
                     Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
                     Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
-                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || ''
+                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
+                    Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
                 };
             });
         }
@@ -1725,7 +1731,9 @@ if ($ycExpiryDate) {
                 Dose: '',
                 Form: '',
                 Frequency: '',
-                Quantity: ''
+                Quantity: '',
+                Days: ''
+                
             });
             renderMedicines();
         }
@@ -1828,7 +1836,8 @@ if ($ycExpiryDate) {
                 Dose: med.Dose || '',
                 Form: med.Form || '',
                 Frequency: med.Frequency || '',
-                Quantity: med.Quantity || ''
+                Quantity: med.Quantity || '',
+                Days: med.Days || ''
             }));
 
             renderEditMedicines();
@@ -1888,6 +1897,11 @@ if ($ycExpiryDate) {
         <label>Qty</label>
         <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;" required>
     </div>
+
+ <div style="display:inline-block; width:10%; margin-left:20px;">
+        <label>Per Day for</label>
+        <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
+    </div>
 </div>`;
             });
         }
@@ -1904,7 +1918,8 @@ if ($ycExpiryDate) {
                     Dose: '',
                     Form: '',
                     Frequency: '',
-                    Quantity: ''
+                    Quantity: '',
+                    Days: editMedicines[index].Days || ''
                 };
                 const parentDiv = input.closest('.medicine-item');
                 parentDiv.querySelector(`select[name="Medicine[${index}][Dose]"]`).innerHTML = `<option value="">-- Select Dose --</option>`;
@@ -1940,7 +1955,8 @@ if ($ycExpiryDate) {
                     Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
                     Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
                     Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
-                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || ''
+                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
+                    Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
                 };
             });
         }
@@ -1953,7 +1969,8 @@ if ($ycExpiryDate) {
                 Dose: '',
                 Form: '',
                 Frequency: '',
-                Quantity: ''
+                Quantity: '',
+                Days: ''  
             });
             renderEditMedicines();
         }

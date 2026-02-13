@@ -109,6 +109,7 @@ case "Add Prescription":
         foreach ($_POST['Medicine'] as $med) {
             $Quantity      = $med['Quantity'] ?? '';
             $Frequency     = $med['Frequency'] ?? '';
+            $Days          = $med['Days'] ?? '';
             $dose          = mysqli_real_escape_string($conn, $med['Dose'] ?? '');
             $form          = mysqli_real_escape_string($conn, $med['Form'] ?? '');
             $medicine_name = mysqli_real_escape_string($conn, $med['Medicine_name'] ?? '');
@@ -132,9 +133,9 @@ case "Add Prescription":
             }
 
             // Insert into rx table
-            $insertRx = "INSERT INTO rx (Prescription_id, Medicine_id, Quantity, Frequency)
-                         VALUES ($Prescription_id, $medicine_id, '$Quantity', '$Frequency')";
-            mysqli_query($conn, $insertRx) or die(mysqli_error($conn));
+             $insertRx = "INSERT INTO rx (Prescription_id, Medicine_id, Quantity, Frequency, Days)
+                     VALUES ($Prescription_id, $medicine_id, '$Quantity', '$Frequency', '$Days')";
+        mysqli_query($conn, $insertRx) or die(mysqli_error($conn));
         }
     }
 
@@ -236,6 +237,7 @@ case 'Update Prescription':
         $form = $med['Form'] ?? '';
         $frequency = $med['Frequency'] ?? '';
         $quantity = $med['Quantity'] ?? '';
+        $days = $med['Days'] ?? '';
         
         if (empty($medicine_name)) continue;
         
@@ -250,15 +252,16 @@ case 'Update Prescription':
         if ($row = mysqli_fetch_assoc($result)) {
             $medicine_id = $row['Medicine_id'];
             
-            $sql = "INSERT INTO rx (Prescription_id, Medicine_id, Frequency, Quantity) 
-                    VALUES (?, ?, ?, ?)";
-            $stmt2 = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt2, 'iiss', 
-                $prescription_id, 
-                $medicine_id, 
-                $frequency, 
-                $quantity
-            );
+            $sql = "INSERT INTO rx (Prescription_id, Medicine_id, Frequency, Quantity, Days) 
+        VALUES (?, ?, ?, ?, ?)";
+$stmt2 = mysqli_prepare($conn, $sql);
+mysqli_stmt_bind_param($stmt2, 'iissi', 
+    $prescription_id, 
+    $medicine_id, 
+    $frequency, 
+    $quantity,
+    $days
+);
             mysqli_stmt_execute($stmt2);
         }
     }
