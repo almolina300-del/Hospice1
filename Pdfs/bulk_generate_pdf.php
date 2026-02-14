@@ -468,7 +468,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->Cell(12, 4, '', 0, 0);
                 $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
                 $pdf->SetTextColor(0, 0, 0);
-                $pdf->Cell(8, 4, $med['Days'] . 'days', 0, 1);
+                $pdf->Cell(8, 4, $med['Days'], 0, 1);
                 $pdf->SetFont('Arial', '', 9); // Reset to normal
                 $pdf->SetTextColor(200, 200, 200);
             } else {
@@ -509,14 +509,14 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->Cell(12, 4, '', 0, 0);
                 $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
                 $pdf->SetTextColor(0, 0, 0);
-                $pdf->Cell(8, 4, $med['Days'] . 'days', 0, 1);
+                $pdf->Cell(8, 4, $med['Days'], 0, 1);
                 $pdf->SetFont('Arial', '', 9); // Reset to normal
                 $pdf->SetTextColor(200, 200, 200);
 
                 // Output remaining frequency on second line (indented)
              if (!empty($remainingFreq)) {
-    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
-    $pdf->SetFont('Arial', 'B', 6);
+    $pdf->SetXY(51, $yFreq + 4); // Use SetXY instead of separate SetX/SetY
+    $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetTextColor(0, 0, 0);
     $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
 
@@ -535,7 +535,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
             $pdf->SetFont('Arial', 'B', 15);
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(15, 4, $med['Quantity'] ?? '', 0, 0, '', false);
+            $pdf->Cell(15, 4, ($med['Quantity'] ?? '') . ' Qty', 0, 0, '', false);
             $pdf->SetFont('Arial', '', 9);
             $pdf->Cell(0, 4, '', 0, 1);
 

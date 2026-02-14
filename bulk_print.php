@@ -31,21 +31,31 @@ $refill_day_for_pdf = '';
 if (isset($_GET['bulk_created']) && isset($_SESSION['bulk_print_result'])) {
     $bulk_result = $_SESSION['bulk_print_result'];
 
-    if ($bulk_result['success']) {
-        // Check which IDs to use for PDF
-        if (!empty($bulk_result['all_prescription_ids'])) {
-            $prescription_ids_for_pdf = implode(',', $bulk_result['all_prescription_ids']);
+   if ($bulk_result['success']) {
+    // Deduplicate prescription IDs before processing
+    if (!empty($bulk_result['all_prescription_ids'])) {
+        // Remove duplicate prescription IDs
+        $unique_ids = array_unique($bulk_result['all_prescription_ids']);
+        $prescription_ids_for_pdf = implode(',', $unique_ids);
+        $has_prescriptions_for_pdf = true;
+        $refill_day_for_pdf = $bulk_result['refill_day'] ?? $Refill_day;
+        
+        // Update the count in the message to show unique patients
+        $bulk_result['count'] = count($unique_ids);
+    } else {
+        // Fallback to created_ids for backward compatibility
+        $created_ids = $bulk_result['created_ids'] ?? [];
+        if (!empty($created_ids)) {
+            // Remove duplicate prescription IDs
+            $unique_ids = array_unique($created_ids);
+            $prescription_ids_for_pdf = implode(',', $unique_ids);
             $has_prescriptions_for_pdf = true;
             $refill_day_for_pdf = $bulk_result['refill_day'] ?? $Refill_day;
-        } else {
-            // Fallback to created_ids for backward compatibility
-            $created_ids = $bulk_result['created_ids'] ?? [];
-            if (!empty($created_ids)) {
-                $prescription_ids_for_pdf = implode(',', $created_ids);
-                $has_prescriptions_for_pdf = true;
-                $refill_day_for_pdf = $bulk_result['refill_day'] ?? $Refill_day;
-            }
+            
+            // Update the count in the message to show unique patients
+            $bulk_result['count'] = count($unique_ids);
         }
+    }
 
         $message = "✅ Successfully processed " . ($bulk_result['count'] ?? 0) . " prescriptions";
         $message .= " for refill day " . ($bulk_result['refill_day'] ?? '');
@@ -53,7 +63,8 @@ if (isset($_GET['bulk_created']) && isset($_SESSION['bulk_print_result'])) {
         $message .= " with doctor: " . ($bulk_result['doctor_name'] ?? '');
         $message_class = "success";
 
-        // Add details about new vs existing if available
+        
+        /*// Add details about new vs existing if available
         if (isset($bulk_result['created_count']) && isset($bulk_result['existing_count'])) {
             $created_count = $bulk_result['created_count'];
             $existing_count = $bulk_result['existing_count'];
@@ -67,6 +78,7 @@ if (isset($_GET['bulk_created']) && isset($_SESSION['bulk_print_result'])) {
                 $message .= "<br><small>✓ Created $created_count new prescriptions</small>";
             }
         }
+        */
 
         if (!empty($bulk_result['errors'])) {
             $message .= "<br><small>⚠️ Note: " . count($bulk_result['errors']) . " errors occurred</small>";
@@ -88,29 +100,30 @@ $total_patients = 0;
 if ($Refill_day != '') {
     // In the patient query, update it to include Prescription_retrieval_method and Days:
     $patient_sql = "SELECT 
-        p.Prescription_id,
-        p.Patient_id,
-        p.Date as last_prescription_date,
-        CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
-        pat.Barangay,
-        pat.House_nos_street_name,
-        pat.Prescription_retrieval_method,
-        p.Refill_day,
-        r.Days,
-        r.Quantity,
-        r.Frequency
-    FROM prescription p
-    LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
-    LEFT JOIN rx r ON p.Prescription_id = r.Prescription_id
-    WHERE p.Prescription_id IN (
-        SELECT MAX(p2.Prescription_id) 
-        FROM prescription p2 
-        WHERE p2.Patient_id = p.Patient_id 
-        GROUP BY p2.Patient_id
-    )
-    AND p.Refill_day = ?
-    AND pat.is_active = 1
-    ORDER BY pat.Last_name, pat.First_name";
+    p.Prescription_id,
+    p.Patient_id,
+    p.Date as last_prescription_date,
+    CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
+    pat.Barangay,
+    pat.House_nos_street_name,
+    pat.Prescription_retrieval_method,
+    p.Refill_day,
+    GROUP_CONCAT(r.Days SEPARATOR '|') as Days,
+    GROUP_CONCAT(r.Quantity SEPARATOR '|') as Quantity,
+    GROUP_CONCAT(r.Frequency SEPARATOR '|') as Frequency
+FROM prescription p
+INNER JOIN (
+    SELECT Patient_id, MAX(Prescription_id) as max_prescription_id
+    FROM prescription
+    WHERE Refill_day = ?
+    GROUP BY Patient_id
+) latest ON p.Patient_id = latest.Patient_id AND p.Prescription_id = latest.max_prescription_id
+LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
+LEFT JOIN rx r ON p.Prescription_id = r.Prescription_id
+WHERE pat.is_active = 1
+GROUP BY p.Prescription_id, p.Patient_id, p.Date, pat.Last_name, pat.First_name, 
+         pat.Barangay, pat.House_nos_street_name, pat.Prescription_retrieval_method, p.Refill_day
+ORDER BY pat.Last_name, pat.First_name";
     
     $stmt = mysqli_prepare($conn, $patient_sql);
     if ($stmt) {

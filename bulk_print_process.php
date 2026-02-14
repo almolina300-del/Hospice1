@@ -23,7 +23,7 @@ if (empty($dosearch) || empty($prescription_date) || empty($doctor_license) || e
     $_SESSION['error'] = "All fields are required!";
     header("Location: bulk_print.php?dosearch=" . urlencode($dosearch));
     exit();
-}
+}  
 
 // Connect to database
 $conn = mysqli_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB)
