@@ -1316,10 +1316,7 @@ if ($ycExpiryDate) {
         </div>
     <?php endif; ?>
 
-<<<<<<< HEAD
-    <!-- Add Prescription Modal -->
-=======
->>>>>>> c4104ff5d13e8cba80abef26ce766502c88b210f
+
   <!-- Add Prescription Modal -->
 <div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
