@@ -60,7 +60,7 @@ try {
     }
 
     // Fetch medicines for this prescription - INCLUDING FORM
-    $meds_sql = "SELECT m.Medicine_name, m.Dose, m.Form, r.Quantity, r.Frequency
+    $meds_sql = "SELECT m.Medicine_name, m.Dose, m.Form, r.Quantity, r.Frequency, r.Days
                  FROM rx r 
                  JOIN medicine m ON r.Medicine_id = m.Medicine_id 
                  WHERE r.Prescription_id = $prescription_id";
@@ -96,7 +96,7 @@ try {
         $pdf->AddPage();
 
         // Add Page X / Y at top-right
-        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 12);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetY(15);
         $pdf->SetX($width - 25);
@@ -108,7 +108,7 @@ try {
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(11, 10, 'Name:');
-        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->SetFont('Arial', 'B', 15);
         $pdf->SetTextColor(0, 0, 0);
 
         $patientName = $prescription['Patient_name'];
@@ -152,7 +152,7 @@ try {
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(-21, 10, 'Age:', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(5, 10, $prescription['Age'], 0, 0, 'R');
 
@@ -196,7 +196,7 @@ try {
         $addrStartY = $pdf->GetY(); // Should be 40
 
         // Set font for address
-        $pdf->SetFont('ARIAL', 'B', 8);
+        $pdf->SetFont('ARIAL', 'B', 9);
         $pdf->SetTextColor(0, 0, 0);
 
         // Check if address fits
@@ -211,7 +211,7 @@ try {
             $pdf->SetFont('Arial', 'B', 9);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFont('Arial', 'B', 10);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
 
@@ -243,7 +243,7 @@ try {
             $pdf->SetFont('Arial', 'B', 9);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFont('Arial', 'B', 11);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
 
@@ -279,7 +279,7 @@ try {
 
             // Set position for medicine name
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFont('Arial', 'B', 11);
 
        // Get medicine name and dose
 $medicineName = $med['Medicine_name'] ?? '';
@@ -411,7 +411,7 @@ if ($hasSecondLine) {
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 4, '', 0, 0); // Reduced height from 6 to 4
             $pdf->Cell(11, 4, 'Signa:', 0, 0); // Reduced height from 6 to 4
-            $pdf->SetFont('Arial', 'B', 7);
+            $pdf->SetFont('Arial', 'B', 10);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->SetX(17); // Added to match bulk positioning
 
@@ -423,72 +423,89 @@ if ($hasSecondLine) {
             $freqWidth = $pdf->GetStringWidth($frequency); // ADD THIS LINE
 
             if ($freqWidth <= $maxFrequencyWidth) {
-                // Fits in one line
-                $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);;
-            } else {
-                // Doesn't fit - need to wrap
-                $currentXFreq = $pdf->GetX();
-                $currentYFreq = $pdf->GetY();
+    // Fits in one line
+    $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
+} else {
+    // Doesn't fit - need to wrap
+    $currentXFreq = $pdf->GetX();
+    $currentYFreq = $pdf->GetY();
 
-                // Find where to break the frequency text
-                $charPosFreq = 0;
-                $testStringFreq = '';
+    // Find where to break the frequency text
+    $charPosFreq = 0;
+    $testStringFreq = '';
 
-                for ($j = 0; $j < strlen($frequency); $j++) {
-                    $testStringFreq .= $frequency[$j];
-                    if ($pdf->GetStringWidth($testStringFreq) > $maxFrequencyWidth) {
-                        $charPosFreq = $j;
-                        break;
-                    }
-                }
+    for ($j = 0; $j < strlen($frequency); $j++) {
+        $testStringFreq .= $frequency[$j];
+        if ($pdf->GetStringWidth($testStringFreq) > $maxFrequencyWidth) {
+            $charPosFreq = $j;
+            break;
+        }
+    }
 
-                if ($charPosFreq > 0) {
-                    $firstLineFreq = substr($frequency, 0, $charPosFreq);
-                    $remainingFreq = substr($frequency, $charPosFreq);
-                } else {
-                    $firstLineFreq = $frequency;
-                    $remainingFreq = '';
-                }
+    if ($charPosFreq > 0) {
+        $firstLineFreq = substr($frequency, 0, $charPosFreq);
+        $remainingFreq = substr($frequency, $charPosFreq);
+    } else {
+        $firstLineFreq = $frequency;
+        $remainingFreq = '';
+    }
 
-                // Save starting Y for frequency
-                $yFreq = $pdf->GetY();
+    // Save starting Y for frequency
+    $yFreq = $pdf->GetY();
 
-                // First line of frequency
-                $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
+    // First line of frequency
+    $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
 
-                // Add "Per day For" and "Days" on same line as first part
-                $pdf->SetFont('Arial', '', 9);
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(18, 2, 'Per day For', 0, 0);
-                $pdf->Cell(12, 2, '', 0, 0);
-                $pdf->Cell(8, 2, 'Days', 0, 1);
-                // Output remaining frequency on second line (indented)
-                if (!empty($remainingFreq)) {
-                    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
-                    $pdf->SetFont('Arial', 'B', 6);
-                    $pdf->SetTextColor(0, 0, 0);
-                    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
+    // Add "Per day For" and Days value on same line as first part
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(18, 2, 'Per day For', 0, 0);
+    $pdf->Cell(12, 2, '', 0, 0);
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetTextColor(0, 0, 0);
+    $$pdf->Cell(8, 4, $med['Days'] .'days', 0, 1);
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetTextColor(200, 200, 200);
 
-                    // Don't reset Y position
-                    $pdf->SetFont('Arial', 'B', 8);
-                }
-            }
+    // Output remaining frequency on second line (indented)
+    if (!empty($remainingFreq)) {
+        $pdf->SetXY(51, $yFreq + 2);
+        $pdf->SetFont('Arial', 'B', 6);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
 
-            // "Per day For" and "Days" labels
-            $pdf->SetFont('Arial', '', 9);
-            $pdf->SetTextColor(200, 200, 200);
+        // RESET FONT AND COLOR FOR THE NEXT SECTION
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(200, 200, 200);
+    }
+}
 
-            // Position the labels properly
-            if (empty($frequency) || $freqWidth <= $maxFrequencyWidth) {
-                // If frequency fits in one line, continue on same line
-                $pdf->Cell(18, 4, 'Per day For', 0, 0); // Reduced height from 6 to 4
-                $pdf->Cell(12, 4, '', 0, 0); // Reduced height from 6 to 4
-                $pdf->Cell(8, 4, 'Days', 0, 1); // Reduced height from 6 to 4
-            } else {
-                // If frequency wrapped, move to next line for labels
-                $pdf->Ln(3); // Small line break for wrapped frequency
-                $pdf->SetX(17); // Align with Signa label
-            }
+            // "Per day For" and "Days" labels with actual Days value
+$pdf->SetFont('Arial', '', 9);
+$pdf->SetTextColor(200, 200, 200);
+
+// Position the labels properly
+if (empty($frequency) || $freqWidth <= $maxFrequencyWidth) {
+    // If frequency fits in one line, continue on same line
+    $pdf->Cell(18, 4, 'Per day For', 0, 0);
+    $pdf->Cell(12, 4, '', 0, 0);
+    $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(8, 4, ($med['Days'] ?? '___') . ' days', 0, 1);
+    $pdf->SetFont('Arial', '', 9); // Reset to normal
+    $pdf->SetTextColor(200, 200, 200);
+} else {
+    // If frequency wrapped, move to next line for labels
+    $pdf->Ln(3); // Small line break for wrapped frequency
+    $pdf->SetX(17); // Align with Signa label
+    $pdf->Cell(18, 4, 'Per day For', 0, 0);
+    $pdf->Cell(12, 4, '', 0, 0);
+    $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(8, 4, ($med['Days'] ?? '___') . ' days', 0, 1);
+    $pdf->SetFont('Arial', '', 9); // Reset to normal
+    $pdf->SetTextColor(200, 200, 200);
+}
 
             // Notes line (UPDATED font size to 7)
             $pdf->SetX(2);
@@ -496,7 +513,7 @@ if ($hasSecondLine) {
             $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0); // Reduced height from 6 to 4
             $pdf->Cell(15, 4, '____', 0, 0, 'R'); // Reduced height from 6 to 4
             $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0); // Reduced height from 6 to 4
-            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFont('Arial', 'B', 14);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->Cell(15, 4, $med['Quantity'] ?? '', 0, 0, '', false); // Reduced height from 6 to 4
             $pdf->SetFont('Arial', '', 9);
@@ -577,7 +594,7 @@ if ($hasSecondLine) {
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(18, 20, 'Refill day:', 0, 0, 'L');
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFont('Arial', 'B', 15);
         $pdf->Cell(10, 20, $prescription['Refill_day'] ?? '', 0, 0, 'L');
 
         // RIGHT SIDE COLUMN (UPDATED positioning to match bulk)
@@ -589,7 +606,7 @@ if ($hasSecondLine) {
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(5, 10, 'M.D.', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(30, 10, $prescription['Doctor_name'], 0, 1, 'R');
 
@@ -599,7 +616,7 @@ if ($hasSecondLine) {
         $pdf->SetFont('Arial', 'B', 6);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(9, 10, 'License #:', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(15, 10, $prescription['Doctor_license'], 0, 1, 'R');
 

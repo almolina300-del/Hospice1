@@ -131,7 +131,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->AddPage();
 
         // Add Page X / Y format at top-right - EXACTLY LIKE GENERATEPDF
-        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 12);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetY(15);  // SAME AS GENERATEPDF
         $pdf->SetX($width - 25);
@@ -143,7 +143,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(11, 10, 'Name:');
-        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->SetFont('Arial', 'B', 15);
         $pdf->SetTextColor(0, 0, 0);
 
         $patientName = $prescription['Patient_name'];
@@ -187,7 +187,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(-21, 10, 'Age:', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(5, 10, $prescription['Age'], 0, 0, 'R');
 
@@ -231,7 +231,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $addrStartY = $pdf->GetY(); // Should be 40
 
         // Set font for address
-        $pdf->SetFont('ARIAL', 'B', 8); // <-- Changed from 'courier' to 'ARIAL'
+        $pdf->SetFont('Arial', 'B', 9); // <-- Changed from 'courier' to 'ARIAL'
         $pdf->SetTextColor(0, 0, 0);
 
         // Check if address fits
@@ -246,7 +246,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             $pdf->SetFont('Arial', 'B', 9);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-            $pdf->SetFont('Arial', 'B', 8); // <-- Changed from 'courier' to 'Arial'
+            $pdf->SetFont('Arial', 'B', 10); // <-- Changed from 'courier' to 'Arial'
             $pdf->SetTextColor(0, 0, 0);
             $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
 
@@ -313,7 +313,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
 
             // Set position for medicine name
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFont('Arial', 'B', 11);
 
             // Get medicine name and dose
             $medicineName = $med['Medicine_name'] ?? '';
@@ -432,7 +432,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
 
             // Show the medicine form next to Others (UPDATED font size to 6)
             if (!empty($medicineForm)) {
-                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFont('Arial', 'B', 10);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetX($pdf->GetX() + 5); // move 5 units to the right
                 $pdf->Cell(15, 4, $medicineForm, 0, 1); // Reduced height from 6 to 4
@@ -440,13 +440,13 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(15, 4, '___________', 0, 1); // Reduced height from 6 to 4
             }
-            
+
             // Signa line - APPLYING THE FREQUENCY WRAPPING LOGIC FROM GENERATE_PDF
             $pdf->SetX(0.5);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 4, '', 0, 0);
             $pdf->Cell(11, 4, 'Signa:', 0, 0);
-            $pdf->SetFont('Arial', 'B', 7); // Font size 7 like generate_pdf
+            $pdf->SetFont('Arial', 'B', 10); // Font size 7 like generate_pdf
             $pdf->SetTextColor(0, 0, 0);
             $pdf->SetX(17);
 
@@ -466,7 +466,11 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(18, 4, 'Per day For', 0, 0);
                 $pdf->Cell(12, 4, '', 0, 0);
-                $pdf->Cell(8, 4, $med['Days'] . ' days', 0, 1);
+                $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->Cell(8, 4, $med['Days'] . 'days', 0, 1);
+                $pdf->SetFont('Arial', '', 9); // Reset to normal
+                $pdf->SetTextColor(200, 200, 200);
             } else {
                 // Doesn't fit - need to wrap
                 $currentXFreq = $pdf->GetX();
@@ -499,22 +503,27 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
 
                 // Add "Per day For" and "Days" on same line as first part
-                $pdf->SetFont('Arial', '', 9);
+                 $pdf->SetFont('Arial', '', 9);
                 $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(18, 2, 'Per day For', 0, 0);
-                $pdf->Cell(12, 2, '', 0, 0);
-                $pdf->Cell(8, 2, 'Days', 0, 1);
+                $pdf->Cell(18, 4, 'Per day For', 0, 0);
+                $pdf->Cell(12, 4, '', 0, 0);
+                $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->Cell(8, 4, $med['Days'] . 'days', 0, 1);
+                $pdf->SetFont('Arial', '', 9); // Reset to normal
+                $pdf->SetTextColor(200, 200, 200);
 
                 // Output remaining frequency on second line (indented)
-                if (!empty($remainingFreq)) {
-                    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
-                    $pdf->SetFont('Arial', 'B', 6);
-                    $pdf->SetTextColor(0, 0, 0);
-                    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
+             if (!empty($remainingFreq)) {
+    $pdf->SetXY(51, $yFreq + 2); // Use SetXY instead of separate SetX/SetY
+    $pdf->SetFont('Arial', 'B', 6);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
 
-                    // Don't reset Y position
-                    $pdf->SetFont('Arial', 'B', 8);
-                }
+    // RESET FONT AND COLOR FOR THE NEXT SECTION
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetTextColor(200, 200, 200);
+}
             }
 
 
@@ -524,7 +533,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0);
             $pdf->Cell(15, 4, '____', 0, 0, 'R');
             $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
-            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFont('Arial', 'B', 15);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->Cell(15, 4, $med['Quantity'] ?? '', 0, 0, '', false);
             $pdf->SetFont('Arial', '', 9);
@@ -597,7 +606,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(18, 20, 'Refill day:', 0, 0, 'L');
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFont('Arial', 'B', 15);
         $pdf->Cell(10, 20, $prescription['Refill_day'] ?? '', 0, 0, 'L');
 
         // RIGHT SIDE COLUMN
@@ -609,7 +618,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(5, 10, 'M.D.', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->SetFont('Arial', 'B', 12);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(35, 10, $prescription['Doctor_name'] ?? '', 0, 1, 'R');
 
@@ -619,7 +628,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
         $pdf->SetFont('Arial', 'B', 6);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(9, 10, 'License #:', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFont('Arial', 'B', 12);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(20, 10, $prescription['License_number'] ?? '', 0, 1, 'R');
 

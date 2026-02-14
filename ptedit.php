@@ -116,7 +116,7 @@ if ($char > 0) {
         $latestRefillDay = isset($prescription['Refill_day']) ? $prescription['Refill_day'] : null;
 
         $medQuery = "
-            SELECT m.Medicine_name, m.Dose, m.Form, r.Quantity, r.Frequency
+            SELECT m.Medicine_name, m.Dose, m.Form, r.Quantity, r.Frequency, r.Days
             FROM rx r
             INNER JOIN medicine m ON m.Medicine_id = r.Medicine_id
             WHERE r.Prescription_id = $latestPrescriptionId
@@ -509,7 +509,7 @@ if ($ycExpiryDate) {
                    text-align: center;
                    min-width: 100px;
                    <?php if ($currentValue != 'PICK-UP' && !empty($currentValue)): ?>
-                        text-decoration: none; opacity: 0.7;
+                        text-decoration: none;
                    <?php endif; ?>
                "
                onclick="selectRetrievalMethod('PICK-UP')">
@@ -539,7 +539,6 @@ if ($ycExpiryDate) {
                    min-width: 100px;
                    <?php if ($currentValue != 'DELIVERY' && !empty($currentValue)): ?>
                        text-decoration: none;
-                       opacity: 0.7;
                    <?php endif; ?>
                "
                onclick="selectRetrievalMethod('DELIVERY')">
@@ -1664,8 +1663,8 @@ if ($ycExpiryDate) {
                 <label>Qty</label>
                 <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;" required>
             </div>
-       <div style="display:inline-block; width:10%; margin-left:20px;">
-    <label>Per Day for</label>
+       <div style="display:inline-block; width:30%; margin-left:20px;">
+    <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
     <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
 </div>
         </div>`;
@@ -1898,10 +1897,9 @@ if ($ycExpiryDate) {
         <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;" required>
     </div>
 
- <div style="display:inline-block; width:10%; margin-left:20px;">
-        <label>Per Day for</label>
-        <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
-    </div>
+<div style="display:inline-block; width:30%; margin-left:20px;">
+    <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
+    <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">    </div>
 </div>`;
             });
         }
