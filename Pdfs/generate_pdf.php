@@ -401,7 +401,7 @@ if ($hasSecondLine) {
                 $pdf->SetFont('Arial', 'B', 8);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetX($pdf->GetX() + 5); // move 5 units to the right
-                $pdf->Cell(15, 4, $medicineForm, 0, 1); // Reduced height from 6 to 4
+                $pdf->Cell(15, 7, $medicineForm, 0, 1); // Reduced height from 6 to 4
             } else {
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(15, 4, '___________', 0, 1); // Reduced height from 6 to 4
@@ -430,10 +430,10 @@ if ($hasSecondLine) {
                 $pdf->SetFont('Arial', '', 9);
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(18, 4, 'Per day For', 0, 0);
-                $pdf->Cell(12, 4, '', 0, 0);
+                $pdf->Cell(3, 4, '', 0, 0);
                 $pdf->SetFont('Arial', 'B', 11);
                 $pdf->SetTextColor(0, 0, 0);
-                $pdf->Cell(8, 4, ($med['Days'] ?? ''), 0, 1);
+                $pdf->Cell(8, 5, ($med['Days'] ?? ''), 0, 1,);
                 $pdf->SetFont('Arial', '', 9);
                 $pdf->SetTextColor(200, 200, 200);
             } else {
