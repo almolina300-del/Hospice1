@@ -435,7 +435,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
                 $pdf->SetFont('Arial', 'B', 10);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetX($pdf->GetX() + 5); // move 5 units to the right
-                $pdf->Cell(15, 4, $medicineForm, 0, 1); // Reduced height from 6 to 4
+                $pdf->Cell(12, 7, $medicineForm, 0, 1); // Reduced height from 6 to 4
             } else {
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(15, 4, '___________', 0, 1); // Reduced height from 6 to 4
@@ -445,10 +445,10 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             $pdf->SetX(0.5);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 4, '', 0, 0);
-            $pdf->Cell(11, 4, 'Signa:', 0, 0);
+            $pdf->Cell(11, 7, 'Signa:', 0, 0);
             $pdf->SetFont('Arial', 'B', 10); // Font size 7 like generate_pdf
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->SetX(17);
+            $pdf->SetX(17.5);
 
             // Get frequency text
             $frequency = $med['Frequency'] ?? '';
@@ -459,14 +459,14 @@ while ($row = mysqli_fetch_assoc($list_result)) {
 
             if ($freqWidth <= $maxFrequencyWidth) {
                 // Fits in one line
-                $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
+                $pdf->Cell($maxFrequencyWidth, 7, $frequency, 0, 0, '', false);
 
                 // "Per day For" and "Days" labels on same line
                 $pdf->SetFont('Arial', '', 9);
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(18, 4, 'Per day For', 0, 0);
-                $pdf->Cell(12, 4, '', 0, 0);
-                $pdf->SetFont('Arial', 'B', 11); // Set bold for the days value
+                $pdf->Cell(2, 4, '', 0, 0);
+                $pdf->SetFont('Arial', 'B', 12); // Set bold for the days value
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->Cell(8, 4, $med['Days'], 0, 1);
                 $pdf->SetFont('Arial', '', 9); // Reset to normal
@@ -528,8 +528,9 @@ while ($row = mysqli_fetch_assoc($list_result)) {
 
 
             // Notes line
+            $pdf->Ln(2);
             $pdf->SetX(2);
-            $pdf->Cell(8, 4, '', 0, 0);
+            $pdf->Cell(8, 2, '', 0, 0);
             $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0);
             $pdf->Cell(15, 4, '____', 0, 0, 'R');
             $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
@@ -539,7 +540,7 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             $pdf->SetFont('Arial', '', 9);
             $pdf->Cell(0, 4, '', 0, 1);
 
-            $pdf->Ln(5);
+            $pdf->Ln(7);
         }
 
         // Fill remaining empty medicine forms

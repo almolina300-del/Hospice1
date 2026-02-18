@@ -430,8 +430,8 @@ if ($hasSecondLine) {
                 $pdf->SetFont('Arial', '', 9);
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(18, 4, 'Per day For', 0, 0);
-                $pdf->Cell(3, 4, '', 0, 0);
-                $pdf->SetFont('Arial', 'B', 11);
+                $pdf->Cell(2, 4, '', 0, 0);
+                $pdf->SetFont('Arial', 'B', 12);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->Cell(8, 5, ($med['Days'] ?? ''), 0, 1,);
                 $pdf->SetFont('Arial', '', 9);
