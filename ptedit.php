@@ -1947,7 +1947,7 @@ function renderMedicines() {
             });
         }
 
-     function saveEditCurrentInputs() {
+function saveEditCurrentInputs() {
     const medicineItems = document.querySelectorAll('#editMedicineContainer .medicine-item');
     editMedicines = [];
     
@@ -1965,25 +1965,25 @@ function renderMedicines() {
     });
 }
 
-    function removeMedicine(i) {
-    saveCurrentInputs();
-    Medicines.splice(i, 1);
-    // Re-index the remaining medicines
-    renderMedicines();
+function addEditMedicine() {
+    saveEditCurrentInputs();
+    editMedicines.push({
+        Medicine_id: '',
+        Medicine_name: '',
+        Dose: '',
+        Form: '',
+        Frequency: '',
+        Quantity: '',
+        Days: ''
+    });
+    renderEditMedicines();
 }
 
 function removeEditMedicine(i) {
     saveEditCurrentInputs();
     editMedicines.splice(i, 1);
-    // Re-index the remaining medicines
     renderEditMedicines();
 }
-
-        function removeEditMedicine(i) {
-            saveEditCurrentInputs();
-            editMedicines.splice(i, 1);
-            renderEditMedicines();
-        }
 
         // Doctor search for edit modal
         editDoctorInput.addEventListener('input', function() {
