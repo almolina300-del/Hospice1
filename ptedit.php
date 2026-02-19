@@ -1615,61 +1615,61 @@ if ($ycExpiryDate) {
             document.getElementById('prescriptionModal').style.display = 'none';
         }
 
-        function renderMedicines() {
-            medicineContainer.innerHTML = '';
-            Medicines.forEach((med, i) => {
-                const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
-                const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
-                const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
-                const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
+function renderMedicines() {
+    medicineContainer.innerHTML = '';
+    Medicines.forEach((med, i) => {
+        const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
+        const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
+        const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
+        const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
 
-                const doseOptionsHtml = doses.map(d => {
-                    const isSelected = d === med.Dose;
-                    return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
-                }).join('');
+        const doseOptionsHtml = doses.map(d => {
+            const isSelected = d === med.Dose;
+            return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
+        }).join('');
 
-                const formOptionsHtml = forms.map(f => {
-                    const isSelected = f === med.Form;
-                    return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
-                }).join('');
+        const formOptionsHtml = forms.map(f => {
+            const isSelected = f === med.Form;
+            return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
+        }).join('');
 
-                medicineContainer.innerHTML += `
-        <div class="medicine-item" style="background:#f3f6ff; border:1px solid #ccd4ff; border-radius:10px; padding:10px 12px; margin-bottom:10px;">
-            <div style="font-weight:bold; font-size:16px; color:#2a3f85; margin-bottom:8px;">
-                Medicine ${i + 1}.
-                <button type="button" onclick="removeMedicine(${i})" style="background:#b32d2e; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; height:25px; width:25px; display:flex; align-items:center; justify-content:center; margin-left:auto; flex-shrink:0; position:relative; top:-5px;">X</button>
-                <input list="medicineList${i}" name="Medicine[${i}][Medicine_name]" value="${med.Medicine_name}" placeholder="Type to search..." onchange="checkMedicine(this, ${i})" style="width:92%; padding:8px; font-size:15px;" required>
-                <datalist id="medicineList${i}">${options}</datalist>
-            </div>
-            <div style="display:inline-block; width:15%; margin-right:8px;">
-                <label>Dosage</label>
-                <select name="Medicine[${i}][Dose]" style="width:100%; padding:8px;" required>
-                    <option value="">-- Select Dose --</option>
-                    ${doseOptionsHtml}
-                </select>
-            </div>
-            <div style="display:inline-block; width:25%; margin-right:8px;">
-                <label>Form</label>
-                <select name="Medicine[${i}][Form]" style="width:100%; padding:8px;" required>
-                    <option value="">-- Select Form --</option>
-                    ${formOptionsHtml}
-                </select>
-            </div>
-      <div style="display:inline-block; width:50%; margin-right:8px;">
-    <label>Frequency</label>
-    <input type="text" name="Medicine[${i}][Frequency]" value="${med.Frequency || ''}" oninput="this.value = this.value.toUpperCase()" style="width:100%; padding:8px;" required>
-</div>
-            <div style="display:inline-block; width:10%; margin-right:8px;">
-                <label>Qty</label>
-                <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;" required>
-            </div>
-       <div style="display:inline-block; width:30%; margin-left:20px;">
-    <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
-    <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
-</div>
-        </div>`;
-            });
-        }
+        medicineContainer.innerHTML += `
+<div class="medicine-item" style="background:#f3f6ff; border:1px solid #ccd4ff; border-radius:10px; padding:10px 12px; margin-bottom:10px;">
+    <div style="font-weight:bold; font-size:16px; color:#2a3f85; margin-bottom:8px;">
+        Medicine ${i + 1}.
+        <button type="button" onclick="removeMedicine(${i})" style="background:#b32d2e; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; height:25px; width:25px; display:flex; align-items:center; justify-content:center; margin-left:auto; flex-shrink:0; position:relative; top:-5px;">X</button>
+        <input list="medicineList${i}" name="Medicine[${i}][Medicine_name]" value="${med.Medicine_name}" placeholder="Type to search..." onchange="checkMedicine(this, ${i})" style="width:92%; padding:8px; font-size:15px;">
+        <datalist id="medicineList${i}">${options}</datalist>
+    </div>
+    <div style="display:inline-block; width:15%; margin-right:8px;">
+        <label>Dosage</label>
+        <select name="Medicine[${i}][Dose]" style="width:100%; padding:8px;">
+            <option value="">-- Select Dose --</option>
+            ${doseOptionsHtml}
+        </select>
+    </div>
+    <div style="display:inline-block; width:25%; margin-right:8px;">
+      <label>Form <span style="font-style: italic; color: #888;">(Not Required)</span></label>
+        <select name="Medicine[${i}][Form]" style="width:100%; padding:8px;">
+            <option value="">-- Select Form --</option>
+            ${formOptionsHtml}
+        </select>
+    </div>
+    <div style="display:inline-block; width:50%; margin-right:8px;">
+        <label>Frequency</label>
+        <input type="text" name="Medicine[${i}][Frequency]" value="${med.Frequency || ''}" oninput="this.value = this.value.toUpperCase()" style="width:100%; padding:8px;">
+    </div>
+    <div style="display:inline-block; width:10%; margin-right:8px;">
+        <label>Qty</label>
+        <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;">
+    </div>
+    <div style="display:inline-block; width:30%; margin-left:20px;">
+        <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
+        <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
+    </div>
+</div>`;
+    });
+}
 
         function checkMedicine(input, index) {
             const name = input.value.trim();
@@ -1710,32 +1710,34 @@ if ($ycExpiryDate) {
             });
         }
 
-        function saveCurrentInputs() {
-            document.querySelectorAll('#medicineContainer .medicine-item').forEach((div, i) => {
-                Medicines[i] = {
-                    Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
-                    Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
-                    Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
-                    Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
-                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
-                    Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
-                };
-            });
-        }
-
+      function saveCurrentInputs() {
+    const medicineItems = document.querySelectorAll('#medicineContainer .medicine-item');
+    Medicines = [];
+    
+    medicineItems.forEach((div, i) => {
+        const medicineData = {
+            Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
+            Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
+            Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
+            Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
+            Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
+            Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
+        };
+        Medicines.push(medicineData);
+    });
+}
         function addMedicine() {
-            saveCurrentInputs();
-            Medicines.push({
-                Medicine_name: '',
-                Dose: '',
-                Form: '',
-                Frequency: '',
-                Quantity: '',
-                Days: ''
-                
-            });
-            renderMedicines();
-        }
+    saveCurrentInputs();
+    Medicines.push({
+        Medicine_name: '',
+        Dose: '',
+        Form: '',
+        Frequency: '',
+        Quantity: '',
+        Days: ''
+    });
+    renderMedicines();
+}
 
         function removeMedicine(i) {
             saveCurrentInputs();
@@ -1847,62 +1849,62 @@ if ($ycExpiryDate) {
             editMedicines = [];
         }
 
-        function renderEditMedicines() {
-            editMedicineContainer.innerHTML = '';
-            editMedicines.forEach((med, i) => {
-                const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
-                const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
-                const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
-                const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
+  function renderEditMedicines() {
+    editMedicineContainer.innerHTML = '';
+    editMedicines.forEach((med, i) => {
+        const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
+        const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
+        const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
+        const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
 
-                const doseOptionsHtml = doses.map(d => {
-                    const isSelected = d === med.Dose;
-                    return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
-                }).join('');
+        const doseOptionsHtml = doses.map(d => {
+            const isSelected = d === med.Dose;
+            return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
+        }).join('');
 
-                const formOptionsHtml = forms.map(f => {
-                    const isSelected = f === med.Form;
-                    return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
-                }).join('');
+        const formOptionsHtml = forms.map(f => {
+            const isSelected = f === med.Form;
+            return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
+        }).join('');
 
-                editMedicineContainer.innerHTML += `
+        editMedicineContainer.innerHTML += `
 <div class="medicine-item" style="background:#f3f6ff; border:1px solid #ccd4ff; border-radius:10px; padding:10px 12px; margin-bottom:10px;">
     <div style="font-weight:bold; font-size:16px; color:#2a3f85; margin-bottom:8px;">
         Medicine ${i + 1}.
         <button type="button" onclick="removeEditMedicine(${i})" style="background:#b32d2e; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; height:25px; width:25px; display:flex; align-items:center; justify-content:center; margin-left:auto; flex-shrink:0; position:relative; top:-5px;">X</button>
-        <input list="editMedicineList${i}" name="Medicine[${i}][Medicine_name]" value="${med.Medicine_name}" placeholder="Type to search..." onchange="checkEditMedicine(this, ${i})" style="width:92%; padding:8px; font-size:15px;" required>
+        <input list="editMedicineList${i}" name="Medicine[${i}][Medicine_name]" value="${med.Medicine_name}" placeholder="Type to search..." onchange="checkEditMedicine(this, ${i})" style="width:92%; padding:8px; font-size:15px;">
         <input type="hidden" name="Medicine[${i}][Medicine_id]" value="${med.Medicine_id || ''}">
         <datalist id="editMedicineList${i}">${options}</datalist>
     </div>
     <div style="display:inline-block; width:15%; margin-right:8px;">
         <label>Dosage</label>
-        <select name="Medicine[${i}][Dose]" style="width:100%; padding:8px;" required>
-            <option val1ue="">-- Select Dose --</option>
+        <select name="Medicine[${i}][Dose]" style="width:100%; padding:8px;">
+            <option value="">-- Select Dose --</option>
             ${doseOptionsHtml}
         </select>
     </div>
     <div style="display:inline-block; width:25%; margin-right:8px;">
-        <label>Form</label>
-        <select name="Medicine[${i}][Form]" style="width:100%; padding:8px;" required>
+        <label>Form <span style="font-style: italic; color: #888;">(Not Required)</span></label>
+        <select name="Medicine[${i}][Form]" style="width:100%; padding:8px;">
             <option value="">-- Select Form --</option>
             ${formOptionsHtml}
         </select>
     </div>
     <div style="display:inline-block; width:50%; margin-right:8px;">
-    <label>Frequency</label>
-    <input type="text" name="Medicine[${i}][Frequency]" value="${med.Frequency || ''}" oninput="this.value = this.value.toUpperCase()" style="width:100%; padding:8px;" required>
-</div>
+        <label>Frequency</label>
+        <input type="text" name="Medicine[${i}][Frequency]" value="${med.Frequency || ''}" oninput="this.value = this.value.toUpperCase()" style="width:100%; padding:8px;">
+    </div>
     <div style="display:inline-block; width:10%; margin-right:8px;">
         <label>Qty</label>
-        <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;" required>
+        <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;">
     </div>
-
-<div style="display:inline-block; width:30%; margin-left:20px;">
-    <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
-    <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">    </div>
+    <div style="display:inline-block; width:30%; margin-left:20px;">
+        <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
+        <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
+    </div>
 </div>`;
-            });
-        }
+    });
+}
 
         function checkEditMedicine(input, index) {
             const name = input.value.trim();
@@ -1945,33 +1947,37 @@ if ($ycExpiryDate) {
             });
         }
 
-        function saveEditCurrentInputs() {
-            document.querySelectorAll('#editMedicineContainer .medicine-item').forEach((div, i) => {
-                editMedicines[i] = {
-                    Medicine_id: div.querySelector(`input[name="Medicine[${i}][Medicine_id]"]`)?.value || '',
-                    Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
-                    Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
-                    Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
-                    Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
-                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
-                    Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
-                };
-            });
-        }
+     function saveEditCurrentInputs() {
+    const medicineItems = document.querySelectorAll('#editMedicineContainer .medicine-item');
+    editMedicines = [];
+    
+    medicineItems.forEach((div, i) => {
+        const medicineData = {
+            Medicine_id: div.querySelector(`input[name="Medicine[${i}][Medicine_id]"]`)?.value || '',
+            Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
+            Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
+            Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
+            Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
+            Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
+            Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
+        };
+        editMedicines.push(medicineData);
+    });
+}
 
-        function addEditMedicine() {
-            saveEditCurrentInputs();
-            editMedicines.push({
-                Medicine_id: '',
-                Medicine_name: '',
-                Dose: '',
-                Form: '',
-                Frequency: '',
-                Quantity: '',
-                Days: ''  
-            });
-            renderEditMedicines();
-        }
+    function removeMedicine(i) {
+    saveCurrentInputs();
+    Medicines.splice(i, 1);
+    // Re-index the remaining medicines
+    renderMedicines();
+}
+
+function removeEditMedicine(i) {
+    saveEditCurrentInputs();
+    editMedicines.splice(i, 1);
+    // Re-index the remaining medicines
+    renderEditMedicines();
+}
 
         function removeEditMedicine(i) {
             saveEditCurrentInputs();
