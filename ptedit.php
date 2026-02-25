@@ -26,16 +26,15 @@ mysqli_select_db($conn, SQL_DB);
 // ---------- LOAD EXISTING PATIENT ----------
 $ch = null;
 if ($char > 0) {
-    $sql = "
-        SELECT 
-            pd.*,
-            yc.Yellow_card_nos,
-            yc.Membership_type,
-            yc.Yc_expiry_date
-        FROM patient_details pd
-        LEFT JOIN yellow_card yc ON pd.Patient_id = yc.Patient_id
-        WHERE pd.Patient_id = $char
-    ";
+    $sql = "SELECT pd.*, 
+    (SELECT p.Refill_day 
+        FROM prescription p 
+        WHERE p.Patient_id = pd.Patient_id 
+        ORDER BY p.Date DESC 
+        LIMIT 1) as LastRefillDay,
+    pd.Department AS Department
+FROM patient_details pd 
+WHERE pd.is_active = 1";
     $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
     if ($result && mysqli_num_rows($result) > 0) {
         $ch = mysqli_fetch_assoc($result);

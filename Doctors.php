@@ -209,7 +209,7 @@ $table_doctors = "<table align='center'>
     </div>
 
     <h1 align='center'>
-        <img src="img/doctor_icon.png" alt="doctor_icon" class="logo">Doctors Management
+        Doctors Management
     </h1>
 
 

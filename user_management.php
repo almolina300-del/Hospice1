@@ -313,7 +313,7 @@ if ($is_suadmin) {
 
     <?php if ($is_suadmin): ?>
         <!-- SUADMIN VIEW: Show full user management interface -->
-        <h1 align='center'> <img src="img/user_management_icon.png" alt="user_management_icon" class="logo">User Management</h1>
+        <h1 align='center'> User Management</h1>
 
         <?php
         // Count total users

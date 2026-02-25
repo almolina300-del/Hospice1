@@ -136,7 +136,7 @@ $totalPages = ceil($totalRows / $limit);
         </div>
     </div>
 
-    <h1 align='center'> <img src="img/medicine_header.png" alt="medicine_icon" class="logo">Medicine</h1>
+    <h1 style="margin-top: 1px; margin-left: 180px; text-align: left;"> Medicine List</h1>
 
     <?php
     // Display success/error messages from medicine_transact.php

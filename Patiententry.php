@@ -87,19 +87,19 @@
             $refill_count = $row['count'];
         }
     }
-    $retrieval_filter = isset($_GET['retrieval_filter']) ? mysqli_real_escape_string($conn, $_GET['retrieval_filter']) : '';
-    $retrievalFilterActive = !empty($retrieval_filter) && $retrieval_filter != 'all';
+   $department_filter = isset($_GET['department_filter']) ? mysqli_real_escape_string($conn, $_GET['department_filter']) : '';
+$departmentFilterActive = !empty($department_filter) && $department_filter != 'all';
 
-    // Get count for selected retrieval method
-    $retrieval_count = 0;
-    if ($retrievalFilterActive) {
-        $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Prescription_retrieval_method = '$retrieval_filter'";
-        $result = mysqli_query($conn, $count_query);
-        if ($result) {
-            $row = mysqli_fetch_assoc($result);
-            $retrieval_count = $row['count'];
-        }
+// Get count for selected department
+$department_count = 0;
+if ($departmentFilterActive) {
+    $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Department = '$department_filter'";
+    $result = mysqli_query($conn, $count_query);
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $department_count = $row['count'];
     }
+}
     ?>
 
     <html>
@@ -117,7 +117,10 @@
             <?php if (isset($_SESSION['First_name'])): ?>
                 <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
                     <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
-                        Prescription
+                     Employees Clinic<br>
+                        <div style="margin-top: 5px; font-size: 18px; color: rgba(255,255,255,0.8);">
+                          Prescription
+                        </div>
                     </div> <br>
                     <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
                     Welcome,<br>
@@ -177,7 +180,7 @@
             </div>
         </div>
 
-        <h1 align='center'> <img src="img/patient_record_icon.png" alt="patient_record_icon" class="logo">Patient Records</h1>
+        <h1 align='center'>Patient Records</h1>
 
         <div class="datetime-header" id="liveDateTime">
             <?php
@@ -290,14 +293,14 @@
             WHERE p.Patient_id = pd.Patient_id 
             ORDER BY p.Date DESC 
             LIMIT 1) as LastRefillDay,
-        pd.Prescription_retrieval_method AS RetrievalMethod
+        pd.Department AS Department
     FROM patient_details pd 
     WHERE $whereCondition";
 
-            // Prescription Retrieval Method filter - BEFORE $countSql is defined
-            if (!empty($retrieval_filter)) {
-                $sql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
-            }
+            // Department Method filter - BEFORE $countSql is defined
+            if (!empty($department_filter)) {
+    $sql .= " AND pd.Department = '$department_filter'";
+}
 
             if (!empty($barangay_filter)) {
                 $sql .= " AND pd.Barangay = '$barangay_filter'";
@@ -330,9 +333,9 @@
             WHERE $whereCondition";
 
             // Add filters to count query
-            if (!empty($retrieval_filter)) {
-                $countSql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
-            }
+            if (!empty($department_filter)) {
+    $countSql .= " AND pd.Department = '$department_filter'";
+}
 
             if (!empty($barangay_filter)) {
                 $countSql .= " AND pd.Barangay = '$barangay_filter'";
@@ -356,28 +359,26 @@
                 }
             }
         } else {
-            // NO SEARCH - SHOW ALL RECORDS
-            // ... rest of your non-search code remains the same
-            // NO SEARCH - SHOW ALL RECORDS
-            // MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
-            $sql = "SELECT pd.*, 
-        (SELECT p.Refill_day 
-            FROM prescription p 
-            WHERE p.Patient_id = pd.Patient_id 
-            ORDER BY p.Date DESC 
-            LIMIT 1) as LastRefillDay,
-        pd.Prescription_retrieval_method AS RetrievalMethod
-    FROM patient_details pd 
-    WHERE pd.is_active = 1";
+            /// NO SEARCH - SHOW ALL RECORDS
+// MODIFIED SQL TO INCLUDE LATEST PRESCRIPTION REFILL DAY
+$sql = "SELECT pd.*, 
+    (SELECT p.Refill_day 
+        FROM prescription p 
+        WHERE p.Patient_id = pd.Patient_id 
+        ORDER BY p.Date DESC 
+        LIMIT 1) as LastRefillDay,
+    pd.Department AS Department
+FROM patient_details pd 
+WHERE pd.is_active = 1";
 
             if (!empty($barangay_filter)) {
                 $sql .= " AND pd.Barangay = '$barangay_filter'";
             }
 
-            // ADD THIS - Prescription Retrieval Method filter for MAIN QUERY
-            if (!empty($retrieval_filter)) {
-                $sql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
-            }
+            // ADD THIS - Department filter for MAIN QUERY
+            if (!empty($department_filter)) {
+    $sql .= " AND pd.Department = '$department_filter'";
+}
             // Refill Day filter for MAIN QUERY
             if (!empty($refill_filter)) {
                 if ($refill_filter == 'No Rx') {
@@ -409,9 +410,9 @@
                 $countSql .= " AND pd.Barangay = '$barangay_filter'";
             }
             // ADD THIS - Prescription Retrieval Method filter for COUNT QUERY
-            if (!empty($retrieval_filter)) {
-                $countSql .= " AND pd.Prescription_retrieval_method = '$retrieval_filter'";
-            }
+           if (!empty($department_filter)) {
+    $countSql .= " AND pd.Department = '$department_filter'";
+}
             // Refill Day filter for COUNT QUERY
             if (!empty($refill_filter)) {
                 if ($refill_filter == 'No Rx') {
@@ -515,34 +516,32 @@
             echo "<th>Birthday</th>";
 
             // Prescription Retrieval Method header with filter button
-            echo "<th class='narrow-column'>";
-            echo "<div class='prescription-header-container'>";
-
-            // Column title
-            echo "<span style='color:white;'>Prescription Retrieval Method</span>";
+           echo "<th class='narrow-column'>";
+echo "<div class='prescription-header-container'>";
+echo "<span style='color:white;'>Department</span>";
 
             // Show filter indicator if active
-            if ($retrievalFilterActive) {
-                echo "<span class='filter-indicator'>🔍</span>";
+           if ($departmentFilterActive) {
+    echo "<span class='filter-indicator'>🔍</span>";
 
-                // Show count badge in the header
-                echo "<span class='barangay-count-badge' title='$retrieval_count patients with $retrieval_filter retrieval method'>$retrieval_count</span>";
-            }
+    // Show count badge in the header
+    echo "<span class='barangay-count-badge' title='$department_count patients with $department_filter department'>$department_count</span>";
+}
 
-            // Filter button with dynamic icon
-            $filterIcon = $retrievalFilterActive ? "🔽" : "▼";
-            echo "<button class='filter-btn' onclick=\"showRetrievalFilter()\" title='Filter by Prescription Retrieval Method'>$filterIcon</button>";
+// Filter button with dynamic icon
+$filterIcon = $departmentFilterActive ? "🔽" : "▼";
+echo "<button class='filter-btn' onclick=\"showDepartmentFilter()\" title='Filter by Department'>$filterIcon</button>";
 
-            // Clear filter button (only show when filter is active)
-            if ($retrievalFilterActive) {
-                // Build clear URL
-                $queryParams = $_GET;
-                unset($queryParams['retrieval_filter']);
-                unset($queryParams['page']); // Reset to page 1
-                $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
+// Clear filter button (only show when filter is active)
+if ($departmentFilterActive) {
+    // Build clear URL
+    $queryParams = $_GET;
+    unset($queryParams['department_filter']);
+    unset($queryParams['page']); // Reset to page 1
+    $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
 
-                echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Prescription Retrieval Method Filter'>❌</a>";
-            }
+    echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Department Filter'>❌</a>";
+}
 
             echo "</div>";
             echo "</th>";
@@ -575,9 +574,9 @@
                 foreach ($otherColumns as $col) {
                     echo "<td align='center'>" . strtoupper($row[$col]) . "</td>";
                 }
-                // Prescription Retrieval Method Column (make sure this column exists in your database)
-                $retrievalMethod = !empty($row['RetrievalMethod']) ? $row['RetrievalMethod'] : 'NOT SPECIFIED';
-                echo "<td align='center' style='font-size:12px; width: 120px;'>" . htmlspecialchars($retrievalMethod) . "</td>";
+                // Department Method Column (make sure this column exists in your database)
+                $department = !empty($row['Department']) ? $row['Department'] : 'NOT SPECIFIED';
+echo "<td align='center' style='font-size:12px; width: 120px;'>" . htmlspecialchars($department) . "</td>";
 
 
                 // Status Column (needs special handling since it has a button)
@@ -612,12 +611,12 @@
         // PAGINATION LINKS
         echo "<div style='text-align:center; margin-top:10px;'>";
 
-        if ($page > 1) {
-            $prev_link = "?page=" . ($page - 1) . "&o=" . $ord;
-            if (!empty($runsearch)) $prev_link .= "&dosearch=" . urlencode($runsearch);
-            if (!empty($barangay_filter)) $prev_link .= "&barangay_filter=" . urlencode($barangay_filter);
-            if (!empty($refill_filter)) $prev_link .= "&refill_filter=" . urlencode($refill_filter);
-            if (!empty($retrieval_filter)) $prev_link .= "&retrieval_filter=" . urlencode($retrieval_filter);
+    if ($page > 1) {
+    $prev_link = "?page=" . ($page - 1) . "&o=" . $ord;
+    if (!empty($runsearch)) $prev_link .= "&dosearch=" . urlencode($runsearch);
+    if (!empty($barangay_filter)) $prev_link .= "&barangay_filter=" . urlencode($barangay_filter);
+    if (!empty($refill_filter)) $prev_link .= "&refill_filter=" . urlencode($refill_filter);
+    if (!empty($department_filter)) $prev_link .= "&department_filter=" . urlencode($department_filter);
 
             echo "<a href='" . $prev_link . "' 
         style='padding:8px 15px; margin-right:10px; 
@@ -632,7 +631,7 @@
             if (!empty($runsearch)) $next_link .= "&dosearch=" . urlencode($runsearch);
             if (!empty($barangay_filter)) $next_link .= "&barangay_filter=" . urlencode($barangay_filter);
             if (!empty($refill_filter)) $next_link .= "&refill_filter=" . urlencode($refill_filter);
-            if (!empty($retrieval_filter)) $next_link .= "&retrieval_filter=" . urlencode($retrieval_filter);
+           if (!empty($department_filter)) $next_link .= "&department_filter=" . urlencode($department_filter);
             echo "<a href='" . $next_link . "' 
         style='padding:8px 15px; 
             background:#28A745; color:white; 
@@ -1060,12 +1059,12 @@
                 });
             });
             // Add these functions to your existing JavaScript section
-            function showRetrievalFilter() {
-                document.getElementById('retrievalFilterModal').style.display = 'flex';
+            function showDepartmentFilter() {
+                document.getElementById('departmentFilterModal').style.display = 'flex';
             }
 
-            function hideRetrievalFilter() {
-                document.getElementById('retrievalFilterModal').style.display = 'none';
+            function hideDepartmentFilter() {
+                document.getElementById('departmentFilterModal').style.display = 'none';
             }
 
             // Update the existing Escape key handler to include retrieval filter
@@ -1073,11 +1072,13 @@
                 if (e.key === 'Escape') {
                     hideBarangayFilter();
                     hideRefillDayFilter();
-                    hideRetrievalFilter();
+                    hideDepartmentFilter();
                     hideDeactivateModal();
                 }
             });
         </script>
+
+
         <!-- Refill Day Filter Modal -->
         <div id="refillDayFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
             <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
@@ -1146,7 +1147,7 @@
                 </form>
             </div>
         </div>
-        <script>
+  <script>
             function showRefillDayFilter() {
                 document.getElementById('refillDayFilterModal').style.display = 'flex';
             }
@@ -1160,27 +1161,29 @@
                 if (e.key === 'Escape') {
                     hideBarangayFilter();
                     hideRefillDayFilter();
+                    hideDepartmentFilter();
                     hideDeactivateModal();
                 }
             });
         </script>
-        <!-- Prescription Retrieval Method Filter Modal -->
-        <div id="retrievalFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10002; justify-content:center; align-items:center;">
-            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
-                <h3 style="margin-top:0; color:#263F73;">Filter by Prescription Retrieval Method</h3>
-                <form method="get" action="Patiententry.php" id="retrievalFilterForm">
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Retrieval Method:</label>
-                        <select name="retrieval_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                            <option value="">All Methods</option>
-                            <?php
-                            $retrieval_query = mysqli_query($conn, "SELECT DISTINCT Prescription_retrieval_method FROM patient_details WHERE is_active = 1 AND Prescription_retrieval_method != '' AND Prescription_retrieval_method IS NOT NULL ORDER BY Prescription_retrieval_method ASC");
-                            $current_filter = $_GET['retrieval_filter'] ?? '';
-                            while ($retrieval_row = mysqli_fetch_assoc($retrieval_query)) {
-                                $method_name = strtoupper($retrieval_row['Prescription_retrieval_method']);
 
-                                // Get count for this method
-                                $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Prescription_retrieval_method = '$method_name'";
+        <!-- Department Filter Modal (Correct Version) -->
+        <div id="departmentFilterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10002; justify-content:center; align-items:center;">
+            <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
+                <h3 style="margin-top:0; color:#263F73;">Filter by Department</h3>
+                <form method="get" action="Patiententry.php" id="departmentFilterForm">
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Department:</label>
+                        <select name="department_filter" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                            <option value="">All Departments</option>
+                            <?php
+                            $department_query = mysqli_query($conn, "SELECT DISTINCT Department FROM patient_details WHERE is_active = 1 AND Department != '' AND Department IS NOT NULL ORDER BY Department ASC");
+                            $current_filter = $_GET['department_filter'] ?? '';
+                            while ($dept_row = mysqli_fetch_assoc($department_query)) {
+                                $dept_name = strtoupper($dept_row['Department']);
+
+                                // Get count for this department
+                                $count_query = "SELECT COUNT(*) as count FROM patient_details WHERE is_active = 1 AND Department = '$dept_name'";
                                 $count_result = mysqli_query($conn, $count_query);
                                 $count = 0;
                                 if ($count_result) {
@@ -1188,8 +1191,8 @@
                                     $count = $count_row['count'];
                                 }
 
-                                $selected = ($current_filter == $method_name) ? 'selected' : '';
-                                echo "<option value='" . htmlspecialchars($method_name) . "' $selected>" . $method_name . " ($count patients)</option>";
+                                $selected = ($current_filter == $dept_name) ? 'selected' : '';
+                                echo "<option value='" . htmlspecialchars($dept_name) . "' $selected>" . $dept_name . " ($count patients)</option>";
                             }
                             ?>
                         </select>
@@ -1209,7 +1212,7 @@
 
                     <div style="display:flex; gap:10px; margin-top:20px;">
                         <button type="submit" style="flex:1; padding:10px; background:#263F73; color:white; border:none; border-radius:4px; cursor:pointer;">Apply Filter</button>
-                        <button type="button" onclick="hideRetrievalFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                        <button type="button" onclick="hideDepartmentFilter()" style="flex:1; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
                         <?php if (!empty($current_filter)): ?>
                             <a href="?page=1&o=<?php echo $ord; ?><?php echo !empty($runsearch) ? '&dosearch=' . urlencode($runsearch) : ''; ?><?php echo !empty($barangay_filter) ? '&barangay_filter=' . urlencode($barangay_filter) : ''; ?><?php echo !empty($refill_filter) ? '&refill_filter=' . urlencode($refill_filter) : ''; ?>"
                                 style="flex:1; padding:10px; background:#dc3545; color:white; text-decoration:none; border-radius:4px; text-align:center; line-height:38px;">

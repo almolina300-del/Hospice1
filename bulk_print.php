@@ -751,7 +751,6 @@ $today_date = date('Y-m-d');
     </div>
 
     <h1 align="center">
-        <img src="img/printer.png" alt="bulk_print_icon" class="logo">
         Bulk Printing
     </h1>
 

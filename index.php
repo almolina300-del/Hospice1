@@ -21,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($result && mysqli_num_rows($result) === 1) {
             $row = mysqli_fetch_assoc($result);
-            
+
             // CHECK IF USER IS ACTIVE
             if ($row['is_active'] == 0) {
                 $error = "Your account is deactivated. Please contact Health Informatics Division.";
@@ -56,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <header>
         <img src="img/mhd_logo.png" alt="Makati Logo" class="logo">
         <span>MAKATI HEALTH DEPARTMENT<br>
-            <span style="font-size: 18px; color: #F2F0EF; font-weight: normal;">Prescription System</span>
+            <span style="font-size: 18px; color: #F2F0EF; font-weight: normal;">Prescription System - Employees Clinic</span>
         </span>
     </header>
 
@@ -78,23 +78,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <?php if (isset($error) && !empty($error)): ?>
                     <div class="error"><?php echo $error; ?></div>
                 <?php endif; ?>
-               
-    <div class="footer-note">
-        For technical assistance, contact <br><strong>
-              <div style="text-align: center; margin: 5px 0 10px 0;">
-        <img src="img/hid_logo_icon.png" alt="Hid Logo" style="max-width: 150px; height: auto;">
-    </div>Health Informatics Division</strong><br>
-        Email: <strong>mhims@makati.gov.ph</strong><br>
-        Local: <strong>1444</strong><br>
-    </div>
-                
+
+                <div class="footer-note">
+                    For technical assistance, contact <br><strong>
+                        <div style="text-align: center; margin: 5px 0 10px 0;">
+                            <img src="img/hid_logo_icon.png" alt="Hid Logo" style="max-width: 150px; height: auto;">
+                        </div>Health Informatics Division
+                    </strong><br>
+                    Email: <strong>mhims@makati.gov.ph</strong><br>
+                    Local: <strong>1444</strong><br>
+                </div>
+
             </form>
             <!-- FORM ENDS HERE -->
         </div>
 
         <!-- Image Section -->
         <div class="image-section">
-            <img src="img/rx1.jpg" alt="Healthcare">
+            <img src="img/offices.jpeg" alt="Directory">
         </div>
     </div>
 
