@@ -32,9 +32,10 @@ if ($char > 0) {
         WHERE p.Patient_id = pd.Patient_id 
         ORDER BY p.Date DESC 
         LIMIT 1) as LastRefillDay,
-    pd.Department AS Department
+    pd.Department AS Department,
+    pd.Status_of_appointment AS Status_of_appointment
 FROM patient_details pd 
-WHERE pd.is_active = 1";
+WHERE pd.Patient_id = $char AND pd.is_active = 1";
     $result = mysqli_query($conn, $sql) or die(mysqli_error($conn));
     if ($result && mysqli_num_rows($result) > 0) {
         $ch = mysqli_fetch_assoc($result);
@@ -47,14 +48,9 @@ WHERE pd.is_active = 1";
 }
 // ========== ADD THIS SECTION RIGHT HERE ==========
 $sex = isset($ch['Sex']) ? $ch['Sex'] : '';
-$prescriptionRetrievalMethod = isset($ch['Prescription_retrieval_method']) ? $ch['Prescription_retrieval_method'] : '';
 
 // Check for valid sex
 $hasValidSex = !empty($sex) && strtoupper($sex) !== 'ENTER' && in_array(strtoupper($sex), ['MALE', 'FEMALE']);
-
-// Check for valid prescription retrieval method
-$hasValidPrescriptionMethod = !empty($prescriptionRetrievalMethod) && 
-                              in_array(strtoupper($prescriptionRetrievalMethod), ['PICK-UP', 'DELIVERY']);
 
 // Keep birthday variable for other uses if needed
 $birthday = isset($ch['Birthday']) ? $ch['Birthday'] : '';
@@ -62,18 +58,21 @@ $birthday = isset($ch['Birthday']) ? $ch['Birthday'] : '';
 
 // ---------- FETCH PATIENT SUMMARY ----------
 $patientName = '';
-$patientAddress = '';
+$patientContact = '';
+$patientCivilStatus = ''; // Add this line
+$patientDepartment = '';
+$patientStatus = '';
 $patientSex = '';
 $patientAge = '';
-
-$hasSex = $hasValidSex; // Keep this for sex validation
-$hasPrescriptionMethod = $hasValidPrescriptionMethod; // Add this for prescription method validation
 
 if ($char > 0) {
     $sql = "
         SELECT 
             CONCAT(pd.Last_name, ', ', pd.First_name, ' ', pd.Middle_name) AS FullName,
-            CONCAT(pd.House_nos_street_name, ', ', pd.Barangay) AS FullAddress,
+            pd.Contact_nos,
+            pd.Civil_status,
+            pd.Department,
+            pd.Status_of_appointment,
             pd.Sex,
             pd.Birthday
         FROM patient_details pd
@@ -85,7 +84,10 @@ if ($char > 0) {
     if ($result && mysqli_num_rows($result) > 0) {
         $row = mysqli_fetch_assoc($result);
         $patientName = 'Name: ' . htmlspecialchars($row['FullName']);
-        $patientAddress = 'Address: ' . htmlspecialchars($row['FullAddress']);
+        $patientContact = 'Contact: ' . htmlspecialchars($row['Contact_nos'] ?? 'N/A');
+        $patientCivilStatus = 'Civil Status: ' . htmlspecialchars($row['Civil_status'] ?? 'N/A');
+        $patientDepartment = 'Department: ' . htmlspecialchars($row['Department'] ?? 'N/A');
+        $patientStatus = 'Status: ' . htmlspecialchars($row['Status_of_appointment'] ?? 'N/A');
         $patientSex = htmlspecialchars($row['Sex']);
 
         // Check if birthday exists and is not empty/null
@@ -93,10 +95,10 @@ if ($char > 0) {
             $birthDate = new DateTime($row['Birthday']);
             $today = new DateTime();
             $patientAge = $birthDate->diff($today)->y;
-            $hasBirthday = true; // Birthday exists
+            $hasBirthday = true;
         } else {
             $patientAge = 'N/A';
-            $hasBirthday = false; // No birthday
+            $hasBirthday = false;
         }
 
         $patientName .= "    Age: $patientAge    Sex: $patientSex";
@@ -129,6 +131,15 @@ if ($char > 0) {
     }
 }
 
+// ---------- FETCH DEPARTMENTS FOR DROPDOWN ----------
+$departments = [];
+$deptQuery = "SELECT Department_name FROM department WHERE is_active = 1 ORDER BY Department_name ASC";
+$deptResult = mysqli_query($conn, $deptQuery);
+if ($deptResult && mysqli_num_rows($deptResult) > 0) {
+    while ($dept = mysqli_fetch_assoc($deptResult)) {
+        $departments[] = $dept['Department_name'];
+    }
+}
 // ---------- FETCH REFERENCE MEDICINES ----------
 $refMeds = [];
 $refQuery = "SELECT Medicine_name, Dose, Form FROM medicine ORDER BY Medicine_name ASC";
@@ -224,7 +235,7 @@ if ($ycExpiryDate) {
 </head>
 
 <body>
-    <!-- Success Messages Display -->
+    <!-- Success Messages Display   -->
     <?php
     // Check for success messages from prescription update
     if (isset($_GET['success']) && $_GET['success'] == 1) {
@@ -425,128 +436,72 @@ if ($ycExpiryDate) {
                         <input type="radio" name="Sex" value="FEMALE" required <?php echo (isset($ch['Sex']) && $ch['Sex'] == 'FEMALE') ? 'checked' : ''; ?>> FEMALE
                     </label>
                 </td>
-<td>Birthday: <span style="color:red;">*</span></td>
-<td colspan="2">
-    <input type="date" name="Birthday" max="<?php echo date('Y-m-d', strtotime('-1 day')); ?>"
-        value="<?php echo isset($ch['Birthday']) ? date('Y-m-d', strtotime($ch['Birthday'])) : ''; ?>" 
-        <?php echo (!isset($ch) || empty($ch['Birthday'])) ? 'required' : ''; ?>>
-</td>
-            </tr>
-            <!-- Contact Nos., House Nos., and Barangay on same row -->
-            <tr>
-                <!-- Contact Nos. -->
-                <td>Contact Nos.: </td>
-                <td style="white-space:nowrap;">
-                    <input type="text" name="Contact_nos" maxlength="11" pattern="\d{11}" title="Please enter exactly 11 digits (e.g., 09123456789)"
-                        style="width:150px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;"
-                        value="<?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : ''; ?>"
-                        placeholder="09XXXXXXXXX" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                </td>
-
-                <!-- House Nos. and St. Name -->
-                <td style="white-space:nowrap;">House Nos. and St. Name: <span style="color:red;">*</span></td>
-                <td style="white-space:nowrap;">
-                    <input type="text" name="House_nos_street_name" style="text-transform:uppercase; width:250px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;"
-                        value="<?php echo isset($ch['House_nos_street_name']) ? htmlspecialchars($ch['House_nos_street_name']) : ''; ?>" required>
-                </td>
-
-                <!-- Barangay -->
-                <td style="white-space:nowrap;">Barangay: <span style="color:red;">*</span></td>
-                <td style="white-space:nowrap;">
-                    <input type="text"
-                        name="Barangay"
-                        id="barangayInput"
-                        list="barangayList"
-                        required
-                        value="<?php echo isset($ch['Barangay']) ? htmlspecialchars($ch['Barangay']) : ''; ?>"
-                        style="width: 180px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;"
-                        placeholder="Type or select barangay"
-                        autocomplete="off">
-
-                    <datalist id="barangayList">
-                        <?php
-                        $sql = "SELECT barangay FROM barangay WHERE is_active = 1 ORDER BY barangay ASC";
-                        $result = mysqli_query($conn, $sql);
-
-                        if ($result && mysqli_num_rows($result) > 0) {
-                            while ($row = mysqli_fetch_assoc($result)) {
-                                $b = htmlspecialchars($row['barangay']);
-                                echo "<option value=\"$b\">$b</option>";
-                            }
-                        }
-                        ?>
-                    </datalist>
+                <td>Birthday: <span style="color:red;">*</span></td>
+                <td colspan="2">
+                    <input type="date" name="Birthday" max="<?php echo date('Y-m-d', strtotime('-1 day')); ?>"
+                        value="<?php echo isset($ch['Birthday']) ? date('Y-m-d', strtotime($ch['Birthday'])) : ''; ?>"
+                        <?php echo (!isset($ch) || empty($ch['Birthday'])) ? 'required' : ''; ?>>
                 </td>
             </tr>
-             <tr>
-<td style="white-space:nowrap;">Prescription Retrieval Method: <span style="color:red;">*</span></td>
-<td style="white-space:nowrap;">
-    <?php
-    $currentValue = isset($ch['Prescription_retrieval_method']) ? trim($ch['Prescription_retrieval_method']) : '';
-    ?>
+
+<tr>
+    <!-- Contact Nos. -->
+    <td>Contact Nos.: </td>
+    <td style="white-space:nowrap;">
+        <input type="text" name="Contact_nos" maxlength="11" pattern="\d{11}" title="Please enter exactly 11 digits (e.g., 09123456789)"
+            style="width:200px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;"
+            value="<?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : ''; ?>"
+            placeholder="09XXXXXXXXX" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+    </td>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
-        <!-- PICK-UP Button -->
-        <input type="radio" 
-               name="Prescription_retrieval_method" 
-               value="PICK-UP" 
-               id="pickupBtn"
-               required 
-               style="display: none;"
-               <?php echo ($currentValue == 'PICK-UP') ? 'checked' : ''; ?>>
-        <label for="pickupBtn" 
-               class="retrieval-btn" 
-               style="
-                   padding: 8px 20px;
-                   border: 2px solid <?php echo ($currentValue == 'PICK-UP') ? '#007bff' : '#ccc'; ?>;
-                   border-radius: 6px;
-                   background-color: <?php echo ($currentValue == 'PICK-UP') ? '#007bff' : 'white'; ?>;
-                   color: <?php echo ($currentValue == 'PICK-UP') ? 'white' : '#666'; ?>;
-                   font-weight: bold;
-                   cursor: pointer;
-                   transition: all 0.3s ease;
-                   text-align: center;
-                   min-width: 100px;
-                   <?php if ($currentValue != 'PICK-UP' && !empty($currentValue)): ?>
-                        text-decoration: none;
-                   <?php endif; ?>
-               "
-               onclick="selectRetrievalMethod('PICK-UP')">
-            PICK-UP
-        </label>
-        
-        <!-- DELIVERY Button -->
-        <input type="radio" 
-               name="Prescription_retrieval_method" 
-               value="DELIVERY" 
-               id="deliveryBtn"
-               required 
-               style="display: none;"
-               <?php echo ($currentValue == 'DELIVERY') ? 'checked' : ''; ?>>
-        <label for="deliveryBtn" 
-               class="retrieval-btn" 
-               style="
-                   padding: 8px 20px;
-                   border: 2px solid <?php echo ($currentValue == 'DELIVERY') ? '#007bff' : '#ccc'; ?>;
-                   border-radius: 6px;
-                   background-color: <?php echo ($currentValue == 'DELIVERY') ? '#007bff' : 'white'; ?>;
-                   color: <?php echo ($currentValue == 'DELIVERY') ? 'white' : '#666'; ?>;
-                   font-weight: bold;
-                   cursor: pointer;
-                   transition: all 0.3s ease;
-                   text-align: center;
-                   min-width: 100px;
-                   <?php if ($currentValue != 'DELIVERY' && !empty($currentValue)): ?>
-                       text-decoration: none;
-                   <?php endif; ?>
-               "
-               onclick="selectRetrievalMethod('DELIVERY')">
-            DELIVERY
-        </label>
-    </div>
-</td>
-            </tr>
+    <!-- Civil Status (beside Contact Nos.) -->
+    <td>Civil Status: </td>
+    <td style="white-space:nowrap;" colspan="3">
+        <select name="Civil_status" 
+            style="width:200px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+            <option value="">-- Select Civil Status --</option>
+            <option value="SINGLE" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'SINGLE') ? 'selected' : ''; ?>>SINGLE</option>
+            <option value="MARRIED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'MARRIED') ? 'selected' : ''; ?>>MARRIED</option>
+            <option value="DIVORCED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'DIVORCED') ? 'selected' : ''; ?>>DIVORCED</option>
+            <option value="SEPARATED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'SEPARATED') ? 'selected' : ''; ?>>SEPARATED</option>
+            <option value="WIDOWED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'WIDOWED') ? 'selected' : ''; ?>>WIDOWED</option>
+        </select>
+    </td>
+</tr>
 
+<tr>
+<td>Department: <span style="color:red;">*</span></td>
+<td style="white-space:nowrap;" colspan="5">
+    <select name="Department" required
+        style="width:450px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+        <option value="">-- Select Department --</option>
+        <?php
+        // Get current department value
+        $currentDept = isset($ch['Department']) ? $ch['Department'] : '';
+        
+        // Loop through departments from database
+        foreach ($departments as $dept) {
+            $selected = ($currentDept == $dept) ? 'selected' : '';
+            echo "<option value=\"$dept\" $selected>$dept</option>";
+        }
+        ?>
+    </select>
+</td>
+</tr>
+<tr>
+    <td>Status of Appointment: <span style="color:red;">*</span></td>
+    <td style="white-space:nowrap;" colspan="5">
+        <select name="Status_of_appointment" required  <!-- Add required here -->
+            style="width:300px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+            <option value="">-- Select Status --</option>
+            <option value="JOB ORDER" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'JOB ORDER') ? 'selected' : ''; ?>>JOB ORDER</option>
+            <option value="CASUAL" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'CASUAL') ? 'selected' : ''; ?>>CASUAL</option>
+            <option value="REGULAR" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'REGULAR') ? 'selected' : ''; ?>>REGULAR</option>
+            <option value="CONTRACTUAL" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'CONTRACTUAL') ? 'selected' : ''; ?>>CONTRACTUAL</option>
+        </select>
+    </td>
+</tr>
+        
             <!-- Action Buttons -->
             <tr>
                 <td align="center">
@@ -1078,76 +1033,75 @@ if ($ycExpiryDate) {
     </script>
 
 
- <!-- Scripts for change detection -->
+<!-- Scripts for change detection -->
 <script>
-    const last = document.querySelector('input[name="Last_name"]');
-    const first = document.querySelector('input[name="First_name"]');
-    const middle = document.querySelector('input[name="Middle_name"]');
-    const Suffix = document.querySelector('select[name="Suffix"]');
-    const Birthday = document.querySelector('input[name="Birthday"]');
-    const Contact = document.querySelector('input[name="Contact_nos"]');
-    const Barangay = document.querySelector('input[name="Barangay"]');
-    const House = document.querySelector('input[name="House_nos_street_name"]');
-    const updateBtn = document.getElementById('updateBtn');
-    const prescriptionRetrieval = document.querySelectorAll('input[name="Prescription_retrieval_method"]');
+const last = document.querySelector('input[name="Last_name"]');
+const first = document.querySelector('input[name="First_name"]');
+const middle = document.querySelector('input[name="Middle_name"]');
+const Suffix = document.querySelector('select[name="Suffix"]');
+const Birthday = document.querySelector('input[name="Birthday"]');
+const Contact = document.querySelector('input[name="Contact_nos"]');
+const CivilStatus = document.querySelector('select[name="Civil_status"]');
+const Department = document.querySelector('select[name="Department"]'); // CHANGED: from input to select
+const Status = document.querySelector('select[name="Status_of_appointment"]');
+const updateBtn = document.getElementById('updateBtn');
 
-    function getSex() {
-        const sexRadios = document.querySelectorAll('input[name="Sex"]');
-        for (const r of sexRadios) {
-            if (r.checked) return r.value;
-        }
-        return '';
+function getSex() {
+    const sexRadios = document.querySelectorAll('input[name="Sex"]');
+    for (const r of sexRadios) {
+        if (r.checked) return r.value;
     }
+    return '';
+}
 
-    function getPrescriptionRetrieval() {
-        for (const r of prescriptionRetrieval) {
-            if (r.checked) return r.value;
-        }
-        return '';
+// Store original values
+const originalValues = {
+    last: last.value,
+    first: first.value,
+    middle: middle.value,
+    suffix: Suffix.value,
+    sex: getSex(),
+    birthday: Birthday.value,
+    contact: Contact.value,
+    civilStatus: CivilStatus.value,
+    department: Department.value,
+    status: Status.value,
+};
+
+// Disable update button initially
+updateBtn.disabled = true;
+updateBtn.style.opacity = 0.5;
+
+function checkChanges() {
+    if (
+        last.value !== originalValues.last ||
+        first.value !== originalValues.first ||
+        middle.value !== originalValues.middle ||
+        Suffix.value !== originalValues.suffix ||
+        getSex() !== originalValues.sex ||
+        Birthday.value !== originalValues.birthday ||
+        Contact.value !== originalValues.contact ||
+        CivilStatus.value !== originalValues.civilStatus ||
+        Department.value !== originalValues.department ||
+        Status.value !== originalValues.status
+    ) {
+        updateBtn.disabled = false;
+        updateBtn.style.opacity = 1;
+    } else {
+        updateBtn.disabled = true;
+        updateBtn.style.opacity = 0.5;
     }
+}
 
-    const originalValues = {
-        last: last.value,
-        first: first.value,
-        middle: middle.value,
-        suffix: Suffix.value,
-        sex: getSex(),
-        birthday: Birthday.value,
-        contact: Contact.value,
-        barangay: Barangay.value,
-        house: House.value,
-        prescriptionRetrieval: getPrescriptionRetrieval()
-    };
+// Add event listeners
+[last, first, middle, Birthday, Contact].forEach(el => el.addEventListener('input', checkChanges));
+[Suffix, CivilStatus, Department, Status].forEach(el => el.addEventListener('change', checkChanges));
+document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('change', checkChanges));
 
-    updateBtn.disabled = true;
-    updateBtn.style.opacity = 0.5;
 
-    function checkChanges() {
-        if (
-            last.value !== originalValues.last ||
-            first.value !== originalValues.first ||
-            middle.value !== originalValues.middle ||
-            Suffix.value !== originalValues.suffix ||
-            getSex() !== originalValues.sex ||
-            Birthday.value !== originalValues.birthday ||
-            Contact.value !== originalValues.contact ||
-            Barangay.value !== originalValues.barangay ||
-            House.value !== originalValues.house ||
-            getPrescriptionRetrieval() !== originalValues.prescriptionRetrieval
-        ) {
-            updateBtn.disabled = false;
-            updateBtn.style.opacity = 1;
-        } else {
-            updateBtn.disabled = true;
-            updateBtn.style.opacity = 0.5;
-        }
-    }
 
-    [last, first, middle, Birthday, Contact, House].forEach(el => el.addEventListener('input', checkChanges));
-    [Suffix, Barangay].forEach(el => el.addEventListener('change', checkChanges));
-    document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('change', checkChanges));
-    prescriptionRetrieval.forEach(r => r.addEventListener('change', checkChanges));
 </script>
+
     </form>
     <style>
         .logo {
@@ -1174,8 +1128,6 @@ if ($ycExpiryDate) {
         $today = new DateTime();
         $todayStr = $today->format('Y-m-d');
 
-        // Check if patient has sex/gender
-        $hasSex = !empty($ch['Sex']);
         ?>
 
         <div style='width: 100%; margin: 0 auto;'>
@@ -1186,25 +1138,15 @@ if ($ycExpiryDate) {
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-                       <?php if ($hasValidSex && $hasValidPrescriptionMethod): ?>
+<?php if ($hasValidSex): ?>
     <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
         Add Prescription</a>
 <?php else: ?>
-    <?php
-    $errorMessage = '';
-    if (!$hasValidSex && !$hasValidPrescriptionMethod) {
-        $errorMessage = "Patient sex/gender and prescription retrieval method are missing or invalid";
-    } elseif (!$hasValidSex) {
-        $errorMessage = "Patient sex/gender is missing or invalid";
-    } elseif (!$hasValidPrescriptionMethod) {
-        $errorMessage = "Prescription retrieval method is missing or invalid (must be PICK-UP or DELIVERY)";
-    }
-    ?>
     <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-        title='Cannot add prescription: <?php echo $errorMessage; ?>'>
+        title='Cannot add prescription: Patient sex/gender is missing or invalid'>
         Add Prescription</button>
     <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-        ⚠ <?php echo $errorMessage; ?>
+        ⚠ Patient sex/gender is missing or invalid
     </span>
 <?php endif; ?>
                     </th>
@@ -1315,118 +1257,125 @@ if ($ycExpiryDate) {
     <?php endif; ?>
 
 
-  <!-- Add Prescription Modal -->
-<div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
-        <h3 style="margin-top:0;">Add Prescription</h3>
-        <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
-            <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
+    <!-- Add Prescription Modal -->
+    <div id="prescriptionModal" style="display:none; position:fixed; top:0px; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:800px; box-shadow:0 0 10px rgba(0,0,0,0.3); position:relative;">
+            <h3 style="margin-top:0;">Add Prescription</h3>
+            <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
+                <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-            <input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-            <br>
-            <input type="display" name="PatientAddress" value="<?php echo $patientAddress; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-            <br>
+<input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientContact" value="Contact: <?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientCivilStatus" value="Civil Status: <?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientDepartment" value="Department: <?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientStatus" value="Status of appointment: <?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<br>
 
-            <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
-                <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
-                    Date: <span style="color:red;">*</span>
-                </label>
-                <input type="date" id="Date" name="Date"
-                    value="<?php echo date('Y-m-d'); ?>"
-                    min="<?php echo date('Y-m-d'); ?>"
-                    required
-                    style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
+                <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
+                    <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
+                        Date: <span style="color:red;">*</span>
+                    </label>
+                    <input type="date" id="Date" name="Date"
+                        value="<?php echo date('Y-m-d'); ?>"
+                        min="<?php echo date('Y-m-d'); ?>"
+                        required
+                        style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
 
-                <label for="refill_day" style="width:100px; margin-left:220px; font-size:13px;">
-                    Refill Day: <span style="color:red;">*</span>
-                </label>
+                    <label for="refill_day" style="width:100px; margin-left:220px; font-size:13px;">
+                        Refill Day: <span style="color:red;">*</span>
+                    </label>
 
-                <select id="refill_day" name="refill_day" required
-                    style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
-                    <option value="">Select day</option>
-                    <?php
-                    for ($i = 1; $i <= 31; $i++) {
-                        $selected = ($latestRefillDay == $i) ? 'selected' : '';
-                        echo "<option value='$i' $selected>$i</option>";
-                    }
-                    ?>
-                </select>
-                <?php if ($latestRefillDay): ?>
-                    <span style="margin-left:10px; font-size:12px; color:#3CB371; font-style:italic;">
-                        (Auto-filled from latest prescription)
-                    </span>
-                <?php endif; ?>
-            </div>
+                    <select id="refill_day" name="refill_day" required
+                        style="flex:1; padding:6px; border:1px solid #000; border-radius:4px;">
+                        <option value="">Select day</option>
+                        <?php
+                        for ($i = 1; $i <= 31; $i++) {
+                            $selected = ($latestRefillDay == $i) ? 'selected' : '';
+                            echo "<option value='$i' $selected>$i</option>";
+                        }
+                        ?>
+                    </select>
+                    <?php if ($latestRefillDay): ?>
+                        <span style="margin-left:10px; font-size:12px; color:#3CB371; font-style:italic;">
+                            (Auto-filled from latest prescription)
+                        </span>
+                    <?php endif; ?>
+                </div>
+<br>
+                <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
+                    <label style="width:50px; margin-right:8px; font-size:13px;">
+                        Doctor: <span style="color:red;">*</span>
+                    </label>
 
-            <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
-                <label style="width:50px; margin-right:8px; font-size:13px;">
-                    Doctor: <span style="color:red;">*</span>
-                </label>
+                    <input list="doctorsList"
+                        id="doctorName"
+                        name="DoctorName"
+                        required
+                        style="flex:2; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px;"
+                        placeholder="Type doctor name"
+                        oninput="this.value = this.value.toUpperCase()">
 
-                <input list="doctorsList"
-                    id="doctorName"
-                    name="DoctorName"
-                    required
-                    style="flex:2; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px;"
-                    placeholder="Type doctor name"
-                    oninput="this.value = this.value.toUpperCase()">
+                    <label style="width:80px; margin-left:12px; font-size:13px;">License No:</label>
+                    <input type="text"
+                        id="doctorLicense"
+                        name="License_number"
+                        placeholder="Auto-filled"
+                        readonly
+                        style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
 
-                <label style="width:80px; margin-left:12px; font-size:13px;">License No:</label>
-                <input type="text"
-                    id="doctorLicense"
-                    name="License_number"
-                    placeholder="Auto-filled"
-                    readonly
-                    style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
+                    <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
+                    <input type="text"
+                        id="doctorPtr"
+                        name="Ptr_number"
+                        placeholder="Auto-filled"
+                        readonly
+                        style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
 
-                <label style="width:80px; margin-left:12px; font-size:13px;">PTR No:</label>
-                <input type="text"
-                    id="doctorPtr"
-                    name="Ptr_number"
-                    placeholder="Auto-filled"
-                    readonly
-                    style="flex:1; border:1px solid #000; border-radius:4px; padding:6px; font-size:14px; background:#f3f3f3;">
-
-                <datalist id="doctorsList">
-                    <?php
-                    $docQuery = "SELECT License_number, Ptr_number, Last_name, First_name, Middle_name
+                    <datalist id="doctorsList">
+                        <?php
+                        $docQuery = "SELECT License_number, Ptr_number, Last_name, First_name, Middle_name
             FROM doctors
             WHERE is_active = 1
             ORDER BY Last_name ASC";
-                    $docResult = mysqli_query($conn, $docQuery);
+                        $docResult = mysqli_query($conn, $docQuery);
 
-                    while ($doc = mysqli_fetch_assoc($docResult)) {
-                        $DoctorName = trim($doc['Last_name'] . ', ' . $doc['First_name'] . ' ' . $doc['Middle_name']);
-                        $LicenseNo  = htmlspecialchars($doc['License_number']);
-                        $PtrNo      = htmlspecialchars($doc['Ptr_number'] ?? '');
-                        echo "<option value=\"{$DoctorName}\" data-license=\"{$LicenseNo}\" data-ptr=\"{$PtrNo}\"></option>";
-                    }
-                    ?>
-                </datalist>
-            </div>
-            <div id="doctorError" style="color:red; font-size:12px; margin-top:2px; display:none;">Doctor not found</div>
+                        while ($doc = mysqli_fetch_assoc($docResult)) {
+                            $DoctorName = trim($doc['Last_name'] . ', ' . $doc['First_name'] . ' ' . $doc['Middle_name']);
+                            $LicenseNo  = htmlspecialchars($doc['License_number']);
+                            $PtrNo      = htmlspecialchars($doc['Ptr_number'] ?? '');
+                            echo "<option value=\"{$DoctorName}\" data-license=\"{$LicenseNo}\" data-ptr=\"{$PtrNo}\"></option>";
+                        }
+                        ?>
+                    </datalist>
+                </div>
+                <div id="doctorError" style="color:red; font-size:12px; margin-top:2px; display:none;">Doctor not found</div>
 
-            <!-- Medicines Section with Simple Yellow Card Warning -->
-            <div style="margin-top: 20px; margin-bottom: 10px;">
-                <h3 style="margin: 0; text-align: center; position: relative;">
-                    Medicines
-                    <?php
-                    // Simple yellow card check
-                    $yellowCardQuery = "SELECT * FROM yellow_card WHERE patient_id = '$char'";
-                    $yellowCardResult = mysqli_query($conn, $yellowCardQuery);
-                    
-                    if (mysqli_num_rows($yellowCardResult) > 0) {
-                        $yellowCardData = mysqli_fetch_assoc($yellowCardResult);
-                        $expiryDate = $yellowCardData['Yc_expiry_date'] ?? null;
-                        
-                        if (!empty($expiryDate)) {
-                            $today = new DateTime();
-                            $expiry = new DateTime($expiryDate);
-                            
-                            if ($expiry < $today) {
-                                // Yellow card is EXPIRED - show centered warning
-                                ?>
-                                <div style="
+                <!-- Medicines Section with Simple Yellow Card Warning -->
+                <div style="margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0; text-align: center; position: relative;">
+                        Medicines
+                        <?php
+                        // Simple yellow card check
+                        $yellowCardQuery = "SELECT * FROM yellow_card WHERE patient_id = '$char'";
+                        $yellowCardResult = mysqli_query($conn, $yellowCardQuery);
+
+                        if (mysqli_num_rows($yellowCardResult) > 0) {
+                            $yellowCardData = mysqli_fetch_assoc($yellowCardResult);
+                            $expiryDate = $yellowCardData['Yc_expiry_date'] ?? null;
+
+                            if (!empty($expiryDate)) {
+                                $today = new DateTime();
+                                $expiry = new DateTime($expiryDate);
+
+                                if ($expiry < $today) {
+                                    // Yellow card is EXPIRED - show centered warning
+                        ?>
+                                    <div style="
                                     background-color: #f8d7da;
                                     border: 1px solid #f5c6cb;
                                     border-radius: 4px;
@@ -1437,15 +1386,15 @@ if ($ycExpiryDate) {
                                     font-weight: bold;
                                     text-align: center;
                                 ">
-                                     PATIENT YELLOW CARD IS EXPIRED
-                                </div>
-                                <?php
+                                        PATIENT YELLOW CARD IS EXPIRED
+                                    </div>
+                            <?php
+                                }
                             }
-                        }
-                    } else {
-                        // NO yellow card - show centered warning
-                        ?>
-                        <div style="
+                        } else {
+                            // NO yellow card - show centered warning
+                            ?>
+                            <div style="
                             background-color: #f8d7da;
                             border: 1px solid #f5c6cb;
                             border-radius: 4px;
@@ -1456,28 +1405,28 @@ if ($ycExpiryDate) {
                             font-weight: bold;
                             text-align: center;
                         ">
-                             PATIENT HAS NO YELLOW CARD
-                        </div>
+                                PATIENT HAS NO YELLOW CARD
+                            </div>
                         <?php
-                    }
-                    ?>
-                </h3>
-            </div>
-            
-            <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px;">
-                <button type="button" onclick="addMedicine()" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">+ Add Medicine</button>
-            </div>
-            <div id="medicineContainerWrapper" style="max-height:320px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fafafa; margin-bottom:12px;">
-                <div id="medicineContainer"></div>
-            </div>
+                        }
+                        ?>
+                    </h3>
+                </div>
 
-            <input type="hidden" name="Age" value="<?php echo $patientAge; ?>">
+                <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:10px;">
+                    <button type="button" onclick="addMedicine()" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">+ Add Medicine</button>
+                </div>
+                <div id="medicineContainerWrapper" style="max-height:320px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fafafa; margin-bottom:12px;">
+                    <div id="medicineContainer"></div>
+                </div>
 
-            <button type="button" onclick="closePrescriptionModal()" style="background:#ccc; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Cancel</button>
-            <button type="submit" name="action" value="Add Prescription" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Save</button>
-        </form>
+                <input type="hidden" name="Age" value="<?php echo $patientAge; ?>">
+
+                <button type="button" onclick="closePrescriptionModal()" style="background:#ccc; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button type="submit" name="action" value="Add Prescription" style="background:#3CB371; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Save</button>
+            </form>
+        </div>
     </div>
-</div>
 
     <!-- Edit Prescription Modal -->
     <div id="editPrescriptionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
@@ -1487,11 +1436,16 @@ if ($ycExpiryDate) {
                 <input type="hidden" name="Prescription_id" id="editPrescriptionId">
                 <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-                <input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-                <br>
-                <input type="display" name="PatientAddress" value="<?php echo $patientAddress; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-                <br>
-
+<input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientContact" value="Contact: <?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientCivilStatus" value="Civil Status: <?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientDepartment" value="Department: <?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
+<input type="display" name="PatientStatus" value="Status of appointment: <?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+<br>
                 <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
                     <label for="editDateDisplay" style="width:60px; white-space:nowrap; font-size:13px;">
                         Date:
@@ -1614,25 +1568,25 @@ if ($ycExpiryDate) {
             document.getElementById('prescriptionModal').style.display = 'none';
         }
 
-function renderMedicines() {
-    medicineContainer.innerHTML = '';
-    Medicines.forEach((med, i) => {
-        const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
-        const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
-        const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
-        const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
+        function renderMedicines() {
+            medicineContainer.innerHTML = '';
+            Medicines.forEach((med, i) => {
+                const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
+                const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
+                const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
+                const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
 
-        const doseOptionsHtml = doses.map(d => {
-            const isSelected = d === med.Dose;
-            return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
-        }).join('');
+                const doseOptionsHtml = doses.map(d => {
+                    const isSelected = d === med.Dose;
+                    return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
+                }).join('');
 
-        const formOptionsHtml = forms.map(f => {
-            const isSelected = f === med.Form;
-            return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
-        }).join('');
+                const formOptionsHtml = forms.map(f => {
+                    const isSelected = f === med.Form;
+                    return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
+                }).join('');
 
-        medicineContainer.innerHTML += `
+                medicineContainer.innerHTML += `
 <div class="medicine-item" style="background:#f3f6ff; border:1px solid #ccd4ff; border-radius:10px; padding:10px 12px; margin-bottom:10px;">
     <div style="font-weight:bold; font-size:16px; color:#2a3f85; margin-bottom:8px;">
         Medicine ${i + 1}.
@@ -1667,8 +1621,8 @@ function renderMedicines() {
         <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
     </div>
 </div>`;
-    });
-}
+            });
+        }
 
         function checkMedicine(input, index) {
             const name = input.value.trim();
@@ -1709,34 +1663,35 @@ function renderMedicines() {
             });
         }
 
-      function saveCurrentInputs() {
-    const medicineItems = document.querySelectorAll('#medicineContainer .medicine-item');
-    Medicines = [];
-    
-    medicineItems.forEach((div, i) => {
-        const medicineData = {
-            Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
-            Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
-            Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
-            Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
-            Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
-            Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
-        };
-        Medicines.push(medicineData);
-    });
-}
+        function saveCurrentInputs() {
+            const medicineItems = document.querySelectorAll('#medicineContainer .medicine-item');
+            Medicines = [];
+
+            medicineItems.forEach((div, i) => {
+                const medicineData = {
+                    Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
+                    Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
+                    Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
+                    Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
+                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
+                    Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
+                };
+                Medicines.push(medicineData);
+            });
+        }
+
         function addMedicine() {
-    saveCurrentInputs();
-    Medicines.push({
-        Medicine_name: '',
-        Dose: '',
-        Form: '',
-        Frequency: '',
-        Quantity: '',
-        Days: ''
-    });
-    renderMedicines();
-}
+            saveCurrentInputs();
+            Medicines.push({
+                Medicine_name: '',
+                Dose: '',
+                Form: '',
+                Frequency: '',
+                Quantity: '',
+                Days: ''
+            });
+            renderMedicines();
+        }
 
         function removeMedicine(i) {
             saveCurrentInputs();
@@ -1848,25 +1803,25 @@ function renderMedicines() {
             editMedicines = [];
         }
 
-  function renderEditMedicines() {
-    editMedicineContainer.innerHTML = '';
-    editMedicines.forEach((med, i) => {
-        const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
-        const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
-        const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
-        const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
+        function renderEditMedicines() {
+            editMedicineContainer.innerHTML = '';
+            editMedicines.forEach((med, i) => {
+                const uniqueNames = [...new Set(referenceMedicines.map(m => m.Medicine_name))];
+                const options = uniqueNames.map(n => `<option value="${n}"></option>`).join('');
+                const doses = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Dose))] : [];
+                const forms = med.Medicine_name ? [...new Set(referenceMedicines.filter(r => r.Medicine_name === med.Medicine_name).map(r => r.Form))] : [];
 
-        const doseOptionsHtml = doses.map(d => {
-            const isSelected = d === med.Dose;
-            return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
-        }).join('');
+                const doseOptionsHtml = doses.map(d => {
+                    const isSelected = d === med.Dose;
+                    return `<option value="${d}" ${isSelected ? 'selected' : ''}>${d}</option>`;
+                }).join('');
 
-        const formOptionsHtml = forms.map(f => {
-            const isSelected = f === med.Form;
-            return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
-        }).join('');
+                const formOptionsHtml = forms.map(f => {
+                    const isSelected = f === med.Form;
+                    return `<option value="${f}" ${isSelected ? 'selected' : ''}>${f}</option>`;
+                }).join('');
 
-        editMedicineContainer.innerHTML += `
+                editMedicineContainer.innerHTML += `
 <div class="medicine-item" style="background:#f3f6ff; border:1px solid #ccd4ff; border-radius:10px; padding:10px 12px; margin-bottom:10px;">
     <div style="font-weight:bold; font-size:16px; color:#2a3f85; margin-bottom:8px;">
         Medicine ${i + 1}.
@@ -1902,8 +1857,8 @@ function renderMedicines() {
         <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
     </div>
 </div>`;
-    });
-}
+            });
+        }
 
         function checkEditMedicine(input, index) {
             const name = input.value.trim();
@@ -1946,43 +1901,43 @@ function renderMedicines() {
             });
         }
 
-function saveEditCurrentInputs() {
-    const medicineItems = document.querySelectorAll('#editMedicineContainer .medicine-item');
-    editMedicines = [];
-    
-    medicineItems.forEach((div, i) => {
-        const medicineData = {
-            Medicine_id: div.querySelector(`input[name="Medicine[${i}][Medicine_id]"]`)?.value || '',
-            Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
-            Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
-            Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
-            Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
-            Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
-            Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
-        };
-        editMedicines.push(medicineData);
-    });
-}
+        function saveEditCurrentInputs() {
+            const medicineItems = document.querySelectorAll('#editMedicineContainer .medicine-item');
+            editMedicines = [];
 
-function addEditMedicine() {
-    saveEditCurrentInputs();
-    editMedicines.push({
-        Medicine_id: '',
-        Medicine_name: '',
-        Dose: '',
-        Form: '',
-        Frequency: '',
-        Quantity: '',
-        Days: ''
-    });
-    renderEditMedicines();
-}
+            medicineItems.forEach((div, i) => {
+                const medicineData = {
+                    Medicine_id: div.querySelector(`input[name="Medicine[${i}][Medicine_id]"]`)?.value || '',
+                    Medicine_name: div.querySelector(`[name="Medicine[${i}][Medicine_name]"]`)?.value || '',
+                    Dose: div.querySelector(`[name="Medicine[${i}][Dose]"]`)?.value || '',
+                    Form: div.querySelector(`[name="Medicine[${i}][Form]"]`)?.value || '',
+                    Frequency: div.querySelector(`[name="Medicine[${i}][Frequency]"]`)?.value || '',
+                    Quantity: div.querySelector(`[name="Medicine[${i}][Quantity]"]`)?.value || '',
+                    Days: div.querySelector(`[name="Medicine[${i}][Days]"]`)?.value || ''
+                };
+                editMedicines.push(medicineData);
+            });
+        }
 
-function removeEditMedicine(i) {
-    saveEditCurrentInputs();
-    editMedicines.splice(i, 1);
-    renderEditMedicines();
-}
+        function addEditMedicine() {
+            saveEditCurrentInputs();
+            editMedicines.push({
+                Medicine_id: '',
+                Medicine_name: '',
+                Dose: '',
+                Form: '',
+                Frequency: '',
+                Quantity: '',
+                Days: ''
+            });
+            renderEditMedicines();
+        }
+
+        function removeEditMedicine(i) {
+            saveEditCurrentInputs();
+            editMedicines.splice(i, 1);
+            renderEditMedicines();
+        }
 
         // Doctor search for edit modal
         editDoctorInput.addEventListener('input', function() {
@@ -2133,7 +2088,7 @@ function removeEditMedicine(i) {
                         style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; min-height:100px;
                     text-transform: uppercase; font-size:14px;"
                         placeholder="ENTER DETAILS FOR DEACTIVATION..."
-                        oninput="this.value = this.value.toUpperCase()" ></textarea>
+                        oninput="this.value = this.value.toUpperCase()"></textarea>
                 </div>
 
                 <div style="margin-bottom:20px;">
@@ -2299,109 +2254,7 @@ function removeEditMedicine(i) {
             });
         }
     </script>
-<script>
-// Store original value
-let originalRetrievalMethod = '<?php echo !empty($currentValue) ? $currentValue : ""; ?>';
-
-function selectRetrievalMethod(method) {
-    const pickupBtn = document.getElementById('pickupBtn');
-    const deliveryBtn = document.getElementById('deliveryBtn');
-    
-    // Uncheck all
-    pickupBtn.checked = false;
-    deliveryBtn.checked = false;
-    
-    // Check selected
-    if (method === 'PICK-UP') {
-        pickupBtn.checked = true;
-    } else if (method === 'DELIVERY') {
-        deliveryBtn.checked = true;
-    }
-    
-    // Update styles
-    updateRetrievalButtonStyles();
-    
-    // Check if value changed and update button
-    checkIfValueChanged();
-    
-    // Trigger existing change detection
-    if (typeof checkChanges === 'function') {
-        checkChanges();
-    }
-}
-
-function getCurrentRetrievalMethod() {
-    const pickupBtn = document.getElementById('pickupBtn');
-    const deliveryBtn = document.getElementById('deliveryBtn');
-    
-    if (pickupBtn.checked) return 'PICK-UP';
-    if (deliveryBtn.checked) return 'DELIVERY';
-    return '';
-}
-
-function updateRetrievalButtonStyles() {
-    const pickupBtn = document.getElementById('pickupBtn');
-    const deliveryBtn = document.getElementById('deliveryBtn');
-    const pickupLabel = document.querySelector('label[for="pickupBtn"]');
-    const deliveryLabel = document.querySelector('label[for="deliveryBtn"]');
-    
-    const isPickupSelected = pickupBtn.checked;
-    const isDeliverySelected = deliveryBtn.checked;
-    const anySelected = isPickupSelected || isDeliverySelected;
-    const currentMethod = getCurrentRetrievalMethod();
-    const isChanged = (currentMethod !== originalRetrievalMethod) && (originalRetrievalMethod !== "");
-    
-    // Update PICK-UP button
-    pickupLabel.style.backgroundColor = isPickupSelected ? '#007bff' : 'white';
-    pickupLabel.style.color = isPickupSelected ? 'white' : '#666';
-    pickupLabel.style.border = isPickupSelected ? '2px solid #007bff' : '2px solid #ccc';
-    pickupLabel.style.textDecoration = anySelected && !isPickupSelected ? 'line-through' : 'none';
-    pickupLabel.style.opacity = isPickupSelected ? '1' : '0.7';
-    
-    // Highlight if changed
-    if (isChanged && isPickupSelected) {
-        pickupLabel.style.boxShadow = '0 0 5px rgba(0, 123, 255, 0.8)';
-        pickupLabel.style.border = '2px solid #28a745';
-    }
-    
-    // Update DELIVERY button
-    deliveryLabel.style.backgroundColor = isDeliverySelected ? '#007bff' : 'white';
-    deliveryLabel.style.color = isDeliverySelected ? 'white' : '#666';
-    deliveryLabel.style.border = isDeliverySelected ? '2px solid #007bff' : '2px solid #ccc';
-    deliveryLabel.style.textDecoration = anySelected && !isDeliverySelected ? 'line-through' : 'none';
-    deliveryLabel.style.opacity = isDeliverySelected ? '1' : '0.7';
-    
-    // Highlight if changed
-    if (isChanged && isDeliverySelected) {
-        deliveryLabel.style.boxShadow = '0 0 5px rgba(0, 123, 255, 0.8)';
-        deliveryLabel.style.border = '2px solid #28a745';
-    }
-}
-
-function checkIfValueChanged() {
-    const currentMethod = getCurrentRetrievalMethod();
-    const isChanged = (currentMethod !== originalRetrievalMethod) && (originalRetrievalMethod !== "");
-    
-    // Optional: Update a hidden field or variable if needed
-    if (isChanged) {
-        console.log('Prescription retrieval method changed from', originalRetrievalMethod, 'to', currentMethod);
-    }
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize button styles
-    updateRetrievalButtonStyles();
-    
-    // Update your existing getPrescriptionRetrieval function
-    window.getPrescriptionRetrieval = getCurrentRetrievalMethod;
-    
-    // Make sure originalValues includes the correct original value
-    if (typeof originalValues !== 'undefined') {
-        originalValues.prescriptionRetrieval = originalRetrievalMethod;
-    }
-});
-</script>
+ 
 </body>
 
 </html>

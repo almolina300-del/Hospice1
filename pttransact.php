@@ -28,10 +28,10 @@ $Middle_name      = $_POST['Middle_name'] ?? '';
 $Suffix           = $_POST['Suffix'] ?? '';
 $Sex              = $_POST['Sex'] ?? '';
 $Birthday         = $_POST['Birthday'] ?? '';
-$House_nos_street_name    = $_POST['House_nos_street_name'] ?? '';
-$Barangay         = $_POST['Barangay'] ?? '';
 $Contact_nos      = $_POST['Contact_nos'] ?? '';
-$Prescription_retrieval_method = $_POST['Prescription_retrieval_method'] ?? '';
+$Civil_status     = $_POST['Civil_status'] ?? ''; // Add this line
+$Department       = $_POST['Department'] ?? ''; // Add this line
+$Status_of_appointment = $_POST['Status_of_appointment'] ?? ''; // Add this line
 
 // Sanitize numeric values
 $Contact_nos      = preg_replace('/\D/', '', $Contact_nos);
@@ -50,10 +50,10 @@ switch ($action) {
     $Suffix      = strtoupper($Suffix);
     $Sex         = strtoupper($Sex);
     $Birthday    = strtoupper($Birthday);
-    $House_nos_street_name = strtoupper($House_nos_street_name);
-    $Barangay    = strtoupper($Barangay);
     $Contact_nos = trim($Contact_nos);
-    $Prescription_retrieval_method = strtoupper($Prescription_retrieval_method);
+    $Civil_status = strtoupper($Civil_status); // Add this line
+    $Department  = strtoupper($Department); // Add this line
+    $Status_of_appointment = strtoupper($Status_of_appointment); // Add this line
 
     // Duplicate check before insert
     $dup_sql = "SELECT Patient_id FROM patient_details 
@@ -71,10 +71,11 @@ switch ($action) {
       exit;
     }
 
-    // Insert patient
+    // Insert patient - REMOVED House_nos_street_name, Barangay, Prescription_retrieval_method
+    // ADDED Civil_status, Department, Status_of_appointment
     $sql = "INSERT INTO patient_details 
-            (Patient_id, First_name, Middle_name, Last_name, Suffix, Sex, Birthday, Contact_nos, House_nos_street_name, Barangay, Prescription_retrieval_method)
-            VALUES (NULL, '$First_name', '$Middle_name', '$Last_name', '$Suffix', '$Sex', '$Birthday', '$Contact_nos', '$House_nos_street_name', '$Barangay', '$Prescription_retrieval_method')";
+            (Patient_id, First_name, Middle_name, Last_name, Suffix, Sex, Birthday, Contact_nos, Civil_status, Department, Status_of_appointment)
+            VALUES (NULL, '$First_name', '$Middle_name', '$Last_name', '$Suffix', '$Sex', '$Birthday', '$Contact_nos', '$Civil_status', '$Department', '$Status_of_appointment')";
     mysqli_query($conn, $sql) or die(mysqli_error($conn));
 
     // Get newly created patient ID
@@ -113,10 +114,10 @@ switch ($action) {
     $Suffix      = strtoupper($Suffix);
     $Sex         = strtoupper($Sex);
     $Birthday    = strtoupper($Birthday);
-    $House_nos_street_name = strtoupper($House_nos_street_name);
-    $Barangay    = strtoupper($Barangay);
     $Contact_nos = trim($Contact_nos);
-    $Prescription_retrieval_method = strtoupper($Prescription_retrieval_method);
+    $Civil_status = strtoupper($Civil_status); // Add this line
+    $Department  = strtoupper($Department); // Add this line
+    $Status_of_appointment = strtoupper($Status_of_appointment); // Add this line
 
     // 🔒 START TRANSACTION
     mysqli_begin_transaction($conn);
@@ -137,7 +138,8 @@ switch ($action) {
         }
 
         /* ---------------- UPDATE PATIENT ---------------- */
-        // FIXED: Added Prescription_retrieval_method to the UPDATE query
+        // REMOVED House_nos_street_name, Barangay, Prescription_retrieval_method
+        // ADDED Civil_status, Department, Status_of_appointment
         mysqli_query($conn, "
             UPDATE patient_details 
             SET Last_name = '$Last_name',
@@ -147,9 +149,9 @@ switch ($action) {
                 Sex = '$Sex',
                 Birthday = '$Birthday',
                 Contact_nos = '$Contact_nos',
-                House_nos_street_name = '$House_nos_street_name',
-                Barangay = '$Barangay',
-                Prescription_retrieval_method = '$Prescription_retrieval_method'
+                Civil_status = '$Civil_status',
+                Department = '$Department',
+                Status_of_appointment = '$Status_of_appointment'
             WHERE Patient_id = $cid
         ") or die(mysqli_error($conn));
 
@@ -181,3 +183,4 @@ switch ($action) {
 // Redirect after action
 header("Location: $redirect");
 exit;
+?>
