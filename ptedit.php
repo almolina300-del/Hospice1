@@ -444,64 +444,64 @@ if ($ycExpiryDate) {
                 </td>
             </tr>
 
-<tr>
-    <!-- Contact Nos. -->
-    <td>Contact Nos.: </td>
-    <td style="white-space:nowrap;">
-        <input type="text" name="Contact_nos" maxlength="11" pattern="\d{11}" title="Please enter exactly 11 digits (e.g., 09123456789)"
-            style="width:200px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;"
-            value="<?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : ''; ?>"
-            placeholder="09XXXXXXXXX" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-    </td>
-    
-    <!-- Civil Status (beside Contact Nos.) -->
-    <td>Civil Status: </td>
-    <td style="white-space:nowrap;" colspan="3">
-        <select name="Civil_status" 
-            style="width:200px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
-            <option value="">-- Select Civil Status --</option>
-            <option value="SINGLE" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'SINGLE') ? 'selected' : ''; ?>>SINGLE</option>
-            <option value="MARRIED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'MARRIED') ? 'selected' : ''; ?>>MARRIED</option>
-            <option value="DIVORCED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'DIVORCED') ? 'selected' : ''; ?>>DIVORCED</option>
-            <option value="SEPARATED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'SEPARATED') ? 'selected' : ''; ?>>SEPARATED</option>
-            <option value="WIDOWED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'WIDOWED') ? 'selected' : ''; ?>>WIDOWED</option>
-        </select>
-    </td>
-</tr>
+            <tr>
+                <!-- Contact Nos. -->
+                <td>Contact Nos.: </td>
+                <td style="white-space:nowrap;">
+                    <input type="text" name="Contact_nos" maxlength="11" pattern="\d{11}" title="Please enter exactly 11 digits (e.g., 09123456789)"
+                        style="width:200px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;"
+                        value="<?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : ''; ?>"
+                        placeholder="09XXXXXXXXX" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                </td>
 
-<tr>
-<td>Department: <span style="color:red;">*</span></td>
-<td style="white-space:nowrap;" colspan="5">
-    <select name="Department" required
-        style="width:450px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
-        <option value="">-- Select Department --</option>
-        <?php
-        // Get current department value
-        $currentDept = isset($ch['Department']) ? $ch['Department'] : '';
-        
-        // Loop through departments from database
-        foreach ($departments as $dept) {
-            $selected = ($currentDept == $dept) ? 'selected' : '';
-            echo "<option value=\"$dept\" $selected>$dept</option>";
-        }
-        ?>
-    </select>
-</td>
-</tr>
-<tr>
-    <td>Status of Appointment: <span style="color:red;">*</span></td>
-    <td style="white-space:nowrap;" colspan="5">
-        <select name="Status_of_appointment" required  <!-- Add required here -->
-            style="width:300px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
-            <option value="">-- Select Status --</option>
-            <option value="JOB ORDER" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'JOB ORDER') ? 'selected' : ''; ?>>JOB ORDER</option>
-            <option value="CASUAL" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'CASUAL') ? 'selected' : ''; ?>>CASUAL</option>
-            <option value="REGULAR" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'REGULAR') ? 'selected' : ''; ?>>REGULAR</option>
-            <option value="CONTRACTUAL" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'CONTRACTUAL') ? 'selected' : ''; ?>>CONTRACTUAL</option>
-        </select>
-    </td>
-</tr>
-        
+                <!-- Civil Status (beside Contact Nos.) -->
+                <td>Civil Status: </td>
+                <td style="white-space:nowrap;" colspan="3">
+                    <select name="Civil_status"
+                        style="width:200px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="">-- Select Civil Status --</option>
+                        <option value="SINGLE" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'SINGLE') ? 'selected' : ''; ?>>SINGLE</option>
+                        <option value="MARRIED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'MARRIED') ? 'selected' : ''; ?>>MARRIED</option>
+                        <option value="DIVORCED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'DIVORCED') ? 'selected' : ''; ?>>DIVORCED</option>
+                        <option value="SEPARATED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'SEPARATED') ? 'selected' : ''; ?>>SEPARATED</option>
+                        <option value="WIDOWED" <?php echo (isset($ch['Civil_status']) && $ch['Civil_status'] == 'WIDOWED') ? 'selected' : ''; ?>>WIDOWED</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Department: <span style="color:red;">*</span></td>
+                <td style="white-space:nowrap;" colspan="5">
+                    <select name="Department" required
+                        style="width:450px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="">-- Select Department --</option>
+                        <?php
+                        // Get current department value
+                        $currentDept = isset($ch['Department']) ? $ch['Department'] : '';
+
+                        // Loop through departments from database
+                        foreach ($departments as $dept) {
+                            $selected = ($currentDept == $dept) ? 'selected' : '';
+                            echo "<option value=\"$dept\" $selected>$dept</option>";
+                        }
+                        ?>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Status of Appointment: <span style="color:red;">*</span></td>
+                <td style="white-space:nowrap;" colspan="5">
+                    <select name="Status_of_appointment" required <!-- Add required here -->
+                        style="width:300px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="">-- Select Status --</option>
+                        <option value="JOB ORDER" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'JOB ORDER') ? 'selected' : ''; ?>>JOB ORDER</option>
+                        <option value="CASUAL" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'CASUAL') ? 'selected' : ''; ?>>CASUAL</option>
+                        <option value="REGULAR" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'REGULAR') ? 'selected' : ''; ?>>REGULAR</option>
+                        <option value="CONTRACTUAL" <?php echo (isset($ch['Status_of_appointment']) && $ch['Status_of_appointment'] == 'CONTRACTUAL') ? 'selected' : ''; ?>>CONTRACTUAL</option>
+                    </select>
+                </td>
+            </tr>
+
             <!-- Action Buttons -->
             <tr>
                 <td align="center">
@@ -1033,74 +1033,71 @@ if ($ycExpiryDate) {
     </script>
 
 
-<!-- Scripts for change detection -->
-<script>
-const last = document.querySelector('input[name="Last_name"]');
-const first = document.querySelector('input[name="First_name"]');
-const middle = document.querySelector('input[name="Middle_name"]');
-const Suffix = document.querySelector('select[name="Suffix"]');
-const Birthday = document.querySelector('input[name="Birthday"]');
-const Contact = document.querySelector('input[name="Contact_nos"]');
-const CivilStatus = document.querySelector('select[name="Civil_status"]');
-const Department = document.querySelector('select[name="Department"]'); // CHANGED: from input to select
-const Status = document.querySelector('select[name="Status_of_appointment"]');
-const updateBtn = document.getElementById('updateBtn');
+    <!-- Scripts for change detection -->
+    <script>
+        const last = document.querySelector('input[name="Last_name"]');
+        const first = document.querySelector('input[name="First_name"]');
+        const middle = document.querySelector('input[name="Middle_name"]');
+        const Suffix = document.querySelector('select[name="Suffix"]');
+        const Birthday = document.querySelector('input[name="Birthday"]');
+        const Contact = document.querySelector('input[name="Contact_nos"]');
+        const CivilStatus = document.querySelector('select[name="Civil_status"]');
+        const Department = document.querySelector('select[name="Department"]'); // CHANGED: from input to select
+        const Status = document.querySelector('select[name="Status_of_appointment"]');
+        const updateBtn = document.getElementById('updateBtn');
 
-function getSex() {
-    const sexRadios = document.querySelectorAll('input[name="Sex"]');
-    for (const r of sexRadios) {
-        if (r.checked) return r.value;
-    }
-    return '';
-}
+        function getSex() {
+            const sexRadios = document.querySelectorAll('input[name="Sex"]');
+            for (const r of sexRadios) {
+                if (r.checked) return r.value;
+            }
+            return '';
+        }
 
-// Store original values
-const originalValues = {
-    last: last.value,
-    first: first.value,
-    middle: middle.value,
-    suffix: Suffix.value,
-    sex: getSex(),
-    birthday: Birthday.value,
-    contact: Contact.value,
-    civilStatus: CivilStatus.value,
-    department: Department.value,
-    status: Status.value,
-};
+        // Store original values
+        const originalValues = {
+            last: last.value,
+            first: first.value,
+            middle: middle.value,
+            suffix: Suffix.value,
+            sex: getSex(),
+            birthday: Birthday.value,
+            contact: Contact.value,
+            civilStatus: CivilStatus.value,
+            department: Department.value,
+            status: Status.value,
+        };
 
-// Disable update button initially
-updateBtn.disabled = true;
-updateBtn.style.opacity = 0.5;
-
-function checkChanges() {
-    if (
-        last.value !== originalValues.last ||
-        first.value !== originalValues.first ||
-        middle.value !== originalValues.middle ||
-        Suffix.value !== originalValues.suffix ||
-        getSex() !== originalValues.sex ||
-        Birthday.value !== originalValues.birthday ||
-        Contact.value !== originalValues.contact ||
-        CivilStatus.value !== originalValues.civilStatus ||
-        Department.value !== originalValues.department ||
-        Status.value !== originalValues.status
-    ) {
-        updateBtn.disabled = false;
-        updateBtn.style.opacity = 1;
-    } else {
+        // Disable update button initially
         updateBtn.disabled = true;
         updateBtn.style.opacity = 0.5;
-    }
-}
 
-// Add event listeners
-[last, first, middle, Birthday, Contact].forEach(el => el.addEventListener('input', checkChanges));
-[Suffix, CivilStatus, Department, Status].forEach(el => el.addEventListener('change', checkChanges));
-document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('change', checkChanges));
+        function checkChanges() {
+            if (
+                last.value !== originalValues.last ||
+                first.value !== originalValues.first ||
+                middle.value !== originalValues.middle ||
+                Suffix.value !== originalValues.suffix ||
+                getSex() !== originalValues.sex ||
+                Birthday.value !== originalValues.birthday ||
+                Contact.value !== originalValues.contact ||
+                CivilStatus.value !== originalValues.civilStatus ||
+                Department.value !== originalValues.department ||
+                Status.value !== originalValues.status
+            ) {
+                updateBtn.disabled = false;
+                updateBtn.style.opacity = 1;
+            } else {
+                updateBtn.disabled = true;
+                updateBtn.style.opacity = 0.5;
+            }
+        }
 
-
-
-</script>
+        // Add event listeners
+        [last, first, middle, Birthday, Contact].forEach(el => el.addEventListener('input', checkChanges));
+        [Suffix, CivilStatus, Department, Status].forEach(el => el.addEventListener('change', checkChanges));
+        document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('change', checkChanges));
+    </script>
 
     </form>
     <style>
@@ -1138,17 +1135,17 @@ document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-<?php if ($hasValidSex): ?>
-    <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
-        Add Prescription</a>
-<?php else: ?>
-    <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-        title='Cannot add prescription: Patient sex/gender is missing or invalid'>
-        Add Prescription</button>
-    <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-        ⚠ Patient sex/gender is missing or invalid
-    </span>
-<?php endif; ?>
+                        <?php if ($hasValidSex): ?>
+                            <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
+                                Add Prescription</a>
+                        <?php else: ?>
+                            <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
+                                title='Cannot add prescription: Patient sex/gender is missing or invalid'>
+                                Add Prescription</button>
+                            <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
+                                ⚠ Patient sex/gender is missing or invalid
+                            </span>
+                        <?php endif; ?>
                     </th>
                 </tr>
 
@@ -1264,16 +1261,33 @@ document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('
             <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
                 <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-<input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientContact" value="Contact: <?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientCivilStatus" value="Civil Status: <?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientDepartment" value="Department: <?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientStatus" value="Status of appointment: <?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
+         <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Name: <strong><?php echo isset($ch['Last_name']) ? htmlspecialchars($ch['Last_name'] . ', ' . $ch['First_name'] . ' ' . $ch['Middle_name']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Age: <strong><?php echo $patientAge; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Sex: <strong><?php echo isset($ch['Sex']) ? htmlspecialchars($ch['Sex']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Contact: <strong><?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Civil Status: <strong><?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Department: <strong><?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Status of appointment: <strong><?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?></strong>
+</div>
 <br>
 
                 <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
@@ -1306,7 +1320,7 @@ document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('
                         </span>
                     <?php endif; ?>
                 </div>
-<br>
+                <br>
                 <div style="display:flex; align-items:center; margin-bottom:5px; white-space:nowrap;">
                     <label style="width:50px; margin-right:8px; font-size:13px;">
                         Doctor: <span style="color:red;">*</span>
@@ -1436,15 +1450,33 @@ document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('
                 <input type="hidden" name="Prescription_id" id="editPrescriptionId">
                 <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-<input type="display" name="PatientName" value="<?php echo $patientName; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientContact" value="Contact: <?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientCivilStatus" value="Civil Status: <?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientDepartment" value="Department: <?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
-<br>
-<input type="display" name="PatientStatus" value="Status of appointment: <?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?>" readonly style="width:100%; border:none; border-bottom:1px solid #000; background-color:transparent; padding:4px 0; font-size:14px; color:#000;">
+             <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Name: <strong><?php echo isset($ch['Last_name']) ? htmlspecialchars($ch['Last_name'] . ', ' . $ch['First_name'] . ' ' . $ch['Middle_name']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Age: <strong><?php echo $patientAge; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Sex: <strong><?php echo isset($ch['Sex']) ? htmlspecialchars($ch['Sex']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Contact: <strong><?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Civil Status: <strong><?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Department: <strong><?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?></strong>
+</div>
+
+<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+    Status of appointment: <strong><?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?></strong>
+</div>
 <br>
                 <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
                     <label for="editDateDisplay" style="width:60px; white-space:nowrap; font-size:13px;">
@@ -1617,7 +1649,7 @@ document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('
         <input type="number" name="Medicine[${i}][Quantity]" value="${med.Quantity || ''}" style="width:100%; padding:8px;">
     </div>
     <div style="display:inline-block; width:30%; margin-left:20px;">
-        <label>Per Day for<span style="font-style: italic;">(not required)</span></label>
+        <label>Per Day for<span style="font-style: italic; color: #888;">(Not Required)</span></label>
         <input type="number" name="Medicine[${i}][Days]" value="${med.Days || ''}" style="width:100%; padding:8px;" placeholder="Days" min="1">
     </div>
 </div>`;
@@ -2254,7 +2286,7 @@ document.querySelectorAll('input[name="Sex"]').forEach(r => r.addEventListener('
             });
         }
     </script>
- 
+
 </body>
 
 </html>
