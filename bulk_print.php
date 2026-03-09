@@ -99,14 +99,13 @@ $total_patients = 0;
 
 if ($Refill_day != '') {
     // In the patient query, update it to include Prescription_retrieval_method and Days:
-    $patient_sql = "SELECT 
+  $patient_sql = "SELECT 
     p.Prescription_id,
     p.Patient_id,
     p.Date as last_prescription_date,
     CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
-    pat.Barangay,
-    pat.House_nos_street_name,
-    pat.Prescription_retrieval_method,
+    pat.Department,
+    pat.Status_of_appointment,
     p.Refill_day,
     GROUP_CONCAT(r.Days SEPARATOR '|') as Days,
     GROUP_CONCAT(r.Quantity SEPARATOR '|') as Quantity,
@@ -122,7 +121,7 @@ LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
 LEFT JOIN rx r ON p.Prescription_id = r.Prescription_id
 WHERE pat.is_active = 1
 GROUP BY p.Prescription_id, p.Patient_id, p.Date, pat.Last_name, pat.First_name, 
-         pat.Barangay, pat.House_nos_street_name, pat.Prescription_retrieval_method, p.Refill_day
+         pat.Department, pat.Status_of_appointment, p.Refill_day
 ORDER BY pat.Last_name, pat.First_name";
     
     $stmt = mysqli_prepare($conn, $patient_sql);
@@ -174,7 +173,7 @@ $today_date = date('Y-m-d');
 <html>
 
 <head>
-    <title>Bulk Print - Hospice</title>
+    <title>Employees Clinic - Bulk Print</title>
     <link rel="stylesheet" type="text/css" href="CSS/style.css">
     <style>
         /* Loading overlay styles */
@@ -865,11 +864,11 @@ $today_date = date('Y-m-d');
 <div style="margin: -15px auto; width:100%; border:1px solid #f5f5f5;">
     <?php
     echo "<table align='center' border='1' cellpadding='2' width='100%'>";
-    echo "<tr style='background-color:#263F73; color:white;'>
-        <th>Patient Name</th>
-        <th>Address</th>
-        <th>Retrieval Method</th>
-    </tr>";
+   echo "<tr style='background-color:#263F73; color:white;'>
+    <th>Patient Name</th>
+    <th>Department</th>
+    <th>Status</th>
+</tr>";
 
     // Initialize $bg variable BEFORE the loop
     $bg = 'F2F2FF';
@@ -882,21 +881,16 @@ $today_date = date('Y-m-d');
                 strtoupper($patient['Prescription_retrieval_method']) : 
                 '<span style="color:red; font-style:italic;">Not set</span>';
             
-            echo "<tr bgcolor='#$bg'>
-                <td align='center'>" . strtoupper($patient['Patient_name'] ?? '') . "</td>
-                <td align='center'>" . 
-                    (!empty($patient['House_nos_street_name']) ? 
-                        strtoupper($patient['House_nos_street_name'] . ', ' . $patient['Barangay']) : 
-                        strtoupper($patient['Barangay'] ?? '')
-                    ) . 
-                "</td>
-                <td align='center'>" . $retrievalMethod . "</td>
-            </tr>";
+           echo "<tr bgcolor='#$bg'>
+    <td align='center'>" . strtoupper($patient['Patient_name'] ?? '') . "</td>
+    <td align='center'>" . strtoupper($patient['Department'] ?? 'N/A') . "</td>
+    <td align='center'>" . strtoupper($patient['Status_of_appointment'] ?? 'N/A') . "</td>
+</tr>";
         }
     } else {
-        echo "<tr>
-                <td colspan='3' align='center' style='padding:10px;'>Please select refill day.</td>
-            </tr>";
+     echo "<tr>
+        <td colspan='4' align='center' style='padding:10px;'>Please select refill day.</td>
+    </tr>";
     }
 
     echo "</table>";
@@ -976,50 +970,7 @@ $today_date = date('Y-m-d');
                         <div class="date-note">Note: You can only select today's date or future dates</div>
                     </div>
                 </div>
-<!-- Retrieval Method Selection -->
-<div class="method-buttons-container">
-    <div style="font-weight: bold; color: #263F73; display: flex; align-items: center; min-width: 180px;">
-        <span>Filter by Method:</span>
-    </div>
-    <div style="display: flex; gap: 10px; flex: 1;">
-        <!-- PICK-UP Button -->
-        <input type="radio" 
-               name="retrieval_method_filter" 
-               value="ALL" 
-               id="methodAll"
-               style="display: none;"
-               checked>
-        <label for="methodAll" 
-               class="method-btn selected"
-               onclick="selectRetrievalMethodFilter('ALL')">
-            ALL PATIENTS
-        </label>
-        
-        <!-- PICK-UP Button -->
-        <input type="radio" 
-               name="retrieval_method_filter" 
-               value="PICK-UP" 
-               id="methodPickup"
-               style="display: none;">
-        <label for="methodPickup" 
-               class="method-btn"
-               onclick="selectRetrievalMethodFilter('PICK-UP')">
-            PICK-UP ONLY
-        </label>
-        
-        <!-- DELIVERY Button -->
-        <input type="radio" 
-               name="retrieval_method_filter" 
-               value="DELIVERY" 
-               id="methodDelivery"
-               style="display: none;">
-        <label for="methodDelivery" 
-               class="method-btn"
-               onclick="selectRetrievalMethodFilter('DELIVERY')">
-            DELIVERY ONLY
-        </label>
-    </div>
-</div>
+
 
 <div id="methodSummary" class="method-summary">
     Showing: <span id="selectedMethodText">ALL PATIENTS</span> | 
@@ -1057,30 +1008,31 @@ $today_date = date('Y-m-d');
 
 <div class="patient-list-container" style="max-height: 400px; overflow-y: auto; position: relative;">
     <table class="patient-table">
-      <thead>
+    <thead>
     <tr>
         <th class="checkbox-cell">Include</th>
         <th>Patient Name</th>
-        <th>Address</th>
-        <th>Retrieval Method</th>  <!-- Add this column -->
-       <th>
-    <div style="display: flex; align-items: center; gap: 10px; position: relative;">
-        <span class="sortable-header" onclick="toggleDateSort()" style="cursor: pointer; flex-grow: 1;">
-            Last Prescription Date
-        </span>
-        <button type="button" id="methodFilterBtn" class="method-filter-btn" onclick="toggleMethodFilter()" title="Filter by retrieval method">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M6 12h12M9 18h6"/>
-            </svg>
-        </button>
-        <button type="button" id="dateFilterBtn" class="date-filter-btn" onclick="toggleDateFilter()" title="Filter by date">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 3H2v18h20V3zM7 1v4M17 1v4M2 9h20"/>
-                <path d="M6 13h2v2H6zM10 13h2v2h-2zM14 13h2v2h-2zM6 17h2v2H6zM10 17h2v2h-2z"/>
-            </svg>
-        </button>
-    </div>
-</th>
+        <th>Department</th>
+        <th>Status</th>
+        <th>Retrieval Method</th>
+        <th>
+            <div style="display: flex; align-items: center; gap: 10px; position: relative;">
+                <span class="sortable-header" onclick="toggleDateSort()" style="cursor: pointer; flex-grow: 1;">
+                    Last Prescription Date
+                </span>
+                <button type="button" id="methodFilterBtn" class="method-filter-btn" onclick="toggleMethodFilter()" title="Filter by retrieval method">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M6 12h12M9 18h6"/>
+                    </svg>
+                </button>
+                <button type="button" id="dateFilterBtn" class="date-filter-btn" onclick="toggleDateFilter()" title="Filter by date">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 3H2v18h20V3zM7 1v4M17 1v4M2 9h20"/>
+                        <path d="M6 13h2v2H6zM10 13h2v2h-2zM14 13h2v2h-2zM6 17h2v2H6zM10 17h2v2h-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </th>
     </tr>
 </thead>
         <tbody id="patientListBody">
@@ -1093,7 +1045,7 @@ $today_date = date('Y-m-d');
             strtoupper($patient['Prescription_retrieval_method']) : 
             'NOT SET';
     ?>
-    <tr data-patient-id="<?php echo $patient['Patient_id']; ?>" 
+   <tr data-patient-id="<?php echo $patient['Patient_id']; ?>" 
     data-date-timestamp="<?php echo $date_timestamp; ?>"
     data-date-value="<?php echo $date_for_filter; ?>"
     data-retrieval-method="<?php echo $retrievalMethod; ?>"
@@ -1110,20 +1062,8 @@ $today_date = date('Y-m-d');
                onchange="updatePatientStatus(this)">
     </td>
     <td><?php echo strtoupper($patient['Patient_name']); ?></td>
-    <td>
-        <?php 
-        // Concatenate House_nos_street_name and Barangay
-        $addressParts = [];
-        if (!empty(trim($patient['House_nos_street_name'] ?? ''))) {
-            $addressParts[] = trim($patient['House_nos_street_name']);
-        }
-        if (!empty(trim($patient['Barangay'] ?? ''))) {
-            $addressParts[] = trim($patient['Barangay']);
-        }
-        
-        echo strtoupper(implode(', ', $addressParts));
-        ?>
-    </td>
+    <td><?php echo strtoupper($patient['Department'] ?? 'N/A'); ?></td>
+    <td><?php echo strtoupper($patient['Status_of_appointment'] ?? 'N/A'); ?></td>
     <td class="retrieval-method" style="text-align: center;">
         <?php echo $retrievalMethod; ?>
     </td>
@@ -1491,7 +1431,7 @@ function updateCheckboxStates() {
     });
 }
 function updateSelectedPatientsHiddenInput() {
-    const visibleRows = document.querySelectorAll('#patientListBody tr:not(.hidden)');
+    const visibleRows = document.querySelectorAll('#patientListBody tr:not(.hidden)');  
     const checkedBoxes = document.querySelectorAll('#patientListBody tr:not(.hidden) .patient-select:checked');
     
     const selectedPatients = Array.from(checkedBoxes).map(cb => cb.value);

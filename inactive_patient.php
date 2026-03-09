@@ -33,7 +33,7 @@ $order_patients = array(
     1 => array('asc' => 'p.Last_name ASC', 'desc' => 'p.Last_name DESC'),
     2 => array('asc' => 'p.First_name ASC', 'desc' => 'p.First_name DESC'),
     3 => array('asc' => 'p.Middle_name ASC', 'desc' => 'p.Middle_name DESC'),
-    4 => array('asc' => 'p.Barangay ASC', 'desc' => 'p.Barangay DESC'),
+    4 => array('asc' => 'p.Department ASC', 'desc' => 'p.Department DESC'), // ADDED Department
     5 => array('asc' => 'r.Date ASC', 'desc' => 'r.Date DESC'),
     6 => array('asc' => 'r.Reason ASC', 'desc' => 'r.Reason DESC')
 );
@@ -76,7 +76,7 @@ $table_patients = "<table align='center'>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Hospice - Inactive Patients</title>
+    <title>Employees Clinic - Inactive Patients</title>
     <link rel="stylesheet" type="text/css" href="CSS/style.css">
     <style>
         .filter-btn {
@@ -280,32 +280,46 @@ $reasons_query = mysqli_query($conn, "
         </div>
 
         <?php
-        // Build SQL query
-        if (!empty($search)) {
-            $runsearch = mysqli_real_escape_string($conn, $search);
-            $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
-                    p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
-                    p.Barangay, p.Birthday, p.House_nos_street_name,
-                    r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
-                 FROM patient_details p
-                 LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
-                 WHERE p.is_active = 0 
-                 AND (p.Last_name LIKE '%$runsearch%' 
-                      OR p.First_name LIKE '%$runsearch%'
-                      OR CONCAT(p.Last_name, ' ', p.First_name) LIKE '%$runsearch%')
-                 $reason_filter
-                 ORDER BY " . $order_patients[$ord_patients][$dir];
-        } else {
-            $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
-                    p.Patient_id, p.Last_name, p.First_name, p.Middle_name, 
-                    p.Barangay, p.Birthday, p.House_nos_street_name,
-                    r.Date as deactivation_date, r.Reason, r.Details, r.is_set_by
-                 FROM patient_details p
-                 LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
-                 WHERE p.is_active = 0 
-                 $reason_filter
-                 ORDER BY " . $order_patients[$ord_patients][$dir];
-        }
+// Build SQL query - FIXED SYNTAX
+if (!empty($search)) {
+    $runsearch = mysqli_real_escape_string($conn, $search);
+    $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
+            p.Patient_id, 
+            p.Last_name, 
+            p.First_name, 
+            p.Middle_name, 
+            p.Department,
+            p.Birthday,
+            r.Date AS deactivation_date, 
+            r.Reason, 
+            r.Details, 
+            r.is_set_by
+         FROM patient_details p
+         LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
+         WHERE p.is_active = 0 
+         AND (p.Last_name LIKE '%$runsearch%' 
+              OR p.First_name LIKE '%$runsearch%'
+              OR CONCAT(p.Last_name, ' ', p.First_name) LIKE '%$runsearch%')
+         $reason_filter
+         ORDER BY " . $order_patients[$ord_patients][$dir];
+} else {
+    $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
+            p.Patient_id, 
+            p.Last_name, 
+            p.First_name, 
+            p.Middle_name,  
+            p.Department,
+            p.Birthday,
+            r.Date AS deactivation_date, 
+            r.Reason, 
+            r.Details, 
+            r.is_set_by
+         FROM patient_details p
+         LEFT JOIN remarks_inactive r ON p.Patient_id = r.Patient_id
+         WHERE p.is_active = 0 
+         $reason_filter
+         ORDER BY " . $order_patients[$ord_patients][$dir];
+}
 
         // Apply limit for pagination
         $sql_patients .= " LIMIT $start, $limit";
@@ -341,7 +355,7 @@ $reasons_query = mysqli_query($conn, "
                 1 => 'Last Name',
                 2 => 'First Name',
                 3 => 'Middle Name',
-                4 => 'Barangay',
+                4 => 'Department',
                 6 => 'Reason',
                 5 => 'Deactivation Date'
             ];
@@ -402,7 +416,7 @@ $reasons_query = mysqli_query($conn, "
                 echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Last_name'] ?? '')) . "</td>";
                 echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['First_name'] ?? '')) . "</td>";
                 echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Middle_name'] ?? '')) . "</td>";
-                echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Barangay'] ?? '')) . "</td>";
+                echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Department'] ?? 'N/A')) . "</td>";
                 echo "<td style='padding: 8px 5px;'><span class='" . $reason_class . "'>" . htmlspecialchars($reason) . "</span></td>";
                 echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['deactivation_date'] ?? '') . "</td>";
                 echo "<td style='padding: 8px 5px; word-wrap: break-word; font-size: 12px;'>" .

@@ -65,7 +65,7 @@ $totalPages = ceil($totalRows / $limit);
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Medicine Management</title>
+    <title>Employees Clinic - Medicine Management</title>
     <link rel="stylesheet" type="text/css" href="CSS/medicine.css">
     <script src="js/notifications.js"></script>
 </head>

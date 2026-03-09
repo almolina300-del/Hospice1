@@ -404,7 +404,7 @@ try {
                 $pdf->SetFont('Arial', 'B', 8);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetX($pdf->GetX() + 5); // move 5 units to the right
-                $pdf->Cell(15, 7, $medicineForm, 0, 1); // Reduced height from 6 to 4
+                $pdf->Cell(15, 4, $medicineForm, 0, 1); // Reduced height from 6 to 4
             } else {
                 $pdf->SetTextColor(200, 200, 200);
                 $pdf->Cell(15, 4, '___________', 0, 1); // Reduced height from 6 to 4

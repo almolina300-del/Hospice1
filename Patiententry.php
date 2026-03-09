@@ -92,7 +92,7 @@ if ($departmentFilterActive) {
 <html>
 
 <head>
-    <title>Hospice</title>
+    <title>Employees Clinic - Patient Records</title>
     <link rel="stylesheet" type="text/css" href="CSS/style.css">
     <script src="js/notifications.js"></script>
 </head>

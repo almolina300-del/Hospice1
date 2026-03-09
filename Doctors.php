@@ -99,7 +99,7 @@ $table_doctors = "<table align='center'>
 <html lang="en">
 
 <head>
-    <title>Hospice - Doctors</title>
+    <title>Employees Clinic - Doctors</title>
     <link rel="stylesheet" type="text/css" href="CSS/doctors.css">
     <style>
         .disabled-btn {

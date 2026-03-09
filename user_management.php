@@ -89,7 +89,7 @@ if ($is_suadmin) {
 <html>
 
 <head>
-    <title>Prescription</title>
+    <title>Employees Clinic - User Management</title>
     <link rel="stylesheet" type="text/css" href="CSS/style.css">
     <script src="js/notifications.js"></script>
     <style>

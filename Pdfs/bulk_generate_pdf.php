@@ -76,20 +76,21 @@ while ($row = mysqli_fetch_assoc($list_result)) {
     $pid = intval($row['Prescription_id']);
     $prescription_count++;
 
-    $sql2 = "SELECT p.*, 
-                    CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
-                    CONCAT(pat.House_nos_street_name, ', ', Barangay) AS Address,
-                    pat.Sex,
-                    pat.Birthday,
-                    CONCAT(d.Last_name, ', ', d.First_name, ' ', COALESCE(d.Middle_name, '')) AS Doctor_name,
-                    d.License_number,
-                    d.PTR_number,
-                    TIMESTAMPDIFF(YEAR, pat.Birthday, CURDATE()) AS Age,
-                    p.creation_type
-             FROM prescription p
-             LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
-             LEFT JOIN doctors d ON p.License_number = d.License_number
-             WHERE p.Prescription_id = $pid";
+$sql2 = "SELECT p.*, 
+                CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) AS Patient_name,
+                pat.Department as Department,
+                pat.Status_of_appointment as Status_of_appointment,
+                pat.Sex,
+                pat.Birthday,
+                CONCAT(d.Last_name, ', ', d.First_name, ' ', COALESCE(d.Middle_name, '')) AS Doctor_name,
+                d.License_number,
+                d.PTR_number,
+                TIMESTAMPDIFF(YEAR, pat.Birthday, CURDATE()) AS Age,
+                p.creation_type
+         FROM prescription p
+         LEFT JOIN patient_details pat ON p.Patient_id = pat.Patient_id
+         LEFT JOIN doctors d ON p.License_number = d.License_number
+         WHERE p.Prescription_id = $pid";
 
     $rx = mysqli_query($conn, $sql2);
     if (!$rx) {
@@ -216,81 +217,83 @@ while ($row = mysqli_fetch_assoc($list_result)) {
             $pdf->SetTextColor(200, 200, 200);
         }
 
-        // Address section - working like frequency
-        $pdf->SetX(10);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetTextColor(200, 200, 200);
-        $pdf->Cell(15, 5, 'Address:'); // <-- Changed from 11 to 15
+  // Department and Status section
+$pdf->SetX(10);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->SetTextColor(200, 200, 200);
+$pdf->Cell(18, 5, 'Dept/Status:');
 
-        // Get address text
-        $address = $prescription['Address'];
-        $maxAddrWidth = 65; // Reduced from 100 to leave space for date at X:115
+// Get department and status text
+$department = $prescription['Department'] ?? '';
+$status = $prescription['Status_of_appointment'] ?? '';
+$deptStatus = $department . ' / ' . $status;
+$maxDeptWidth = 65; // Width for department/status text
 
-        // Save starting position
-        $addrStartX = $pdf->GetX(); // Should be 21
-        $addrStartY = $pdf->GetY(); // Should be 40
+// Save starting position
+$deptStartX = $pdf->GetX();
+$deptStartY = $pdf->GetY();
 
-        // Set font for address
-        $pdf->SetFont('Arial', 'B', 9); // <-- Changed from 'courier' to 'ARIAL'
-        $pdf->SetTextColor(0, 0, 0);
+// Set font for department/status
+$pdf->SetFont('ARIAL', 'B', 9);
+$pdf->SetTextColor(0, 0, 0);
 
-        // Check if address fits
-        $addrWidth = $pdf->GetStringWidth($address);
+// Check if text fits
+$deptWidth = $pdf->GetStringWidth($deptStatus);
 
-        if ($addrWidth <= $maxAddrWidth) {
-            // Write address
-            $pdf->Cell($maxAddrWidth, 5, $address, 0, 0, 'L');
+if ($deptWidth <= $maxDeptWidth) {
+    // Write department/status
+    $pdf->Cell($maxDeptWidth, 5, $deptStatus, 0, 0, 'L');
 
-            // Write date on same line
-            $pdf->SetX(93);
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetTextColor(200, 200, 200);
-            $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-            $pdf->SetFont('Arial', 'B', 10); // <-- Changed from 'courier' to 'Arial'
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+    // Write date on same line
+    $pdf->SetX(93);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
 
-            $pdf->Ln(-5); // <-- CHANGED FROM Ln(5) to Ln(-5)
-        } else {
-            // Find where to break the address (like frequency)
-            $charPos = 0;
-            $testString = '';
+    $pdf->Ln(-5);
+} else {
+    // Find where to break the text
+    $charPos = 0;
+    $testString = '';
 
-            for ($j = 0; $j < strlen($address); $j++) {
-                $testString .= $address[$j];
-                if ($pdf->GetStringWidth($testString) > $maxAddrWidth) {
-                    $charPos = $j;
-                    break;
-                }
-            }
-
-            $firstLine = $charPos > 0 ? substr($address, 0, $charPos) : $address;
-            $remaining = $charPos > 0 ? substr($address, $charPos) : '';
-
-            // Save Y position
-            $yPos = $pdf->GetY();
-
-            // First line of address
-            $pdf->Cell($maxAddrWidth, 1, $firstLine, 0, 0, 'L');
-
-            // Date on same line
-            $pdf->SetX(93);
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetTextColor(200, 200, 200);
-            $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-            $pdf->SetFont('Arial', 'B', 8); // <-- Changed from 'courier' to 'Arial'
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
-
-            // Second line if needed (like frequency's second line)
-            if (!empty($remaining)) {
-                $pdf->SetXY($addrStartX, $yPos + 1); // Next line, same X
-                $pdf->Cell($maxAddrWidth, 5, $remaining, 0, 0, 'L');
-            }
-
-            // Adjust spacing
-            $pdf->Ln(1);
+    for ($j = 0; $j < strlen($deptStatus); $j++) {
+        $testString .= $deptStatus[$j];
+        if ($pdf->GetStringWidth($testString) > $maxDeptWidth) {
+            $charPos = $j;
+            break;
         }
+    }
+
+    $firstLine = $charPos > 0 ? substr($deptStatus, 0, $charPos) : $deptStatus;
+    $remaining = $charPos > 0 ? substr($deptStatus, $charPos) : '';
+
+    // Save Y position
+    $yPos = $pdf->GetY();
+
+    // First line of department/status
+    $pdf->Cell($maxDeptWidth, 1, $firstLine, 0, 0, 'L');
+
+    // Date on same line
+    $pdf->SetX(93);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+
+    // Second line if needed
+    if (!empty($remaining)) {
+        $pdf->SetXY($deptStartX, $yPos + 1);
+        $pdf->Cell($maxDeptWidth, 5, $remaining, 0, 0, 'L');
+    }
+
+    // Adjust spacing
+    $pdf->Ln(1);
+}
 
         $start = ($page - 1) * $meds_per_page;
         $end = min($start + $meds_per_page, $total_meds);

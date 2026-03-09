@@ -411,7 +411,7 @@ if ($ycExpiryDate) {
                 </td>
                 <!-- Suffix -->
                 <?php
-                $suffixes = ["", "Jr.", "Sr.", "III", "IV"];
+                $suffixes = ["", "Jr.", "Sr.", "II", "III", "IV"];
                 ?>
                 <td>Suffix:</td>
                 <td colspan="2">
@@ -473,7 +473,7 @@ if ($ycExpiryDate) {
                 <td>Department: <span style="color:red;">*</span></td>
                 <td style="white-space:nowrap;" colspan="5">
                     <select name="Department" required
-                        style="width:450px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+                        style="width:700px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
                         <option value="">-- Select Department --</option>
                         <?php
                         // Get current department value
