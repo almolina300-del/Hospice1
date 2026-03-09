@@ -470,7 +470,7 @@ try {
                 // Add "Per day For" and Days on same line as first part
                 $pdf->SetFont('Arial', '', 9);
                 $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(18, 2, 'Per day For', 0, 0);
+                $pdf->Cell(8, 2, 'Per day For', 0, 0);
                 $pdf->Cell(12, 2, '', 0, 0);
                 $pdf->SetFont('Arial', 'B', 11);
                 $pdf->SetTextColor(0, 0, 0);
@@ -480,10 +480,10 @@ try {
 
                 // Output remaining frequency on second line (indented)
                 if (!empty($remainingFreq)) {
-                    $pdf->SetXY(51, $yFreq + 4);
+                    $pdf->SetXY(18, $yFreq + 4);
                     $pdf->SetFont('Arial', 'B', 8);
                     $pdf->SetTextColor(0, 0, 0);
-                    $pdf->Cell($maxFrequencyWidth, 2, $remainingFreq, 0, 0, '', false);
+                    $pdf->Cell($maxFrequencyWidth, 0, $remainingFreq, 0, 0, '', false);
 
                     // RESET FONT AND COLOR FOR THE NEXT SECTION
                     $pdf->SetFont('Arial', '', 9);

@@ -1,3 +1,23 @@
+/* Style for the input */
+#departmentInput {
+    width: 700px;
+    padding: 4px 6px;
+    font-size: 13.5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+#departmentInput:focus {
+    outline: none;
+    border-color: #263F73;
+    box-shadow: 0 0 5px rgba(38,63,115,0.3);
+}
+
+#departmentInput.invalid {
+    border-color: red;
+    background-color: #fff0f0;
+}
 /* Body and general font */
 body {
   background-color: #f5f5f5;

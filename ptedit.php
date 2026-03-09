@@ -182,6 +182,7 @@ if ($ycExpiryDate) {
 <head>
     <title>Patient Record</title>
     <link rel="stylesheet" type="text/css" href="CSS/ptinfo.css">
+    <script src="JS/ptedit.js"></script>
     <script>
         // PREVENT ENTER KEY FROM SUBMITTING FORMS
         document.addEventListener('DOMContentLoaded', function() {
@@ -469,25 +470,33 @@ if ($ycExpiryDate) {
                 </td>
             </tr>
 
-            <tr>
-                <td>Department: <span style="color:red;">*</span></td>
-                <td style="white-space:nowrap;" colspan="5">
-                    <select name="Department" required
-                        style="width:700px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
-                        <option value="">-- Select Department --</option>
-                        <?php
-                        // Get current department value
-                        $currentDept = isset($ch['Department']) ? $ch['Department'] : '';
 
-                        // Loop through departments from database
-                        foreach ($departments as $dept) {
-                            $selected = ($currentDept == $dept) ? 'selected' : '';
-                            echo "<option value=\"$dept\" $selected>$dept</option>";
-                        }
-                        ?>
-                    </select>
-                </td>
-            </tr>
+
+
+<tr>
+    <td>Department: <span style="color:red;">*</span></td>
+    <td style="white-space:nowrap;" colspan="5">
+        <div style="position: relative;">
+            <input list="departmentList" 
+                   name="Department" 
+                   id="departmentInput"
+                   value="<?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : ''; ?>"
+                   placeholder="Type to search department..."
+                   required
+                   autocomplete="off"
+                   style="width:700px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+            <datalist id="departmentList">
+                <option value="">-- Select Department --</option>
+                <?php
+                // Loop through departments from database
+                foreach ($departments as $dept) {
+                    echo "<option value=\"" . htmlspecialchars($dept) . "\">" . htmlspecialchars($dept) . "</option>";
+                }
+                ?>
+            </datalist>
+        </div>
+    </td>
+</tr>
             <tr>
                 <td>Status of Appointment: <span style="color:red;">*</span></td>
                 <td style="white-space:nowrap;" colspan="5">
