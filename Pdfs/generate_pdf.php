@@ -412,7 +412,7 @@ try {
             // Signa line - frequency only in signa field (UPDATED to match bulk with wrapping logic)
             $pdf->SetX(0.5);
             $pdf->SetTextColor(200, 200, 200);
-            $pdf->Cell(8, 4, '', 0, 0); // Reduced height from 6 to 4
+            $pdf->Cell(9    , 4, '', 0, 0); // Reduced height from 6 to 4
             $pdf->Cell(13, 4, 'Signa:', 0, 0); // Reduced height from 6 to 4
             $pdf->SetFont('Arial', 'B', 10);
             $pdf->SetTextColor(0, 0, 0);
