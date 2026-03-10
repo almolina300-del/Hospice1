@@ -274,7 +274,9 @@ if ($is_suadmin) {
                 margin-right: 6px;
             }
         </style>
-
+<a href="dashboard.php">
+        Dashboard
+        </a>
         <a href="patiententry.php">
             Patient Records
         </a>

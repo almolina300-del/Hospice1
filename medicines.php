@@ -90,6 +90,10 @@ $totalPages = ceil($totalRows / $limit);
     
     </div>
 <?php endif; ?>
+ <a href="dashboard.php">
+            Dashboard
+        </a>
+
 
         <a href="patiententry.php">
             Patient Records

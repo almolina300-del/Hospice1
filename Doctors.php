@@ -166,6 +166,11 @@ $table_doctors = "<table align='center'>
 
             </div>
         <?php endif; ?>
+ <a href="dashboard.php">
+            Dashboard
+        </a>
+
+
         <a href="patiententry.php">
             Patient Records
         </a>

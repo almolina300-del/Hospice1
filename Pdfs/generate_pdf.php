@@ -401,7 +401,7 @@ try {
 
             // Show the medicine form next to Others (UPDATED font size to 6)
             if (!empty($medicineForm)) {
-                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFont('Arial', 'B', 11);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetX($pdf->GetX() + 5); // move 5 units to the right
                 $pdf->Cell(15, 4, $medicineForm, 0, 1); // Reduced height from 6 to 4
@@ -413,7 +413,7 @@ try {
             $pdf->SetX(0.5);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 4, '', 0, 0); // Reduced height from 6 to 4
-            $pdf->Cell(11, 4, 'Signa:', 0, 0); // Reduced height from 6 to 4
+            $pdf->Cell(13, 4, 'Signa:', 0, 0); // Reduced height from 6 to 4
             $pdf->SetFont('Arial', 'B', 10);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->SetX(17); // Added to match bulk positioning
@@ -590,7 +590,7 @@ try {
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(5, 10, 'M.D.', 0, 0, 'R');
-        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetFont('Arial', 'B', 11);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(30, 10, $prescription['Doctor_name'], 0, 1, 'R');
 

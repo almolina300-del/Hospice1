@@ -122,6 +122,9 @@ if ($departmentFilterActive) {
 
             </div>
         <?php endif; ?>
+<a href="dashboard.php">
+            Dashboard
+        </a>
 
         <a href="patiententry.php" style="background-color: whitesmoke; padding: 8px 12px; border-radius: 0px; display: inline-block; margin: 4px 0; text-decoration: none; color: #263F73; font-weight: bold;">
             Patient Records
@@ -442,36 +445,30 @@ WHERE pd.is_active = 1";
         echo "<th><a href='" . $_SERVER['PHP_SELF'] . "?o=3' style='color:white; text-decoration:none;'>Middle name</a></th>";
         echo "<th>Birthday</th>";
 
-        // Department header with filter button
-        echo "<th class='narrow-column'>";
-        echo "<div class='prescription-header-container'>";
-        echo "<span style='color:white;'>Department</span>";
+// Department header - WITHOUT filter dropdown
+echo "<th class='narrow-column'>";
+echo "<div class='prescription-header-container'>";
+echo "<span style='color:white;'>Department</span>";
 
-        // Show filter indicator if active
-        if ($departmentFilterActive) {
-            echo "<span class='filter-indicator'>🔍</span>";
+// Show filter indicator if active (keep this to show when filter is applied)
+if ($departmentFilterActive) {
+    echo "<span class='filter-indicator'>🔍</span>";
 
-            // Show count badge in the header
-            echo "<span class='barangay-count-badge' title='$department_count patients with $department_filter department'>$department_count</span>";
-        }
+    // Show count badge in the header
+    echo "<span class='barangay-count-badge' title='$department_count patients with $department_filter department'>$department_count</span>";
+    
+    // Keep ONLY the clear filter button (remove the dropdown button)
+    // Build clear URL
+    $queryParams = $_GET;
+    unset($queryParams['department_filter']);
+    unset($queryParams['page']); // Reset to page 1
+    $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
 
-        // Filter button with dynamic icon
-        $filterIcon = $departmentFilterActive ? "🔽" : "▼";
-        echo "<button class='filter-btn' onclick=\"showDepartmentFilter()\" title='Filter by Department'>$filterIcon</button>";
+    echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Department Filter'>❌</a>";
+}
 
-        // Clear filter button (only show when filter is active)
-        if ($departmentFilterActive) {
-            // Build clear URL
-            $queryParams = $_GET;
-            unset($queryParams['department_filter']);
-            unset($queryParams['page']); // Reset to page 1
-            $clearUrl = $_SERVER['PHP_SELF'] . '?' . http_build_query($queryParams);
-
-            echo "<a href='" . $clearUrl . "' class='clear-filter-btn' title='Clear Department Filter'>❌</a>";
-        }
-
-        echo "</div>";
-        echo "</th>";
+echo "</div>";
+echo "</th>";
         echo "<th>Status</th>";
         echo "</tr>";
 
@@ -807,7 +804,7 @@ WHERE pd.is_active = 1";
             if (e.key === 'Escape') {
                 hideDeactivateModal();
                 hideRefillDayFilter();
-                hideDepartmentFilter();
+
             }
         });
 
@@ -911,14 +908,6 @@ WHERE pd.is_active = 1";
                 select.appendChild(opt);
             });
         });
-
-        function showDepartmentFilter() {
-            document.getElementById('departmentFilterModal').style.display = 'flex';
-        }
-
-        function hideDepartmentFilter() {
-            document.getElementById('departmentFilterModal').style.display = 'none';
-        }
     </script>
 
     <!-- Refill Day Filter Modal -->

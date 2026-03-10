@@ -75,6 +75,7 @@ $table_patients = "<table align='center'>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>Employees Clinic - Inactive Patients</title>
     <link rel="stylesheet" type="text/css" href="CSS/style.css">
@@ -89,12 +90,14 @@ $table_patients = "<table align='center'>
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         .filter-btn:hover {
             opacity: 0.9;
         }
+
         .filter-btn.active {
             font-weight: bold;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
@@ -119,6 +122,9 @@ $table_patients = "<table align='center'>
                 </div>
             </div>
         <?php endif; ?>
+        <a href="dashboard.php">
+            Dashboard
+        </a>
 
         <a href="patiententry.php">
             Patient Records
@@ -129,13 +135,13 @@ $table_patients = "<table align='center'>
         <a href="bulk_print.php">
             Bulk Print
         </a>
-        
+
         <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
             <a href="Doctors.php">Doctors</a><?php endif; ?>
-        <a href="Medicines.php">Medicines</a>    
-        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>    
+        <a href="Medicines.php">Medicines</a>
+        <?php if (isset($_SESSION['Role']) && strtoupper($_SESSION['Role']) == 'SUADMIN'): ?>
             <a href="user_management.php">User Management</a><?php endif; ?>
-        
+
 
         <div class="spacer"></div>
         <div class="logout-container">
@@ -156,7 +162,7 @@ $table_patients = "<table align='center'>
             </a>
         </div>
     </div>
-    
+
     <h1 align='center' style="background-color: whitesmoke; color: black; padding: 12px 20px; margin-left: 210px; margin-top: 0px; font-size: 23px; border-radius: 5px 0 0 10px;">
         Inactive Patients
     </h1>
@@ -167,7 +173,7 @@ $table_patients = "<table align='center'>
     $count_total_result = mysqli_fetch_assoc($count_total_query);
 
     // Count by reason
-$reasons_query = mysqli_query($conn, "
+    $reasons_query = mysqli_query($conn, "
     SELECT 
         COUNT(*) as total,
         r.Reason as reason
@@ -246,7 +252,7 @@ $reasons_query = mysqli_query($conn, "
                     if (!empty($search)) {
                         $base_url .= "&dosearch=" . urlencode($search);
                     }
-                    
+
                     // Define all filter options
                     $filter_options = [
                         'all' => ['label' => 'All Reasons', 'color' => '#263F73'],
@@ -256,16 +262,16 @@ $reasons_query = mysqli_query($conn, "
                         'REFUSED DELIVERY' => ['label' => 'REFUSED DELIVERY', 'color' => '#1d2951'],
                         'HOLD BY MAC' => ['label' => 'HOLD BY MAC', 'color' => '#008b8b'],
                     ];
-                    
+
                     // Generate filter buttons
                     foreach ($filter_options as $reason_value => $option) {
-                        $is_active = ($current_reason === $reason_value || 
-                                     (strtoupper($current_reason) === strtoupper($reason_value)));
-                        
+                        $is_active = ($current_reason === $reason_value ||
+                            (strtoupper($current_reason) === strtoupper($reason_value)));
+
                         $btn_url = $base_url . "&reason=" . urlencode($reason_value);
                         $btn_color = $is_active ? $option['color'] : '#6c757d';
                         $btn_class = $is_active ? 'active' : '';
-                        
+
                         echo "<a href='{$btn_url}' 
                               class='filter-btn {$btn_class}'
                               style='background-color: {$btn_color};'
@@ -280,10 +286,10 @@ $reasons_query = mysqli_query($conn, "
         </div>
 
         <?php
-// Build SQL query - FIXED SYNTAX
-if (!empty($search)) {
-    $runsearch = mysqli_real_escape_string($conn, $search);
-    $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
+        // Build SQL query - FIXED SYNTAX
+        if (!empty($search)) {
+            $runsearch = mysqli_real_escape_string($conn, $search);
+            $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
             p.Patient_id, 
             p.Last_name, 
             p.First_name, 
@@ -302,8 +308,8 @@ if (!empty($search)) {
               OR CONCAT(p.Last_name, ' ', p.First_name) LIKE '%$runsearch%')
          $reason_filter
          ORDER BY " . $order_patients[$ord_patients][$dir];
-} else {
-    $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
+        } else {
+            $sql_patients = "SELECT SQL_CALC_FOUND_ROWS 
             p.Patient_id, 
             p.Last_name, 
             p.First_name, 
@@ -319,7 +325,7 @@ if (!empty($search)) {
          WHERE p.is_active = 0 
          $reason_filter
          ORDER BY " . $order_patients[$ord_patients][$dir];
-}
+        }
 
         // Apply limit for pagination
         $sql_patients .= " LIMIT $start, $limit";
@@ -340,16 +346,16 @@ if (!empty($search)) {
                            style='margin-left: 10px; color: #007bff; text-decoration: none;'>[Clear Filter]</a>
                       </div>";
             }
-            
+
             echo "<div style='margin-left: 40px; margin-right: 10px;'>";
             echo "<div class='table-container' style='margin: 0;'>";
             echo "<table class='patients-table' style='width: 100%; table-layout: fixed; margin-left: 0; border-collapse: collapse;'>";
-            
+
             // Table headers with sorting
             echo "<thead>";
             echo "<tr style='background-color: #263F73; color: white;'>";
             echo "<th style='width: 10px; padding: 10px 5px; text-align: center;'>No.</th>";
-            
+
             // Sorting headers
             $sort_headers = [
                 1 => 'Last Name',
@@ -359,38 +365,38 @@ if (!empty($search)) {
                 6 => 'Reason',
                 5 => 'Deactivation Date'
             ];
-            
+
             foreach ($sort_headers as $col_num => $col_name) {
                 $new_dir = ($ord_patients == $col_num && $dir == 'asc') ? 'desc' : 'asc';
                 $sort_url = "inactive_patient.php?op=" . $col_num . "&dir=" . $new_dir . "&page=" . $page;
                 if (!empty($search)) $sort_url .= "&dosearch=" . urlencode($search);
                 if ($current_reason !== 'all') $sort_url .= "&reason=" . urlencode($current_reason);
-                
+
                 $sort_indicator = '';
                 if ($ord_patients == $col_num) {
                     $sort_indicator = $dir == 'asc' ? ' ↑' : ' ↓';
                 }
-                
+
                 echo "<th style='width: " . ($col_num == 6 ? '150' : '120') . "px; padding: 10px 5px;'>
                     <a href='" . $sort_url . "' style='color: white; text-decoration: none; display: block;'>
                     " . $col_name . $sort_indicator . "
                     </a>
                 </th>";
             }
-            
+
             echo "<th style='width: 200px; padding: 10px 5px;'>Details</th>";
             echo "<th style='width: 120px; padding: 10px 5px;'>Deactivated By</th>";
             echo "<th style='width: 80px; padding: 10px 5px; text-align: center;'>Status</th>";
             echo "</tr>";
             echo "</thead>";
-            
+
             echo "<tbody>";
             $row_count = $start + 1;
             while ($row = mysqli_fetch_assoc($result_patients)) {
                 $bg_color = ($row_count % 2 == 0) ? '#F2F2FF' : '#FFFFFF';
                 $reason = $row['Reason'] ?? 'UNKNOWN';
                 $details = $row['Details'] ?? '';
-                
+
                 // Apply CSS class based on reason
                 $reason_class = '';
                 switch (strtoupper($reason)) {
@@ -410,7 +416,7 @@ if (!empty($search)) {
                         $reason_class = 'reason-hold';
                         break;
                 }
-                
+
                 echo "<tr style='background-color: " . $bg_color . ";'>";
                 echo "<td style='padding: 8px 5px; text-align: center;'>" . $row_count . "</td>";
                 echo "<td style='padding: 8px 5px;'>" . htmlspecialchars(strtoupper($row['Last_name'] ?? '')) . "</td>";
@@ -424,7 +430,7 @@ if (!empty($search)) {
                     (strlen($details) > 200 ? '...' : '') . "</td>";
                 echo "<td style='padding: 8px 5px; text-align: center;'>" . htmlspecialchars($row['is_set_by'] ?? 'Unknown') . "</td>";
                 echo "<td style='padding: 2px 2px; text-align: center;'>";
-                
+
                 // Reactivate button - DISABLE IF REASON IS DECEASED
                 if (strtoupper($reason) === 'DECEASED') {
                     echo "<button disabled
@@ -441,31 +447,31 @@ if (!empty($search)) {
                 }
                 echo "</td>";
                 echo "</tr>";
-                
+
                 $row_count++;
             }
-            
+
             echo "</tbody>";
             echo "</table>";
             echo "</div>";
             echo "</div>";
-            
+
             // PAGINATION
             echo "<div style='text-align: center; margin: 20px 0;'>";
             if ($totalPages > 1) {
                 echo "<div class='pagination' style='display: inline-block;'>";
                 echo "<div class='page-info' style='margin-bottom: 10px;'>Page $page of $totalPages</div>";
                 echo "<div style='display: flex; justify-content: center; align-items: center; gap: 10px;'>";
-                
+
                 // Previous button
                 if ($page > 1) {
                     $prev_url = "inactive_patient.php?page=" . ($page - 1) . "&op=" . $ord_patients . "&dir=" . $dir;
                     if (!empty($search)) $prev_url .= "&dosearch=" . urlencode($search);
                     if ($current_reason !== 'all') $prev_url .= "&reason=" . urlencode($current_reason);
-                    
+
                     echo "<a href='$prev_url' class='pagination-btn prev' style='padding: 8px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;'>Previous</a>";
                 }
-                
+
                 // Page numbers
                 echo "<div style='display: flex; gap: 5px;'>";
                 for ($i = 1; $i <= $totalPages; $i++) {
@@ -475,28 +481,27 @@ if (!empty($search)) {
                         $page_url = "inactive_patient.php?page=" . $i . "&op=" . $ord_patients . "&dir=" . $dir;
                         if (!empty($search)) $page_url .= "&dosearch=" . urlencode($search);
                         if ($current_reason !== 'all') $page_url .= "&reason=" . urlencode($current_reason);
-                        
+
                         echo "<a href='$page_url' style='padding: 8px 12px; background: #f0f0f0; color: #333; text-decoration: none; border-radius: 4px;'>$i</a>";
                     }
                 }
                 echo "</div>";
-                
+
                 // Next button
                 if ($page < $totalPages) {
                     $next_url = "inactive_patient.php?page=" . ($page + 1) . "&op=" . $ord_patients . "&dir=" . $dir;
                     if (!empty($search)) $next_url .= "&dosearch=" . urlencode($search);
                     if ($current_reason !== 'all') $next_url .= "&reason=" . urlencode($current_reason);
-                    
+
                     echo "<a href='$next_url' class='pagination-btn next' style='padding: 8px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;'>Next</a>";
                 }
-                
+
                 echo "</div>";
                 echo "</div>";
             } else {
                 echo "<div class='page-info' style='margin: 20px 0;'>Page $page of $totalPages</div>";
             }
             echo "</div>";
-            
         } else {
             echo "<div style='text-align: center;'>";
             if ($current_reason !== 'all') {
@@ -510,9 +515,10 @@ if (!empty($search)) {
             }
             echo "</div>";
         }
-        
+
         mysqli_close($conn);
         ?>
     </div>
 </body>
+
 </html>

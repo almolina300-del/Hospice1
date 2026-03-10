@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $First_name = $row['First_name'];
                 $_SESSION['success_message'] = "Hello $First_name, Welcome to MHD Prescription System.";
 
-                header("Location: Patiententry.php"); // redirect after login
+                header("Location: Dashboard.php"); // redirect after login
                 exit();
             }
         } else {

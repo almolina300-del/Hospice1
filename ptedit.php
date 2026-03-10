@@ -473,30 +473,30 @@ if ($ycExpiryDate) {
 
 
 
-<tr>
-    <td>Department: <span style="color:red;">*</span></td>
-    <td style="white-space:nowrap;" colspan="5">
-        <div style="position: relative;">
-            <input list="departmentList" 
-                   name="Department" 
-                   id="departmentInput"
-                   value="<?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : ''; ?>"
-                   placeholder="Type to search department..."
-                   required
-                   autocomplete="off"
-                   style="width:700px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
-            <datalist id="departmentList">
-                <option value="">-- Select Department --</option>
-                <?php
-                // Loop through departments from database
-                foreach ($departments as $dept) {
-                    echo "<option value=\"" . htmlspecialchars($dept) . "\">" . htmlspecialchars($dept) . "</option>";
-                }
-                ?>
-            </datalist>
-        </div>
-    </td>
-</tr>
+            <tr>
+                <td>Department: <span style="color:red;">*</span></td>
+                <td style="white-space:nowrap;" colspan="5">
+                    <div style="position: relative;">
+                        <input list="departmentList"
+                            name="Department"
+                            id="departmentInput"
+                            value="<?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : ''; ?>"
+                            placeholder="Type to search department..."
+                            required
+                            autocomplete="off"
+                            style="width:700px; padding:4px 6px; font-size:13.5px; border:1px solid #ccc; border-radius:4px;">
+                        <datalist id="departmentList">
+                            <option value="">-- Select Department --</option>
+                            <?php
+                            // Loop through departments from database
+                            foreach ($departments as $dept) {
+                                echo "<option value=\"" . htmlspecialchars($dept) . "\">" . htmlspecialchars($dept) . "</option>";
+                            }
+                            ?>
+                        </datalist>
+                    </div>
+                </td>
+            </tr>
             <tr>
                 <td>Status of Appointment: <span style="color:red;">*</span></td>
                 <td style="white-space:nowrap;" colspan="5">
@@ -1144,15 +1144,32 @@ if ($ycExpiryDate) {
                     <th colspan='5' style='text-align:left; padding:12px;'>
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
-                        <?php if ($hasValidSex): ?>
+                        <?php
+                        // Check if all required fields are filled
+                        $hasValidCivilStatus = isset($ch['Civil_status']) && !empty($ch['Civil_status']) && $ch['Civil_status'] != '';
+                        $hasValidStatusOfAppointment = isset($ch['Status_of_appointment']) && !empty($ch['Status_of_appointment']) && $ch['Status_of_appointment'] != '';
+                        $canAddPrescription = $hasValidSex && $hasValidCivilStatus && $hasValidStatusOfAppointment;
+
+                        // Build the title/tooltip message for disabled button
+                        $disabledReason = '';
+                        if (!$hasValidSex) {
+                            $disabledReason = 'Patient sex/gender is missing or invalid';
+                        } elseif (!$hasValidCivilStatus) {
+                            $disabledReason = 'Civil Status is required';
+                        } elseif (!$hasValidStatusOfAppointment) {
+                            $disabledReason = 'Status of Appointment is required';
+                        }
+                        ?>
+
+                        <?php if ($canAddPrescription): ?>
                             <a href='#' onclick='openPrescriptionModal()' style='background-color:#3CB371; color:white; border:none; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:bold; margin-left:10px; font-size:14px;'>
                                 Add Prescription</a>
                         <?php else: ?>
                             <button style='background-color:#cccccc; color:#666; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; margin-left:10px; font-size:14px; cursor:not-allowed;'
-                                title='Cannot add prescription: Patient sex/gender is missing or invalid'>
+                                title='Cannot add prescription: <?php echo $disabledReason; ?>'>
                                 Add Prescription</button>
                             <span style='color: #dc3545; font-size: 12px; margin-left: 10px;'>
-                                ⚠ Patient sex/gender is missing or invalid
+                                <?php echo $disabledReason; ?>
                             </span>
                         <?php endif; ?>
                     </th>
@@ -1270,34 +1287,34 @@ if ($ycExpiryDate) {
             <form id="addPrescriptionForm" method="post" action="prescriptiontransact.php">
                 <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-         <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Name: <strong><?php echo isset($ch['Last_name']) ? htmlspecialchars($ch['Last_name'] . ', ' . $ch['First_name'] . ' ' . $ch['Middle_name']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Name: <strong><?php echo isset($ch['Last_name']) ? htmlspecialchars($ch['Last_name'] . ', ' . $ch['First_name'] . ' ' . $ch['Middle_name']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Age: <strong><?php echo $patientAge; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Age: <strong><?php echo $patientAge; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Sex: <strong><?php echo isset($ch['Sex']) ? htmlspecialchars($ch['Sex']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Sex: <strong><?php echo isset($ch['Sex']) ? htmlspecialchars($ch['Sex']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Contact: <strong><?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Contact: <strong><?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Civil Status: <strong><?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Civil Status: <strong><?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Department: <strong><?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Department: <strong><?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Status of appointment: <strong><?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?></strong>
-</div>
-<br>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Status of appointment: <strong><?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?></strong>
+                </div>
+                <br>
 
                 <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
                     <label for="Date" style="width:60px; white-space:nowrap; font-size:13px;">
@@ -1459,34 +1476,34 @@ if ($ycExpiryDate) {
                 <input type="hidden" name="Prescription_id" id="editPrescriptionId">
                 <input type="hidden" name="Patient_id" value="<?php echo $char; ?>">
 
-             <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Name: <strong><?php echo isset($ch['Last_name']) ? htmlspecialchars($ch['Last_name'] . ', ' . $ch['First_name'] . ' ' . $ch['Middle_name']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Name: <strong><?php echo isset($ch['Last_name']) ? htmlspecialchars($ch['Last_name'] . ', ' . $ch['First_name'] . ' ' . $ch['Middle_name']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Age: <strong><?php echo $patientAge; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Age: <strong><?php echo $patientAge; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Sex: <strong><?php echo isset($ch['Sex']) ? htmlspecialchars($ch['Sex']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Sex: <strong><?php echo isset($ch['Sex']) ? htmlspecialchars($ch['Sex']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Contact: <strong><?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Contact: <strong><?php echo isset($ch['Contact_nos']) ? htmlspecialchars($ch['Contact_nos']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Civil Status: <strong><?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Civil Status: <strong><?php echo isset($ch['Civil_status']) ? htmlspecialchars($ch['Civil_status']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Department: <strong><?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?></strong>
-</div>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Department: <strong><?php echo isset($ch['Department']) ? htmlspecialchars($ch['Department']) : 'N/A'; ?></strong>
+                </div>
 
-<div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
-    Status of appointment: <strong><?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?></strong>
-</div>
-<br>
+                <div style="width:100%; border-bottom:1px solid #000; padding:4px 0; font-size:14px; color:#000;">
+                    Status of appointment: <strong><?php echo isset($ch['Status_of_appointment']) ? htmlspecialchars($ch['Status_of_appointment']) : 'N/A'; ?></strong>
+                </div>
+                <br>
                 <div style="display:flex; align-items:center; margin-bottom:5px; margin-top:5px;">
                     <label for="editDateDisplay" style="width:60px; white-space:nowrap; font-size:13px;">
                         Date:
