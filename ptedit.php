@@ -1051,7 +1051,7 @@ if ($ycExpiryDate) {
         const Birthday = document.querySelector('input[name="Birthday"]');
         const Contact = document.querySelector('input[name="Contact_nos"]');
         const CivilStatus = document.querySelector('select[name="Civil_status"]');
-        const Department = document.querySelector('select[name="Department"]'); // CHANGED: from input to select
+        const Department = document.querySelector('input[name="Department"]'); // CHANGED: from input to select
         const Status = document.querySelector('select[name="Status_of_appointment"]');
         const updateBtn = document.getElementById('updateBtn');
 
