@@ -236,6 +236,51 @@ if ($ycExpiryDate) {
 </head>
 
 <body>
+    <!-- Loader -->
+    <div id="page-loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Loading Patient Record</div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Loader with 2-second display
+        document.addEventListener('DOMContentLoaded', function() {
+            const loader = document.getElementById('page-loader');
+            const mainContent = document.getElementById('main-content');
+            const progressBar = document.getElementById('progressBar');
+
+            let progress = 0;
+            const totalTime = 1000; // 2 seconds
+            const interval = 50; // Update every 50ms
+            const increment = (interval / totalTime) * 100;
+
+            // Update progress bar
+            const progressInterval = setInterval(function() {
+                progress += increment;
+                if (progress <= 100) {
+                    progressBar.style.width = progress + '%';
+                }
+            }, interval);
+
+            // Hide loader after 2 seconds
+            setTimeout(function() {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+
+                setTimeout(function() {
+                    loader.style.opacity = '0';
+                    setTimeout(function() {
+                        loader.style.display = 'none';
+                        mainContent.classList.add('visible');
+                    }, 500);
+                }, 300);
+            }, totalTime);
+        });
+    </script>
     <!-- Success Messages Display   -->
     <?php
     // Check for success messages from prescription update
@@ -261,6 +306,7 @@ if ($ycExpiryDate) {
             }, 5000);
         </script>";
     }
+
 
     // Check for success messages from prescription creation
     if (isset($_GET['added']) && $_GET['added'] == 1) {
