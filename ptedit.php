@@ -1191,20 +1191,18 @@ if ($ycExpiryDate) {
                         <span style='font-weight:bold; color:black; font-size:16px;'>Prescriptions</span>
 
                         <?php
-                        // Check if all required fields are filled
-                        $hasValidCivilStatus = isset($ch['Civil_status']) && !empty($ch['Civil_status']) && $ch['Civil_status'] != '';
-                        $hasValidStatusOfAppointment = isset($ch['Status_of_appointment']) && !empty($ch['Status_of_appointment']) && $ch['Status_of_appointment'] != '';
-                        $canAddPrescription = $hasValidSex && $hasValidCivilStatus && $hasValidStatusOfAppointment;
+                     // Check if all required fields are filled
+$hasValidStatusOfAppointment = isset($ch['Status_of_appointment']) && !empty($ch['Status_of_appointment']) && $ch['Status_of_appointment'] != '';
+$canAddPrescription = $hasValidSex && $hasValidStatusOfAppointment;
 
-                        // Build the title/tooltip message for disabled button
-                        $disabledReason = '';
-                        if (!$hasValidSex) {
-                            $disabledReason = 'Patient sex/gender is missing or invalid';
-                        } elseif (!$hasValidCivilStatus) {
-                            $disabledReason = 'Civil Status is required';
-                        } elseif (!$hasValidStatusOfAppointment) {
-                            $disabledReason = 'Status of Appointment is required';
-                        }
+// Build the title/tooltip message for disabled button
+$disabledReason = '';
+if (!$hasValidSex) {
+    $disabledReason = 'Patient sex/gender is missing or invalid';
+} elseif (!$hasValidStatusOfAppointment) {
+    $disabledReason = 'Status of Appointment is required';
+}
+
                         ?>
 
                         <?php if ($canAddPrescription): ?>

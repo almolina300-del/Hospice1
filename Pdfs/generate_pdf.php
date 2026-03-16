@@ -19,15 +19,15 @@ if ($prescription_id <= 0) {
 
 try {
     // Fetch prescription data with patient info - WITH AGE CALCULATION
-    $sql = "SELECT p.*, 
+  $sql = "SELECT p.*, 
                    CONCAT(pat.Last_name, ', ', pat.First_name, ' ', COALESCE(pat.Middle_name, '')) as Patient_name,
                    pat.Department as Department,
                    pat.Status_of_appointment as Status_of_appointment,
                    pat.Sex,
                    pat.Birthday,
-                   CONCAT(d.Last_name, ', ', d.First_name, ' ', COALESCE(d.Middle_name, '')) as Doctor_name,
+                   CONCAT(d.First_name, ', ', COALESCE(d.Middle_name, ''), ' ', d.Last_name, ', MD') as Doctor_name,
                    d.License_number as Doctor_license,
-                   d.PTR_number as Doctor_PTR,  -- Added PTR number
+                   d.PTR_number as Doctor_PTR,
                    -- Calculate age from birthday
                    TIMESTAMPDIFF(YEAR, pat.Birthday, CURDATE()) as Age
             FROM prescription p 
@@ -104,12 +104,12 @@ try {
         $pdf->Cell(20, 5, 'Page ' . $page_num . ' / ' . $total_pages, 0, 0, 'R');
 
         // Patient Information on EVERY PAGE 
-        $pdf->Ln(12);
+        $pdf->Ln(16);
         $pdf->SetX(10);
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(11, 10, 'Name:');
-        $pdf->SetFont('Arial', 'B', 15);
+        $pdf->SetFont('Arial', 'B', 8.5);
         $pdf->SetTextColor(0, 0, 0);
 
         $patientName = $prescription['Patient_name'];
@@ -155,7 +155,7 @@ try {
         $pdf->Cell(-21, 10, 'Age:', 0, 0, 'R');
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(5, 10, $prescription['Age'], 0, 0, 'R');
+        $pdf->Cell(8, 10, $prescription['Age'], 0, 0, 'R');
 
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
@@ -214,9 +214,9 @@ try {
             $pdf->SetFont('Arial', 'B', 9);
             $pdf->SetTextColor(200, 200, 200);
             $pdf->Cell(8, 5, 'Date:', 0, 0, 'R');
-            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->SetFont('Arial', 'B', 12);
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(18, 5, $prescription['Date'], 0, 1, 'R');
+            $pdf->Cell(22, 5, $prescription['Date'], 0, 1, 'R');
 
             $pdf->Ln(-5);
         } else {
@@ -257,254 +257,269 @@ try {
             }
 
             // Adjust spacing
-            $pdf->Ln(1);
+            $pdf->Ln(2);
         }
 
         // Medicines section - UPDATED to match bulk exactly
         $start_index = ($page_num - 1) * $medicines_per_page;
         $end_index = min($start_index + $medicines_per_page, $total_medicines);
 
-        // Medicines section
-        $pdf->Ln(12); // Reduced from 8
-        $pdf->SetAutoPageBreak(false);
+ // Medicines section - FIXED ALIGNMENT
+$pdf->Ln(15);
+$pdf->SetAutoPageBreak(false);
 
-        for ($i = $start_index; $i < $end_index; $i++) {
-            $med = $medicines[$i];
-            $number = $i + 1 - $start_index; // Number 1-5 for current page
+for ($i = $start_index; $i < $end_index; $i++) {
+    $med = $medicines[$i];
+    $number = $i + 1 - $start_index; // Number 1-5 for current page
 
-            // Get medicine form
-            $medicineForm = $med['Form'] ?? '';
+    // Get medicine form
+    $medicineForm = $med['Form'] ?? '';
 
-            // Medicine name and dose line - with character limits and wrapping
-            $pdf->SetX(2);
-            $pdf->SetTextColor(200, 200, 200);
-            $pdf->Cell(8, 5, $number . '.', 0, 0); // Reduced height from 6 to 5
+    // Save starting position for this medicine
+    $startX = 2;
+    $startY = $pdf->GetY();
+    $lineHeight = 5; // Height of each line
+    $linesCount = 1; // Track how many lines this medicine takes
 
-            // Set position for medicine name
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->SetFont('Arial', 'B', 11);
+    // Medicine number
+    $pdf->SetX($startX);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(8, $lineHeight, $number . '.', 0, 0);
 
-            // Get medicine name and dose
-            $medicineName = $med['Medicine_name'] ?? '';
-            $dose = $med['Dose'] ?? '';
+    // Set position for medicine name
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetFont('Arial', 'B', 11);
 
-            // Determine max widths
-            $maxMedicineWidth = 85; // Width for medicine name
-            $maxDoseWidth = 35; // Width for dose (increased)
+    // Get medicine name and dose
+    $medicineName = $med['Medicine_name'] ?? '';
+    $dose = $med['Dose'] ?? '';
 
-            // Check if medicine name fits
-            $nameWidth = $pdf->GetStringWidth($medicineName);
-            $doseWidthActual = $pdf->GetStringWidth($dose);
+    // Determine max widths
+    $maxMedicineWidth = 85; // Width for medicine name
+    $maxDoseWidth = 35; // Width for dose
 
-            // MEDICINE NAME WRAPPING (same as patient name)
-            if ($nameWidth <= $maxMedicineWidth) {
-                // Medicine name fits in one line
-                $pdf->Cell($maxMedicineWidth, 5, $medicineName, 0, 0, '', false);
-            } else {
-                // Medicine name doesn't fit - wrap
-                $charPos = 0;
-                $testString = '';
+    // Check if medicine name fits
+    $nameWidth = $pdf->GetStringWidth($medicineName);
+    $doseWidthActual = $pdf->GetStringWidth($dose);
 
-                for ($j = 0; $j < strlen($medicineName); $j++) {
-                    $testString .= $medicineName[$j];
-                    if ($pdf->GetStringWidth($testString) > $maxMedicineWidth) {
-                        $charPos = $j;
-                        break;
-                    }
-                }
+    // MEDICINE NAME WRAPPING
+    if ($nameWidth <= $maxMedicineWidth) {
+        // Medicine name fits in one line
+        $pdf->SetY($startY);
+        $pdf->SetX($startX + 8);
+        $pdf->Cell($maxMedicineWidth, $lineHeight, $medicineName, 0, 0, '', false);
+    } else {
+        // Medicine name doesn't fit - wrap
+        $charPos = 0;
+        $testString = '';
 
-                if ($charPos > 0) {
-                    $firstLineName = substr($medicineName, 0, $charPos);
-                    $remainingName = substr($medicineName, $charPos);
-                } else {
-                    $firstLineName = $medicineName;
-                    $remainingName = '';
-                }
-
-                // First line of medicine name
-                $pdf->Cell($maxMedicineWidth, 1, $firstLineName, 0, 0, '', false);
+        for ($j = 0; $j < strlen($medicineName); $j++) {
+            $testString .= $medicineName[$j];
+            if ($pdf->GetStringWidth($testString) > $maxMedicineWidth) {
+                $charPos = $j;
+                break;
             }
-
-            // DOSE WRAPPING (same logic as medicine name)
-            if ($doseWidthActual <= $maxDoseWidth) {
-                // Dose fits in one line
-                $pdf->Cell($maxDoseWidth, 5, $dose, 0, 0, '', false);
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(5, 5, 'Mg', 0, 1);
-            } else {
-                // Dose doesn't fit - wrap
-                $charPosDose = 0;
-                $testStringDose = '';
-
-                for ($j = 0; $j < strlen($dose); $j++) {
-                    $testStringDose .= $dose[$j];
-                    if ($pdf->GetStringWidth($testStringDose) > $maxDoseWidth) {
-                        $charPosDose = $j;
-                        break;
-                    }
-                }
-
-                if ($charPosDose > 0) {
-                    $firstLineDose = substr($dose, 0, $charPosDose);
-                    $remainingDose = substr($dose, $charPosDose);
-                } else {
-                    $firstLineDose = $dose;
-                    $remainingDose = '';
-                }
-
-                // First line of dose
-                $pdf->Cell($maxDoseWidth, 5, $firstLineDose, 0, 0, '', false);
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(5, 5, 'Mg', 0, 1);
-            }
-
-            // SECOND LINES (if needed)
-            $hasSecondLine = false;
-
-            // Second line of medicine name if needed
-            if ($nameWidth > $maxMedicineWidth && !empty($remainingName)) {
-                $pdf->SetX(10); // Align with the number position (2 + 8)
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetFont('Arial', 'B', 6); // Smaller font for second line
-                $pdf->Cell($maxMedicineWidth, -3, $remainingName, 0, 0, '', false);
-                $hasSecondLine = true;
-            }
-
-            // Second line of dose if needed
-            if ($doseWidthActual > $maxDoseWidth && !empty($remainingDose)) {
-                if (!$hasSecondLine) {
-                    // If medicine name didn't have second line, position dose second line
-                    $pdf->SetX(10 + $maxMedicineWidth); // Position after medicine name area
-                }
-                $pdf->SetFont('Arial', 'B', 7); // Smaller font for second line
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->Cell($maxDoseWidth, 1, $remainingDose, 0, 0, '', false);
-                $hasSecondLine = true;
-            }
-
-            // If there was a second line, add a new line
-            if ($hasSecondLine) {
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(5, 1, '', 0, 1);
-                $pdf->SetFont('Arial', 'B', 8); // Reset font size
-            }
-
-            // Checkboxes for form - SIMPLIFIED: Show form next to Others
-            $pdf->SetX(2);
-            $pdf->Cell(8, 4, '', 0, 0); // Reduced height from 6 to 4
-            $pdf->SetFont('Arial', '', 10);
-            $pdf->Cell(18, 4, '[  ] Tablet', 0, 0); // Reduced height from 6 to 4
-            $pdf->Cell(18, 4, '[  ] Capsule', 0, 0); // Reduced height from 6 to 4
-            $pdf->Cell(18, 4, '[  ] Syrup', 0, 0); // Reduced height from 6 to 4
-            $pdf->Cell(18, 4, '[  ] Drops', 0, 0); // Reduced height from 6 to 40
-            $pdf->Cell(16, 4, '[  ] Others:', 0, 0); // Reduced height from 6 to 4
-
-            // Show the medicine form next to Others (UPDATED font size to 6)
-            if (!empty($medicineForm)) {
-                $pdf->SetFont('Arial', 'B', 11);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetX($pdf->GetX() + 5); // move 5 units to the right
-                $pdf->Cell(15, 4, $medicineForm, 0, 1); // Reduced height from 6 to 4
-            } else {
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(15, 4, '___________', 0, 1); // Reduced height from 6 to 4
-            }
-            // Signa line - frequency only in signa field (UPDATED to match bulk with wrapping logic)
-            $pdf->SetX(0.5);
-            $pdf->SetTextColor(200, 200, 200);
-            $pdf->Cell(9    , 4, '', 0, 0); // Reduced height from 6 to 4
-            $pdf->Cell(13, 4, 'Signa:', 0, 0); // Reduced height from 6 to 4
-            $pdf->SetFont('Arial', 'B', 10);
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->SetX(17); // Added to match bulk positioning
-
-            // Get frequency text
-            $frequency = $med['Frequency'] ?? '';
-            $maxFrequencyWidth = 68; // Max width for frequency text
-
-            // Calculate frequency width for checking
-            $freqWidth = $pdf->GetStringWidth($frequency);
-
-            if ($freqWidth <= $maxFrequencyWidth) {
-                // Fits in one line
-                $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
-
-                // Add "Per day For" and Days on the same line
-                $pdf->SetFont('Arial', '', 9);
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(18, 4, 'Per day For', 0, 0);
-                $pdf->Cell(2, 4, '', 0, 0);
-                $pdf->SetFont('Arial', 'B', 12);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->Cell(8, 5, ($med['Days'] ?? ''), 0, 1,);
-                $pdf->SetFont('Arial', '', 9);
-                $pdf->SetTextColor(200, 200, 200);
-            } else {
-                // Doesn't fit - need to wrap
-                // Find where to break the frequency text
-                $charPosFreq = 0;
-                $testStringFreq = '';
-
-                for ($j = 0; $j < strlen($frequency); $j++) {
-                    $testStringFreq .= $frequency[$j];
-                    if ($pdf->GetStringWidth($testStringFreq) > $maxFrequencyWidth) {
-                        $charPosFreq = $j;
-                        break;
-                    }
-                }
-
-                if ($charPosFreq > 0) {
-                    $firstLineFreq = substr($frequency, 0, $charPosFreq);
-                    $remainingFreq = substr($frequency, $charPosFreq);
-                } else {
-                    $firstLineFreq = $frequency;
-                    $remainingFreq = '';
-                }
-
-                // Save starting Y for frequency
-                $yFreq = $pdf->GetY();
-
-                // First line of frequency
-                $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
-
-                // Add "Per day For" and Days on same line as first part
-                $pdf->SetFont('Arial', '', 9);
-                $pdf->SetTextColor(200, 200, 200);
-                $pdf->Cell(8, 2, 'Per day For', 0, 0);
-                $pdf->Cell(12, 2, '', 0, 0);
-                $pdf->SetFont('Arial', 'B', 11);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->Cell(8, 4, ($med['Days'] ?? '') . ' days', 0, 1);
-                $pdf->SetFont('Arial', '', 9);
-                $pdf->SetTextColor(200, 200, 200);
-
-                // Output remaining frequency on second line (indented)
-                if (!empty($remainingFreq)) {
-                    $pdf->SetXY(18, $yFreq + 4);
-                    $pdf->SetFont('Arial', 'B', 8);
-                    $pdf->SetTextColor(0, 0, 0);
-                    $pdf->Cell($maxFrequencyWidth, 0, $remainingFreq, 0, 0, '', false);
-
-                    // RESET FONT AND COLOR FOR THE NEXT SECTION
-                    $pdf->SetFont('Arial', '', 9);
-                    $pdf->SetTextColor(200, 200, 200);
-                }
-            }
-
-            // Notes line
-            $pdf->SetX(2);
-            $pdf->Cell(8, 4, '', 0, 0);
-            $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0);
-            $pdf->Cell(15, 4, '____', 0, 0, 'R');
-            $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
-            $pdf->SetFont('Arial', 'B', 14);
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(15, 4, ($med['Quantity'] ?? '') . ' Qty', 0, 0, '', false);
-            $pdf->SetFont('Arial', '', 9);
-            $pdf->Cell(0, 4, '', 0, 1);
-
-            $pdf->Ln(7); // Space between medicines
         }
+
+        if ($charPos > 0) {
+            $firstLineName = substr($medicineName, 0, $charPos);
+            $remainingName = substr($medicineName, $charPos);
+        } else {
+            $firstLineName = $medicineName;
+            $remainingName = '';
+        }
+
+        // First line of medicine name
+        $pdf->SetY($startY);
+        $pdf->SetX($startX + 8);
+        $pdf->Cell($maxMedicineWidth, 1, $firstLineName, 0, 0, '', false);
+        
+        // Track that we'll need more lines
+        if (!empty($remainingName)) {
+            $linesCount = 2; // At least 2 lines
+        }
+    }
+
+    // DOSE - Always position at the starting Y (first line)
+    $pdf->SetY($startY);
+    $pdf->SetX($startX + 8 + $maxMedicineWidth + 5); // Position after medicine name with gap
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell($maxDoseWidth, $lineHeight, $dose, 0, 0, '', false);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(5, $lineHeight, 'Mg', 0, 1);
+
+    // SECOND LINE of medicine name if needed
+    if ($nameWidth > $maxMedicineWidth && !empty($remainingName)) {
+        $linesCount = 2;
+        $pdf->SetY($startY + $lineHeight);
+        $pdf->SetX($startX + 8);
+        $pdf->SetFont('Arial', 'B', 9); // Slightly smaller for second line
+        $pdf->SetTextColor(0, 0, 0);
+        
+        // Check if second line also needs wrapping
+        $remainingWidth = $pdf->GetStringWidth($remainingName);
+        if ($remainingWidth > $maxMedicineWidth) {
+            // Need to wrap again
+            $charPos2 = 0;
+            $testString2 = '';
+            for ($j = 0; $j < strlen($remainingName); $j++) {
+                $testString2 .= $remainingName[$j];
+                if ($pdf->GetStringWidth($testString2) > $maxMedicineWidth) {
+                    $charPos2 = $j;
+                    break;
+                }
+            }
+            
+            if ($charPos2 > 0) {
+                $secondLine = substr($remainingName, 0, $charPos2);
+                $remainingName = substr($remainingName, $charPos2);
+            } else {
+                $secondLine = $remainingName;
+                $remainingName = '';
+            }
+            
+            $pdf->Cell($maxMedicineWidth, 1, $secondLine, 0, 0, '', false);
+            
+            // Third line if needed
+            if (!empty($remainingName)) {
+                $linesCount = 3;
+                $pdf->SetY($startY + ($lineHeight * 2));
+                $pdf->SetX($startX + 8);
+                $pdf->SetFont('Arial', 'B', 8); // Even smaller for third line
+                $pdf->Cell($maxMedicineWidth, 1, $remainingName, 0, 0, '', false);
+            }
+        } else {
+            // Second line fits
+            $pdf->Cell($maxMedicineWidth, 1, $remainingName, 0, 0, '', false);
+        }
+    }
+
+    // Checkboxes for form - Position based on number of lines taken
+    $checkboxY = $startY + ($linesCount * $lineHeight) + 2; // Small gap after medicine lines
+    
+    $pdf->SetY($checkboxY);
+    $pdf->SetX($startX);
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(8, 4, '', 0, 0);
+    $pdf->Cell(18, 4, '[  ] Tablet', 0, 0);
+    $pdf->Cell(18, 4, '[  ] Capsule', 0, 0);
+    $pdf->Cell(18, 4, '[  ] Syrup', 0, 0);
+    $pdf->Cell(18, 4, '[  ] Drops', 0, 0);
+    $pdf->Cell(16, 4, '[  ] Others:', 0, 0);
+
+    // Show the medicine form next to Others
+    if (!empty($medicineForm)) {
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetX($pdf->GetX() + 5);
+        $pdf->Cell(15, 4, $medicineForm, 0, 1);
+    } else {
+        $pdf->SetTextColor(200, 200, 200);
+        $pdf->Cell(15, 4, '___________', 0, 1);
+    }
+
+    // Signa line - Position after checkboxes
+    $signaY = $checkboxY + 4;
+    
+    $pdf->SetY($signaY);
+    $pdf->SetX(0.5);
+    $pdf->SetTextColor(200, 200, 200);
+    $pdf->Cell(10, 4, '', 0, 0);
+    $pdf->Cell(13, 4, 'Signa:', 0, 0);
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetX(23);
+
+    // Get frequency text
+    $frequency = $med['Frequency'] ?? '';
+    $maxFrequencyWidth = 68;
+
+    // Calculate frequency width for checking
+    $freqWidth = $pdf->GetStringWidth($frequency);
+
+    if ($freqWidth <= $maxFrequencyWidth) {
+        // Fits in one line
+        $pdf->Cell($maxFrequencyWidth, 4, $frequency, 0, 0, '', false);
+
+        // Add "Per day For" and Days on the same line
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(200, 200, 200);
+        $pdf->Cell(18, 4, 'Per day For', 0, 0);
+        $pdf->Cell(-1, 4, '', 0, 0);
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Cell(8, 5, ($med['Days'] ?? ''), 0, 1);
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(200, 200, 200);
+    } else {
+        // Doesn't fit - need to wrap
+        $charPosFreq = 0;
+        $testStringFreq = '';
+
+        for ($j = 0; $j < strlen($frequency); $j++) {
+            $testStringFreq .= $frequency[$j];
+            if ($pdf->GetStringWidth($testStringFreq) > $maxFrequencyWidth) {
+                $charPosFreq = $j;
+                break;
+            }
+        }
+
+        if ($charPosFreq > 0) {
+            $firstLineFreq = substr($frequency, 0, $charPosFreq);
+            $remainingFreq = substr($frequency, $charPosFreq);
+        } else {
+            $firstLineFreq = $frequency;
+            $remainingFreq = '';
+        }
+
+        // Save starting Y for frequency
+        $yFreq = $pdf->GetY();
+
+        // First line of frequency
+        $pdf->Cell($maxFrequencyWidth, 1.8, $firstLineFreq, 0, 0, '', false);
+
+        // Add "Per day For" and Days on same line as first part
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(200, 200, 200);
+        $pdf->Cell(8, 2, 'Per day For', 0, 0);
+        $pdf->Cell(12, 2, '', 0, 0);
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Cell(8, 4, ($med['Days'] ?? '') . ' days', 0, 1);
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(200, 200, 200);
+
+        // Output remaining frequency on second line (indented)
+        if (!empty($remainingFreq)) {
+            $pdf->SetXY(18, $yFreq + 4);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell($maxFrequencyWidth, 0, $remainingFreq, 0, 0, '', false);
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetTextColor(200, 200, 200);
+        }
+    }
+
+    // Notes line - Position after signa
+    $notesY = $signaY + 6;
+    
+    $pdf->SetY($notesY);
+    $pdf->SetX($startX);
+    $pdf->Cell(8, 4, '', 0, 0);
+    $pdf->Cell(50, 4, 'Note:Total quantity to be dispensed #', 0, 0);
+    $pdf->Cell(15, 4, '____', 0, 0, 'R');
+    $pdf->Cell(33, 4, 'Quantity to consume #', 0, 0);
+    $pdf->SetFont('Arial', 'B', 14);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(15, 4, ($med['Quantity'] ?? '') . ' Qty', 0, 0, '', false);
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->Cell(0, 4, '', 0, 1);
+
+    // Set position for next medicine (add gap)
+    $nextMedicineY = $notesY + 8;
+    $pdf->SetY($nextMedicineY);
+}
 
         // Fill remaining empty medicine forms if less than 5 medicines on the page
         $current_page_medicines = $end_index - $start_index;

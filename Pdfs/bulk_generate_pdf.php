@@ -144,7 +144,7 @@ $sql2 = "SELECT p.*,
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(200, 200, 200);
         $pdf->Cell(11, 10, 'Name:');
-        $pdf->SetFont('Arial', 'B', 15);
+        $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetTextColor(0, 0, 0);
 
         $patientName = $prescription['Patient_name'];

@@ -693,7 +693,10 @@ $today_date = date('Y-m-d');
         <?php if (isset($_SESSION['First_name'])): ?>
             <div class="welcome-user" style="color: white; text-align: center; padding: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
                 <div style="font-size: 25px; color: white; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">
-                    Prescription
+                 Employees Clinic<br>
+                    <div style="margin-top: 5px; font-size: 18px; color: rgba(255,255,255,0.8);">
+                      Prescription
+                    </div>
                 </div> <br>
                 <img src="img/user_icon.png" alt="User Icon" style="width: 30px; height: 30px; filter: brightness(0) invert(1);"><br>
                 Welcome,<br>
